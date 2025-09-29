@@ -65,13 +65,13 @@ export default function LoginPage() {
                         <div className="mb-4">
                             <BastaLogo className="w-24 h-20 mx-auto" />
                         </div>
-                        <p className="text-white/80 text-sm">Tableau de bord administrateur</p>
+                        <p className="text-white/80 text-sm font-christmas text-lg">Tableau de bord administrateur</p>
                     </div>
 
                     {/* Formulaire de connexion */}
                     <Card className="backdrop-blur-sm bg-white/95 border-white/20 shadow-2xl">
                         <CardHeader className="space-y-1 pb-6">
-                            <CardTitle className="text-2xl font-bold text-center text-gray-900">
+                            <CardTitle className="text-2xl font-bold text-center text-gray-900 font-christmas">
                                 Connexion
                             </CardTitle>
                             <CardDescription className="text-center text-gray-600">
