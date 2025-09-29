@@ -30,9 +30,9 @@ export default function DashboardLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-14 items-center gap-2 border-b px-4">
-          <SidebarTrigger />
-          <div className="text-sm text-muted-foreground">Dashboard</div>
+        <header className="flex h-14 items-center gap-2 border-b border-[#2A04D2] px-4 bg-[#3A14E2]">
+          <SidebarTrigger className="text-white hover:bg-white/20" />
+          <div className="text-sm text-white font-christmas">Dashboard</div>
         </header>
         <div className="p-4">
           {children}

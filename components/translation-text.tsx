@@ -12,9 +12,10 @@ type Props = {
     value: TranslationText
     onChange: (val: TranslationText) => void
     disabled?: boolean
+    titleFont?: boolean
 }
 
-export function TranslationTextField({ label, value, onChange, disabled }: Props) {
+export function TranslationTextField({ label, value, onChange, disabled, titleFont = false }: Props) {
     const [loading, setLoading] = useState(false)
 
     // Only count the languages we actually support (en, es)
@@ -67,7 +68,7 @@ export function TranslationTextField({ label, value, onChange, disabled }: Props
 
     return (
         <div className="space-y-2">
-            {label ? <div className="text-sm font-medium">{label}</div> : null}
+            {label ? <div className={`text-sm font-medium ${titleFont ? 'font-christmas' : ''}`}>{label}</div> : null}
 
             <div className="grid gap-2">
                 <div className="flex items-center gap-2">

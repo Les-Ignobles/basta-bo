@@ -66,7 +66,7 @@ export default function IngredientsIndexPage() {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h1 className="text-xl font-semibold">Ingrédients</h1>
+                <h1 className="text-xl font-semibold font-christmas">Ingrédients</h1>
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
                         <Button disabled={loading} onClick={() => {
@@ -77,7 +77,7 @@ export default function IngredientsIndexPage() {
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[800px] max-w-[95vw] w-full">
                         <DialogHeader>
-                            <DialogTitle>{(typeof window !== 'undefined' && (window as any).__editIngredient) ? 'Modifier l\'ingrédient' : 'Nouvel ingrédient'}</DialogTitle>
+                            <DialogTitle className="font-christmas">{(typeof window !== 'undefined' && (window as any).__editIngredient) ? 'Modifier l\'ingrédient' : 'Nouvel ingrédient'}</DialogTitle>
                         </DialogHeader>
                         <IngredientForm
                             onSubmit={handleSubmit}

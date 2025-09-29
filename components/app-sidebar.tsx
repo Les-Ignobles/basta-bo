@@ -22,14 +22,14 @@ export function AppSidebar() {
     const { userProfile, signOut } = useAuth()
 
     return (
-        <Sidebar>
+        <Sidebar className="bg-[#3A14E2] border-[#2A04D2]">
             <SidebarContent>
                 <SidebarGroup>
-                    <SidebarGroupLabel>Cooking</SidebarGroupLabel>
+                    <SidebarGroupLabel className="text-white font-christmas">Cooking</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild isActive={pathname === '/dashboard/ingredients'}>
+                                <SidebarMenuButton asChild isActive={pathname === '/dashboard/ingredients'} className="text-white hover:bg-white/20 data-[active=true]:bg-white/30">
                                     <Link href="/dashboard/ingredients" className="flex items-center gap-2">
                                         <Salad className="size-4" />
                                         <span>Ingredients</span>
@@ -37,7 +37,7 @@ export function AppSidebar() {
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild isActive={pathname === '/dashboard/recipes'}>
+                                <SidebarMenuButton asChild isActive={pathname === '/dashboard/recipes'} className="text-white hover:bg-white/20 data-[active=true]:bg-white/30">
                                     <Link href="/dashboard/recipes" className="flex items-center gap-2">
                                         <UtensilsCrossed className="size-4" />
                                         <span>Recipes</span>
@@ -51,7 +51,7 @@ export function AppSidebar() {
             <SidebarFooter>
                 <div className="p-2 space-y-2">
                     {userProfile && (
-                        <div className="flex items-center gap-2 p-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 p-2 text-sm text-white/80">
                             <User className="size-4" />
                             <span className="truncate">{userProfile.firstname}</span>
                         </div>
@@ -60,7 +60,7 @@ export function AppSidebar() {
                         variant="ghost"
                         size="sm"
                         onClick={signOut}
-                        className="w-full justify-start"
+                        className="w-full justify-start text-white hover:bg-white/20"
                     >
                         <LogOut className="size-4 mr-2" />
                         Se déconnecter

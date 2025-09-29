@@ -64,7 +64,7 @@ export default function RecipesIndexPage() {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h1 className="text-xl font-semibold">Recettes</h1>
+                <h1 className="text-xl font-semibold font-christmas">Recettes</h1>
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
                         <Button disabled={loading} onClick={() => {
@@ -75,7 +75,7 @@ export default function RecipesIndexPage() {
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[800px] max-w-[95vw] w-full">
                         <DialogHeader>
-                            <DialogTitle>{(typeof window !== 'undefined' && (window as any).__editRecipe) ? 'Modifier la recette' : 'Nouvelle recette'}</DialogTitle>
+                            <DialogTitle className="font-christmas">{(typeof window !== 'undefined' && (window as any).__editRecipe) ? 'Modifier la recette' : 'Nouvelle recette'}</DialogTitle>
                         </DialogHeader>
                         <RecipeForm
                             onSubmit={handleSubmit}
