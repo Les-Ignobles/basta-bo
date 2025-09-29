@@ -39,6 +39,7 @@ export default function IngredientsIndexPage() {
         fetchIngredients()
     }, [fetchIngredients, selectedCategories, translationFilter])
 
+
     async function handleSubmit(values: IngredientFormValues) {
         if (values.id) {
             // Update existing ingredient

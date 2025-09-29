@@ -30,12 +30,13 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
             const fileExt = file.name.split('.').pop()
             let fileName: string
 
-            if (ingredientId && ingredientName) {
-                // Use naming convention: ${ingredient.id}-${slugify(ingredient.name.fr)}
+            if (ingredientName) {
+                // Use naming convention: ${slugify(ingredient.name.fr)}-${timestamp}
                 const slug = slugify(ingredientName)
-                fileName = `${ingredientId}-${slug}.${fileExt}`
+                const timestamp = Date.now()
+                fileName = `${slug}-${timestamp}.${fileExt}`
             } else {
-                // Fallback for new ingredients (before creation)
+                // Fallback if no name provided
                 const timestamp = Date.now()
                 const randomId = Math.random().toString(36).substring(2, 15)
                 fileName = `${timestamp}-${randomId}.${fileExt}`
