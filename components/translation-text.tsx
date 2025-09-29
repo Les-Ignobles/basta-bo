@@ -12,10 +12,9 @@ type Props = {
     value: TranslationText
     onChange: (val: TranslationText) => void
     disabled?: boolean
-    titleFont?: boolean
 }
 
-export function TranslationTextField({ label, value, onChange, disabled, titleFont = false }: Props) {
+export function TranslationTextField({ label, value, onChange, disabled }: Props) {
     const [loading, setLoading] = useState(false)
 
     // Only count the languages we actually support (en, es)

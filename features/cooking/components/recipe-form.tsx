@@ -145,7 +145,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid gap-6">
                 <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground font-christmas">Titre</div>
+                    <div className="text-xs text-muted-foreground">Titre</div>
                     <Input
                         value={values.title}
                         onChange={(e) => setValues(prev => ({ ...prev, title: e.target.value }))}
@@ -155,7 +155,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                 </div>
 
                 <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground font-christmas">
+                    <div className="text-xs text-muted-foreground">
                         Ingrédients
                     </div>
                     <div className="flex gap-2">
@@ -248,7 +248,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                 </div>
 
                 <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground font-christmas">Instructions</div>
+                    <div className="text-xs text-muted-foreground">Instructions</div>
                     <Textarea
                         value={values.instructions ?? ''}
                         onChange={(e) => setValues(prev => ({ ...prev, instructions: e.target.value }))}
@@ -268,7 +268,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
 
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <div className="text-xs text-muted-foreground font-christmas">Saisonnalité</div>
+                            <div className="text-xs text-muted-foreground">Saisonnalité</div>
                             <div className="grid grid-cols-3 gap-2">
                                 {MONTHS.map((month, index) => (
                                     <label key={index} className="flex items-center gap-2 text-sm">
@@ -283,7 +283,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                         </div>
 
                         <div className="space-y-2">
-                            <div className="text-xs text-muted-foreground font-christmas">Équipements de cuisine</div>
+                            <div className="text-xs text-muted-foreground">Équipements de cuisine</div>
                             <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
                                 {kitchenEquipments.map((equipment, index) => (
                                     <label key={equipment.id} className="flex items-center gap-2 text-sm">

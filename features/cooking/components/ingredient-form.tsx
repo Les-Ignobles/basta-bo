@@ -55,7 +55,6 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                     label="Nom"
                     value={values.name}
                     onChange={(v) => setValues((s) => ({ ...s, name: v }))}
-                    titleFont={true}
                 />
                 <div className="grid gap-4">
                     <TranslationTextField
