@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 
 export default function IngredientsIndexPage() {
     const [open, setOpen] = useState(false)
-    const { fetchIngredients, fetchCategories, ingredients, categories, createIngredient, loading, setSearch, setPage, page, pageSize, total, setNoImage, noImage } = useCookingStore()
+    const { fetchIngredients, fetchCategories, ingredients, categories, createIngredient, updateIngredient, loading, setSearch, setPage, page, pageSize, total, setNoImage, noImage } = useCookingStore()
 
     useEffect(() => {
         fetchCategories()
@@ -33,14 +33,26 @@ export default function IngredientsIndexPage() {
         return () => clearTimeout(t)
     }, [searchInput, setSearch, fetchIngredients, setPage])
 
-    async function handleCreate(values: IngredientFormValues) {
-        await createIngredient({
-            name: values.name,
-            suffix_singular: values.suffix_singular,
-            suffix_plural: values.suffix_plural,
-            img_path: values.img_path ?? null,
-            category_id: values.category_id ?? null,
-        } as any)
+    async function handleSubmit(values: IngredientFormValues) {
+        if (values.id) {
+            // Update existing ingredient
+            await updateIngredient(values.id, {
+                name: values.name,
+                suffix_singular: values.suffix_singular,
+                suffix_plural: values.suffix_plural,
+                img_path: values.img_path ?? null,
+                category_id: values.category_id ?? null,
+            } as any)
+        } else {
+            // Create new ingredient
+            await createIngredient({
+                name: values.name,
+                suffix_singular: values.suffix_singular,
+                suffix_plural: values.suffix_plural,
+                img_path: values.img_path ?? null,
+                category_id: values.category_id ?? null,
+            } as any)
+        }
         setOpen(false)
     }
 
@@ -54,10 +66,10 @@ export default function IngredientsIndexPage() {
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[800px] max-w-[95vw] w-full">
                         <DialogHeader>
-                            <DialogTitle>Nouvel ingrédient</DialogTitle>
+                            <DialogTitle>{(typeof window !== 'undefined' && (window as any).__editIngredient) ? 'Modifier l\'ingrédient' : 'Nouvel ingrédient'}</DialogTitle>
                         </DialogHeader>
                         <IngredientForm
-                            onSubmit={handleCreate}
+                            onSubmit={handleSubmit}
                             defaultValues={(typeof window !== 'undefined' && (window as any).__editIngredient) || undefined}
                             categories={categories.map((c: any) => ({ id: Number(c.id), label: `${c.emoji ?? ''} ${c.title?.fr ?? ''}`.trim() }))}
                         />

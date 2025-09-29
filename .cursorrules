@@ -1,0 +1,126 @@
+# Cursor Rules - Back Office Development
+
+## Architecture & Structure
+
+### Features-based Architecture
+- Organiser le code par features (ex: `features/cooking/`)
+- Chaque feature contient: `types.ts`, `store.ts`, `repositories/`, `components/`
+- Les entités métier vont dans leur feature respective
+- Éviter les dossiers génériques comme `components/` pour le métier
+
+### Types & Entités
+- Créer des types TypeScript pour chaque entité BDD
+- Utiliser `TranslationText` pour les champs multilingues (JSONB)
+- Ignorer les champs techniques comme `*_embedding`, `created_at` dans les formulaires
+- Ajouter `id?: number` aux types de formulaire pour l'édition
+
+## Frontend (React/Next.js)
+
+### Composants UI
+- Utiliser EXCLUSIVEMENT les composants shadcn/ui
+- Installer via CLI: `npx --yes shadcn@latest add [component]`
+- Ne jamais créer de composants UI custom, toujours shadcn
+
+### Store & State Management
+- Utiliser Zustand pour la gestion d'état
+- Store par feature avec actions CRUD
+- Toujours passer par le store, jamais d'appels API directs dans les composants
+- Store doit gérer: loading, error, pagination, filtres
+
+### Formulaires & Modales
+- Utiliser des modales (Dialog shadcn) au lieu de pages séparées
+- Modales larges: `className="sm:max-w-[800px] max-w-[95vw] w-full"`
+- Formulaires avec validation et états de chargement
+- Réutiliser la même modale pour création/édition
+
+### Tables & Listes
+- Tables avec shadcn Table
+- Pagination par défaut à 50 éléments
+- Barre de recherche avec debounce (400ms)
+- Filtres avec checkboxes
+- Barre sticky pour recherche/pagination
+- Colonne Actions avec menu dropdown (3 points)
+- Tri alphabétique par défaut
+
+### Traductions
+- Composant `TranslationTextField` avec:
+  - Champ FR + bouton "Traduire" inline
+  - Barre de progression des traductions
+  - Accordéon "Autres langues" (EN, ES)
+  - Traduction automatique FR→EN/ES via API
+
+## Backend (API Routes)
+
+### Repositories Pattern
+- `BaseRepository` générique avec CRUD
+- Repository par entité qui étend BaseRepository
+- Utiliser Supabase client serveur
+- Méthodes: `findAll()`, `findById()`, `create()`, `update()`, `delete()`, `findPage()`
+
+### API Routes
+- Routes RESTful: `GET`, `POST`, `PUT`, `DELETE`
+- Pagination: `?page=1&pageSize=50&search=term`
+- Filtres: `?noImage=true`
+- Retourner toujours `{ data, total, page, pageSize }` pour les listes
+
+### Upload d'Images
+- Route générique `/api/upload` qui accepte `fileName` en paramètre
+- Naming convention: `${entity.id}-${slugify(entity.name.fr)}.ext`
+- Buckets Supabase: `ingredients`, `recipes`
+- Composant `ImageUpload` avec drag&drop et preview
+
+## Base de Données (Supabase)
+
+### Structure
+- Tables avec champs JSONB pour traductions
+- Champs techniques: `id`, `created_at`, `*_embedding`
+- Relations via `*_id` (foreign keys)
+
+### Naming Convention
+- Tables: `snake_case` (ex: `ingredient_categories`)
+- Champs: `snake_case`
+- Images: `${id}-${slugify(name.fr)}.ext`
+
+## Code Quality
+
+### Nettoyage
+- Supprimer TOUJOURS le code mort lors des refactos
+- Ne pas laisser de fichiers dépréciés
+- Vérifier les lints après chaque modification
+
+### Git
+- Commits descriptifs avec préfixe: `feat:`, `fix:`, `refactor:`
+- Messages en français
+- Push régulièrement
+
+### TypeScript
+- Types stricts, pas de `any` sauf cas exceptionnels
+- Interfaces claires pour les props
+- Gestion d'erreurs appropriée
+
+## Workflow de Développement
+
+1. **Setup**: Installer shadcn, Zustand, Supabase
+2. **Types**: Créer les types d'entités
+3. **Repositories**: BaseRepository + repositories spécifiques
+4. **API**: Routes RESTful avec pagination/filtres
+5. **Store**: Zustand avec actions CRUD
+6. **UI**: Composants shadcn, modales, tables
+7. **Upload**: Route générique + composant drag&drop
+8. **Tests**: Vérifier création/édition/suppression
+
+## Préférences UX
+
+- Pagination 50 éléments par défaut
+- Recherche avec debounce
+- Barres sticky pour navigation
+- Modales larges pour formulaires
+- Feedback visuel (loading states)
+- Messages d'erreur clairs
+- Tri alphabétique par défaut
+
+## Environnement
+
+- Variables d'env: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+- Fichier `.env.local` pour le développement
+- Buckets Supabase publics pour les images
