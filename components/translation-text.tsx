@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { TranslationText, ISO639_1 } from '@/lib/i18n'
 import { Progress } from '@/components/ui/progress'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { Loader2 } from 'lucide-react'
 
 type Props = {
     label?: string
@@ -16,11 +17,12 @@ type Props = {
 export function TranslationTextField({ label, value, onChange, disabled }: Props) {
     const [loading, setLoading] = useState(false)
 
-    const totalTranslatable = useMemo(() => ISO639_1.filter((l) => l !== 'fr').length, [])
+    // Only count the languages we actually support (en, es)
+    const supportedLanguages = ['en', 'es']
+    const totalTranslatable = supportedLanguages.length
     const translatedCount = useMemo(() => {
         let count = 0
-        for (const lang of ISO639_1) {
-            if (lang === 'fr') continue
+        for (const lang of supportedLanguages) {
             if ((value as any)[lang] && (value as any)[lang].length > 0) count += 1
         }
         return count
@@ -76,7 +78,14 @@ export function TranslationTextField({ label, value, onChange, disabled }: Props
                         disabled={disabled}
                     />
                     <Button size="sm" variant="outline" onClick={translateAll} disabled={disabled || loading || !value.fr}>
-                        Traduire
+                        {loading ? (
+                            <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Traduction...
+                            </>
+                        ) : (
+                            'Traduire'
+                        )}
                     </Button>
                 </div>
 
@@ -91,7 +100,7 @@ export function TranslationTextField({ label, value, onChange, disabled }: Props
 
             <Accordion type="single" collapsible className="w-full mt-1">
                 <AccordionItem value="translations">
-                    <AccordionTrigger className="text-xs">Autres langues</AccordionTrigger>
+                    <AccordionTrigger className="text-xs">Autres langues ({translatedCount}/{totalTranslatable})</AccordionTrigger>
                     <AccordionContent>
                         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                             <div className="space-y-1">

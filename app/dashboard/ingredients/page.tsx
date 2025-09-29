@@ -12,7 +12,7 @@ import { ChevronDown, Filter } from 'lucide-react'
 
 export default function IngredientsIndexPage() {
     const [open, setOpen] = useState(false)
-    const { fetchIngredients, fetchCategories, ingredients, categories, createIngredient, updateIngredient, loading, setSearch, setPage, page, pageSize, total, setNoImage, noImage, selectedCategories, setSelectedCategories } = useCookingStore()
+    const { fetchIngredients, fetchCategories, ingredients, categories, createIngredient, updateIngredient, loading, setSearch, setPage, page, pageSize, total, setNoImage, noImage, selectedCategories, setSelectedCategories, translationFilter, setTranslationFilter } = useCookingStore()
 
     useEffect(() => {
         fetchCategories()
@@ -37,7 +37,7 @@ export default function IngredientsIndexPage() {
 
     useEffect(() => {
         fetchIngredients()
-    }, [fetchIngredients, selectedCategories])
+    }, [fetchIngredients, selectedCategories, translationFilter])
 
     async function handleSubmit(values: IngredientFormValues) {
         if (values.id) {
@@ -133,6 +133,54 @@ export default function IngredientsIndexPage() {
                                         Effacer les filtres
                                     </Button>
                                 )}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9">
+                                <Filter className="h-4 w-4 mr-2" />
+                                Traductions
+                                {translationFilter !== 'all' && (
+                                    <span className="ml-2 bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+                                        {translationFilter === 'complete' ? 'Complètes' : 'Incomplètes'}
+                                    </span>
+                                )}
+                                <ChevronDown className="h-4 w-4 ml-2" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48" align="start">
+                            <div className="space-y-2">
+                                <div className="text-sm font-medium">Filtrer par traduction</div>
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-sm">
+                                        <Checkbox
+                                            checked={translationFilter === 'all'}
+                                            onCheckedChange={(checked) => {
+                                                if (checked) setTranslationFilter('all')
+                                            }}
+                                        />
+                                        <span>Toutes</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 text-sm">
+                                        <Checkbox
+                                            checked={translationFilter === 'incomplete'}
+                                            onCheckedChange={(checked) => {
+                                                if (checked) setTranslationFilter('incomplete')
+                                            }}
+                                        />
+                                        <span>Incomplètes</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 text-sm">
+                                        <Checkbox
+                                            checked={translationFilter === 'complete'}
+                                            onCheckedChange={(checked) => {
+                                                if (checked) setTranslationFilter('complete')
+                                            }}
+                                        />
+                                        <span>Complètes</span>
+                                    </label>
+                                </div>
                             </div>
                         </PopoverContent>
                     </Popover>

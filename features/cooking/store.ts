@@ -14,6 +14,7 @@ type CookingState = {
     search: string
     noImage: boolean
     selectedCategories: number[]
+    translationFilter: 'all' | 'incomplete' | 'complete'
     fetchIngredients: () => Promise<void>
     fetchCategories: () => Promise<void>
     createIngredient: (payload: Omit<Ingredient, 'id' | 'created_at'>) => Promise<void>
@@ -23,6 +24,7 @@ type CookingState = {
     setPage: (p: number) => void
     setNoImage: (b: boolean) => void
     setSelectedCategories: (categories: number[]) => void
+    setTranslationFilter: (filter: 'all' | 'incomplete' | 'complete') => void
 }
 
 export const useCookingStore = create<CookingState>((set, get) => ({
@@ -36,14 +38,16 @@ export const useCookingStore = create<CookingState>((set, get) => ({
     search: '',
     noImage: false,
     selectedCategories: [],
+    translationFilter: 'all',
     async fetchIngredients() {
         set({ loading: true, error: undefined })
         try {
-            const { page, pageSize, search, noImage, selectedCategories } = get()
+            const { page, pageSize, search, noImage, selectedCategories, translationFilter } = get()
             const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
             if (search) params.set('search', search)
             if (noImage) params.set('noImage', 'true')
             if (selectedCategories.length > 0) params.set('categories', selectedCategories.join(','))
+            if (translationFilter !== 'all') params.set('translationFilter', translationFilter)
             const res = await fetch(`/api/ingredients?${params.toString()}`)
             const json = await res.json()
             set({ ingredients: json.data ?? [], total: json.total ?? 0 })
@@ -117,6 +121,9 @@ export const useCookingStore = create<CookingState>((set, get) => ({
     },
     setSelectedCategories(categories) {
         set({ selectedCategories: categories, page: 1 })
+    },
+    setTranslationFilter(filter) {
+        set({ translationFilter: filter, page: 1 })
     },
 }))
 

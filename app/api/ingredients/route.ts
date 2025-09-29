@@ -11,7 +11,8 @@ export async function GET(req: NextRequest) {
     const noImage = (searchParams.get('noImage') ?? 'false') === 'true'
     const categoriesParam = searchParams.get('categories')
     const categories = categoriesParam ? categoriesParam.split(',').map(Number) : undefined
-    const { data, total } = await repo.findPage({ search, page, pageSize, noImage, categories })
+    const translationFilter = searchParams.get('translationFilter') as 'incomplete' | 'complete' | undefined
+    const { data, total } = await repo.findPage({ search, page, pageSize, noImage, categories, translationFilter })
     return Response.json({ data, total, page, pageSize })
 }
 
