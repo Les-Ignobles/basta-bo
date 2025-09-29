@@ -36,18 +36,26 @@
 ### Tables & Listes
 - Tables avec shadcn Table
 - Pagination par défaut à 50 éléments
-- Barre de recherche avec debounce (400ms)
-- Filtres avec checkboxes
+- Barre de recherche avec debounce (400ms) - largeur w-80
+- Filtres multiples avec Popover (catégories, traductions)
+- Filtres simples avec Checkbox (sans image)
 - Barre sticky pour recherche/pagination
 - Colonne Actions avec menu dropdown (3 points)
+- Clic sur ligne pour ouvrir modal d'édition + cursor-pointer
+- Indicateur de chargement sur tableau avec animation
 - Tri alphabétique par défaut
+- Colonne progression traductions avec badges colorés
 
 ### Traductions
 - Composant `TranslationTextField` avec:
-  - Champ FR + bouton "Traduire" inline
-  - Barre de progression des traductions
-  - Accordéon "Autres langues" (EN, ES)
-  - Traduction automatique FR→EN/ES via API
+  - Champ FR + bouton "Traduire" inline avec indicateur de chargement
+  - Barre de progression des traductions (calcul précis sur 2 langues)
+  - Accordéon "Autres langues (X/2)" (EN, ES)
+  - Traduction automatique FR→EN/ES via API avec auto-correction
+  - Service IA avec schémas Zod pour validation
+- Filtre par progression traductions (complètes/incomplètes)
+- Calcul de progression: 6 champs (2 langues × 3 champs)
+- Badges colorés: Vert (100%), Gris (50-99%), Rouge (0-49%)
 
 ## Backend (API Routes)
 
@@ -60,8 +68,9 @@
 ### API Routes
 - Routes RESTful: `GET`, `POST`, `PUT`, `DELETE`
 - Pagination: `?page=1&pageSize=50&search=term`
-- Filtres: `?noImage=true`
+- Filtres: `?noImage=true&categories=1,2&translationFilter=incomplete`
 - Retourner toujours `{ data, total, page, pageSize }` pour les listes
+- API de traduction avec schémas Zod dynamiques
 
 ### Upload d'Images
 - Route générique `/api/upload` qui accepte `fileName` en paramètre
@@ -112,15 +121,33 @@
 ## Préférences UX
 
 - Pagination 50 éléments par défaut
-- Recherche avec debounce
+- Recherche avec debounce (400ms) et largeur w-80
 - Barres sticky pour navigation
 - Modales larges pour formulaires
-- Feedback visuel (loading states)
+- Feedback visuel (loading states, animations)
 - Messages d'erreur clairs
 - Tri alphabétique par défaut
+- Clic sur ligne pour édition
+- Indicateurs de chargement sur boutons et tableaux
+- Filtres avec badges de compteur
+- Ordre des filtres: Recherche → Catégories → Traductions → Sans image
+
+## Service IA & Traduction
+
+### Architecture IA
+- Service abstrait `IaService` avec méthodes génériques
+- Implémentation `OpenaiIaService` avec `client.responses.create`
+- Support des schémas Zod avec `zodTextFormat`
+- Types: `ChatMessage`, `CompletionOptions`, `EmbeddingOptions`
+
+### API de Traduction
+- Endpoint `/api/translate` avec paramètres: `text`, `source`, `languages[]`
+- Schémas Zod dynamiques selon les langues demandées
+- Auto-correction française incluse
+- Retour direct objet `TranslationText`
 
 ## Environnement
 
-- Variables d'env: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+- Variables d'env: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`
 - Fichier `.env.local` pour le développement
 - Buckets Supabase publics pour les images
