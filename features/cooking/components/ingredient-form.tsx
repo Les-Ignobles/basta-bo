@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TranslationTextField } from '@/components/translation-text'
+import { ImageUpload } from '@/components/image-upload'
 import type { TranslationText } from '@/lib/i18n'
 
 export type IngredientFormValues = {
+    id?: number
     name: TranslationText
     suffix_singular: TranslationText
     suffix_plural: TranslationText
@@ -62,15 +64,14 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                         onChange={(v) => setValues((s) => ({ ...s, suffix_plural: v }))}
                     />
                 </div>
-                <div className="grid gap-2 md:grid-cols-2">
-                    <div className="space-y-1">
-                        <div className="text-xs text-muted-foreground">Image (URL)</div>
-                        <Input
-                            value={values.img_path ?? ''}
-                            onChange={(e) => setValues((s) => ({ ...s, img_path: e.target.value }))}
-                            placeholder="https://..."
-                        />
-                    </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <ImageUpload
+                        value={values.img_path ?? undefined}
+                        onChange={(url) => setValues((s) => ({ ...s, img_path: url }))}
+                        bucket="ingredients"
+                        ingredientId={defaultValues?.id ? String(defaultValues.id) : undefined}
+                        ingredientName={values.name?.fr}
+                    />
                     <div className="space-y-1">
                         <div className="text-xs text-muted-foreground">Catégorie</div>
                         <Select
