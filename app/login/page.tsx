@@ -50,7 +50,7 @@ export default function LoginPage() {
                     <div className="absolute top-40 right-32 w-24 h-24 bg-white/15 rounded-full blur-lg"></div>
                     <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
                     <div className="absolute bottom-20 right-20 w-28 h-28 bg-white/10 rounded-full blur-xl"></div>
-                    
+
                     {/* Formes triangulaires */}
                     <div className="absolute top-1/3 right-1/4 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[50px] border-l-transparent border-r-transparent border-b-white/10 rotate-45"></div>
                     <div className="absolute bottom-1/3 left-1/3 w-0 h-0 border-l-[20px] border-r-[20px] border-b-[35px] border-l-transparent border-r-transparent border-b-white/15 rotate-12"></div>
@@ -62,10 +62,9 @@ export default function LoginPage() {
                 <div className="w-full max-w-md">
                     {/* Logo et titre */}
                     <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl mb-4">
-                            <BastaLogo className="w-12 h-12 text-white" />
+                        <div className="mb-4">
+                            <BastaLogo className="w-24 h-20 mx-auto" />
                         </div>
-                        <h1 className="text-3xl font-bold text-white mb-2">Basta</h1>
                         <p className="text-white/80 text-sm">Tableau de bord administrateur</p>
                     </div>
 
@@ -116,9 +115,9 @@ export default function LoginPage() {
                                         {error}
                                     </div>
                                 )}
-                                <Button 
-                                    type="submit" 
-                                    className="w-full h-12 bg-[#3A14E2] hover:bg-[#2A04D2] text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl" 
+                                <Button
+                                    type="submit"
+                                    className="w-full h-12 bg-[#3A14E2] hover:bg-[#2A04D2] text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
                                     disabled={loading}
                                 >
                                     {loading ? (
