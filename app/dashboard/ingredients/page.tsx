@@ -68,7 +68,11 @@ export default function IngredientsIndexPage() {
                 <h1 className="text-xl font-semibold">Ingrédients</h1>
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
-                        <Button disabled={loading}>Nouvel ingrédient</Button>
+                        <Button disabled={loading} onClick={() => {
+                            if (typeof window !== 'undefined') {
+                                (window as any).__editIngredient = undefined; // Clear edit state
+                            }
+                        }}>Nouvel ingrédient</Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[800px] max-w-[95vw] w-full">
                         <DialogHeader>
