@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, ChefHat } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
+import { BastaLogo } from '@/components/basta-logo'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -61,8 +62,8 @@ export default function LoginPage() {
                 <div className="w-full max-w-md">
                     {/* Logo et titre */}
                     <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl mb-4">
-                            <ChefHat className="w-8 h-8 text-white" />
+                        <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl mb-4">
+                            <BastaLogo className="w-12 h-12 text-white" />
                         </div>
                         <h1 className="text-3xl font-bold text-white mb-2">Basta</h1>
                         <p className="text-white/80 text-sm">Tableau de bord administrateur</p>
