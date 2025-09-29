@@ -7,9 +7,20 @@ type CookingState = {
     categories: IngredientCategory[]
     loading: boolean
     error?: string
+    // filters
+    page: number
+    pageSize: number
+    total: number
+    search: string
+    noImage: boolean
     fetchIngredients: () => Promise<void>
     fetchCategories: () => Promise<void>
     createIngredient: (payload: Omit<Ingredient, 'id' | 'created_at'>) => Promise<void>
+    updateIngredient: (id: number, payload: Partial<Ingredient>) => Promise<void>
+    deleteIngredient: (id: number) => Promise<void>
+    setSearch: (s: string) => void
+    setPage: (p: number) => void
+    setNoImage: (b: boolean) => void
 }
 
 export const useCookingStore = create<CookingState>((set, get) => ({
@@ -17,12 +28,21 @@ export const useCookingStore = create<CookingState>((set, get) => ({
     categories: [],
     loading: false,
     error: undefined,
+    page: 1,
+    pageSize: 50,
+    total: 0,
+    search: '',
+    noImage: false,
     async fetchIngredients() {
         set({ loading: true, error: undefined })
         try {
-            const res = await fetch('/api/ingredients')
+            const { page, pageSize, search, noImage } = get()
+            const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
+            if (search) params.set('search', search)
+            if (noImage) params.set('noImage', 'true')
+            const res = await fetch(`/api/ingredients?${params.toString()}`)
             const json = await res.json()
-            set({ ingredients: json.data ?? [] })
+            set({ ingredients: json.data ?? [], total: json.total ?? 0 })
         } catch (e: any) {
             set({ error: e?.message ?? 'Erreur de chargement' })
         } finally {
@@ -53,6 +73,43 @@ export const useCookingStore = create<CookingState>((set, get) => ({
         } finally {
             set({ loading: false })
         }
+    },
+    async updateIngredient(id, payload) {
+        set({ loading: true, error: undefined })
+        try {
+            const res = await fetch('/api/ingredients', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, ...payload }),
+            })
+            if (!res.ok) throw new Error('Erreur mise à jour ingrédient')
+            await get().fetchIngredients()
+        } catch (e: any) {
+            set({ error: e?.message ?? 'Erreur de mise à jour' })
+        } finally {
+            set({ loading: false })
+        }
+    },
+    async deleteIngredient(id) {
+        set({ loading: true, error: undefined })
+        try {
+            const res = await fetch(`/api/ingredients?id=${id}`, { method: 'DELETE' })
+            if (!res.ok) throw new Error('Erreur suppression ingrédient')
+            await get().fetchIngredients()
+        } catch (e: any) {
+            set({ error: e?.message ?? 'Erreur de suppression' })
+        } finally {
+            set({ loading: false })
+        }
+    },
+    setSearch(s) {
+        set({ search: s, page: 1 })
+    },
+    setPage(p) {
+        set({ page: p })
+    },
+    setNoImage(b) {
+        set({ noImage: b, page: 1 })
     },
 }))
 
