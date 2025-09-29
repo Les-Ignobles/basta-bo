@@ -9,7 +9,9 @@ export async function GET(req: NextRequest) {
     const pageSize = Number(searchParams.get('pageSize') ?? '10')
     const search = searchParams.get('search') ?? undefined
     const noImage = (searchParams.get('noImage') ?? 'false') === 'true'
-    const { data, total } = await repo.findPage({ search, page, pageSize, noImage })
+    const categoriesParam = searchParams.get('categories')
+    const categories = categoriesParam ? categoriesParam.split(',').map(Number) : undefined
+    const { data, total } = await repo.findPage({ search, page, pageSize, noImage, categories })
     return Response.json({ data, total, page, pageSize })
 }
 

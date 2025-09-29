@@ -28,27 +28,36 @@ export function TranslationTextField({ label, value, onChange, disabled }: Props
     const progress = totalTranslatable > 0 ? Math.round((translatedCount / totalTranslatable) * 100) : 0
 
     async function translateAll() {
+        if (!value.fr) return;
+
         try {
             setLoading(true)
-            const targets: Array<'en' | 'es'> = ['en', 'es']
-            const translatedEntries: Partial<Record<'en' | 'es', string>> = {}
-            await Promise.all(
-                targets.map(async (lang) => {
-                    if (!value.fr) return
-                    const res = await fetch('/api/translate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ text: value.fr, source: 'fr', target: lang }),
-                    })
-                    const json = await res.json()
-                    if (json.translated) {
-                        translatedEntries[lang] = json.translated as string
-                    }
-                })
-            )
-            if (Object.keys(translatedEntries).length > 0) {
-                onChange({ ...value, ...translatedEntries } as TranslationText)
+
+            // Always include 'fr' for auto-correction, plus missing languages
+            const allLanguages = ['fr', 'en', 'es'];
+            const languagesToTranslate = allLanguages.filter(lang =>
+                lang === 'fr' || !value[lang as keyof TranslationText]
+            );
+
+            if (languagesToTranslate.length === 0) {
+                return;
             }
+
+            const res = await fetch('/api/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: value.fr,
+                    source: 'fr',
+                    languages: languagesToTranslate
+                }),
+            });
+
+            const translations = await res.json();
+
+            // Merge translations with existing values
+            const newValues = { ...value, ...translations };
+            onChange(newValues);
         } finally {
             setLoading(false)
         }

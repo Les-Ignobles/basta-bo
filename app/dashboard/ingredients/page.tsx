@@ -7,10 +7,12 @@ import { useCookingStore } from '@/features/cooking/store'
 import { IngredientsTable } from '@/features/cooking/components/ingredients-table'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { ChevronDown, Filter } from 'lucide-react'
 
 export default function IngredientsIndexPage() {
     const [open, setOpen] = useState(false)
-    const { fetchIngredients, fetchCategories, ingredients, categories, createIngredient, updateIngredient, loading, setSearch, setPage, page, pageSize, total, setNoImage, noImage } = useCookingStore()
+    const { fetchIngredients, fetchCategories, ingredients, categories, createIngredient, updateIngredient, loading, setSearch, setPage, page, pageSize, total, setNoImage, noImage, selectedCategories, setSelectedCategories } = useCookingStore()
 
     useEffect(() => {
         fetchCategories()
@@ -32,6 +34,10 @@ export default function IngredientsIndexPage() {
         }, 400)
         return () => clearTimeout(t)
     }, [searchInput, setSearch, fetchIngredients, setPage])
+
+    useEffect(() => {
+        fetchIngredients()
+    }, [fetchIngredients, selectedCategories])
 
     async function handleSubmit(values: IngredientFormValues) {
         if (values.id) {
@@ -80,10 +86,56 @@ export default function IngredientsIndexPage() {
                 <div className="flex items-center gap-3">
                     <Input
                         placeholder="Rechercher par nom..."
-                        className="max-w-xs"
+                        className="w-80"
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
                     />
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9">
+                                <Filter className="h-4 w-4 mr-2" />
+                                Catégories
+                                {selectedCategories.length > 0 && (
+                                    <span className="ml-2 bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+                                        {selectedCategories.length}
+                                    </span>
+                                )}
+                                <ChevronDown className="h-4 w-4 ml-2" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64" align="start">
+                            <div className="space-y-2">
+                                <div className="text-sm font-medium">Filtrer par catégories</div>
+                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    {categories.map((category: any) => (
+                                        <label key={category.id} className="flex items-center gap-2 text-sm">
+                                            <Checkbox
+                                                checked={selectedCategories.includes(category.id)}
+                                                onCheckedChange={(checked) => {
+                                                    if (checked) {
+                                                        setSelectedCategories([...selectedCategories, category.id])
+                                                    } else {
+                                                        setSelectedCategories(selectedCategories.filter(id => id !== category.id))
+                                                    }
+                                                }}
+                                            />
+                                            <span>{category.emoji} {category.title?.fr}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                                {selectedCategories.length > 0 && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setSelectedCategories([])}
+                                        className="w-full"
+                                    >
+                                        Effacer les filtres
+                                    </Button>
+                                )}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
                     <label className="flex items-center gap-2 text-sm whitespace-nowrap">
                         <Checkbox checked={noImage} onCheckedChange={(v) => { setNoImage(Boolean(v)); setPage(1); fetchIngredients(); }} />
                         Sans image
@@ -104,6 +156,7 @@ export default function IngredientsIndexPage() {
             <IngredientsTable
                 ingredients={ingredients as any}
                 categories={categories as any}
+                loading={loading}
                 onEdit={(ing) => {
                     ; (window as any).__editIngredient = ing
                     setOpen(true)

@@ -6,7 +6,7 @@ export class IngredientRepository extends BaseRepository<Ingredient> {
         super(client, 'ingredients')
     }
 
-    async findPage({ search, page, pageSize, noImage }: { search?: string; page: number; pageSize: number; noImage?: boolean }): Promise<{ data: Ingredient[]; total: number }> {
+    async findPage({ search, page, pageSize, noImage, categories }: { search?: string; page: number; pageSize: number; noImage?: boolean; categories?: number[] }): Promise<{ data: Ingredient[]; total: number }> {
         const from = (page - 1) * pageSize
         const to = from + pageSize - 1
         let query = (this.client as any).from(this.table).select('*', { count: 'exact' })
@@ -16,6 +16,9 @@ export class IngredientRepository extends BaseRepository<Ingredient> {
         }
         if (noImage) {
             query = query.is('img_path', null)
+        }
+        if (categories && categories.length > 0) {
+            query = query.in('category_id', categories)
         }
         query = query.order('name->>fr', { ascending: true })
         const { data, error, count } = await query.range(from, to)

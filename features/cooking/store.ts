@@ -13,6 +13,7 @@ type CookingState = {
     total: number
     search: string
     noImage: boolean
+    selectedCategories: number[]
     fetchIngredients: () => Promise<void>
     fetchCategories: () => Promise<void>
     createIngredient: (payload: Omit<Ingredient, 'id' | 'created_at'>) => Promise<void>
@@ -21,6 +22,7 @@ type CookingState = {
     setSearch: (s: string) => void
     setPage: (p: number) => void
     setNoImage: (b: boolean) => void
+    setSelectedCategories: (categories: number[]) => void
 }
 
 export const useCookingStore = create<CookingState>((set, get) => ({
@@ -33,13 +35,15 @@ export const useCookingStore = create<CookingState>((set, get) => ({
     total: 0,
     search: '',
     noImage: false,
+    selectedCategories: [],
     async fetchIngredients() {
         set({ loading: true, error: undefined })
         try {
-            const { page, pageSize, search, noImage } = get()
+            const { page, pageSize, search, noImage, selectedCategories } = get()
             const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
             if (search) params.set('search', search)
             if (noImage) params.set('noImage', 'true')
+            if (selectedCategories.length > 0) params.set('categories', selectedCategories.join(','))
             const res = await fetch(`/api/ingredients?${params.toString()}`)
             const json = await res.json()
             set({ ingredients: json.data ?? [], total: json.total ?? 0 })
@@ -110,6 +114,9 @@ export const useCookingStore = create<CookingState>((set, get) => ({
     },
     setNoImage(b) {
         set({ noImage: b, page: 1 })
+    },
+    setSelectedCategories(categories) {
+        set({ selectedCategories: categories, page: 1 })
     },
 }))
 
