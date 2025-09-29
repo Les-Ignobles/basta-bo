@@ -28,43 +28,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         const getUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
-            setUser(user)
+            try {
+                const { data: { user } } = await supabase.auth.getUser()
+                setUser(user)
 
-            if (user) {
-                // Fetch user profile
-                const { data: profile } = await supabase
-                    .from('user_profiles')
-                    .select('id, email, firstname, avatar, is_admin')
-                    .eq('uuid', user.id)
-                    .single()
+                if (user) {
+                    // Fetch user profile
+                    const { data: profile, error } = await supabase
+                        .from('user_profiles')
+                        .select('id, email, firstname, avatar, is_admin')
+                        .eq('uuid', user.id)
+                        .single()
 
-                setUserProfile(profile)
+                    if (error) {
+                        console.error('Error fetching user profile:', error)
+                        setUserProfile(null)
+                    } else {
+                        setUserProfile(profile)
+                    }
+                } else {
+                    setUserProfile(null)
+                }
+            } catch (error) {
+                console.error('Error getting user:', error)
+                setUser(null)
+                setUserProfile(null)
+            } finally {
+                setLoading(false)
             }
-
-            setLoading(false)
         }
 
         getUser()
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
-                setUser(session?.user ?? null)
+                try {
+                    setUser(session?.user ?? null)
 
-                if (session?.user) {
-                    // Fetch user profile
-                    const { data: profile } = await supabase
-                        .from('user_profiles')
-                        .select('id, email, firstname, avatar, is_admin')
-                        .eq('uuid', session.user.id)
-                        .single()
+                    if (session?.user) {
+                        // Fetch user profile
+                        const { data: profile, error } = await supabase
+                            .from('user_profiles')
+                            .select('id, email, firstname, avatar, is_admin')
+                            .eq('uuid', session.user.id)
+                            .single()
 
-                    setUserProfile(profile)
-                } else {
+                        if (error) {
+                            console.error('Error fetching user profile:', error)
+                            setUserProfile(null)
+                        } else {
+                            setUserProfile(profile)
+                        }
+                    } else {
+                        setUserProfile(null)
+                    }
+                } catch (error) {
+                    console.error('Error in auth state change:', error)
+                    setUser(null)
                     setUserProfile(null)
+                } finally {
+                    setLoading(false)
                 }
-
-                setLoading(false)
             }
         )
 

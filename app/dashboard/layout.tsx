@@ -9,21 +9,19 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { isAdmin, loading } = useAdmin()
+  const { loading } = useAdmin()
 
+  // Le middleware s'occupe déjà de la vérification des droits
+  // On affiche juste un loader pendant l'initialisation côté client
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-sm text-gray-600">Vérification des droits...</p>
+          <p className="mt-2 text-sm text-gray-600">Chargement...</p>
         </div>
       </div>
     )
-  }
-
-  if (!isAdmin) {
-    return null // Will be redirected by useAdmin hook
   }
 
   return (
