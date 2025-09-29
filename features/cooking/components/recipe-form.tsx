@@ -5,7 +5,14 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ImageUpload } from '@/components/image-upload'
-import type { RecipeFormValues, KitchenEquipment } from '@/features/cooking/types'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Check, ChevronsUpDown, PlusCircle } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import type { RecipeFormValues, KitchenEquipment, Ingredient } from '@/features/cooking/types'
+import { useCookingStore } from '@/features/cooking/store'
+
+export type { RecipeFormValues }
 
 type Props = {
     defaultValues?: Partial<RecipeFormValues>
@@ -33,6 +40,31 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
     const [ingredientInput, setIngredientInput] = useState('')
     const [selectedMonths, setSelectedMonths] = useState<boolean[]>(new Array(12).fill(false))
     const [selectedEquipments, setSelectedEquipments] = useState<boolean[]>(new Array(kitchenEquipments.length).fill(false))
+    const [ingredientOpen, setIngredientOpen] = useState(false)
+    const [searchResults, setSearchResults] = useState<Ingredient[]>([])
+    const [searching, setSearching] = useState(false)
+
+    const { searchIngredients } = useCookingStore()
+
+    // Recherche d'ingrédients avec debounce
+    useEffect(() => {
+        if (!ingredientInput.trim()) {
+            setSearchResults([])
+            return
+        }
+
+        const timeoutId = setTimeout(async () => {
+            setSearching(true)
+            try {
+                const results = await searchIngredients(ingredientInput)
+                setSearchResults(results)
+            } finally {
+                setSearching(false)
+            }
+        }, 300) // Debounce de 300ms
+
+        return () => clearTimeout(timeoutId)
+    }, [ingredientInput, searchIngredients])
 
     // Initialize masks from default values
     useEffect(() => {
@@ -82,13 +114,15 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
         }
     }
 
-    function addIngredient() {
-        if (ingredientInput.trim()) {
+    function addIngredient(ingredientName?: string) {
+        const name = ingredientName || ingredientInput.trim()
+        if (name && !values.ingredients_name.includes(name)) {
             setValues(prev => ({
                 ...prev,
-                ingredients_name: [...prev.ingredients_name, ingredientInput.trim()]
+                ingredients_name: [...prev.ingredients_name, name]
             }))
             setIngredientInput('')
+            setIngredientOpen(false)
         }
     }
 
@@ -121,15 +155,79 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                 </div>
 
                 <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Ingrédients</div>
+                    <div className="text-xs text-muted-foreground">
+                        Ingrédients
+                    </div>
                     <div className="flex gap-2">
-                        <Input
-                            value={ingredientInput}
-                            onChange={(e) => setIngredientInput(e.target.value)}
-                            placeholder="Ajouter un ingrédient"
-                            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addIngredient())}
-                        />
-                        <Button type="button" onClick={addIngredient} size="sm">
+                        <Popover open={ingredientOpen} onOpenChange={setIngredientOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={ingredientOpen}
+                                    className="w-full justify-between"
+                                >
+                                    {ingredientInput || "Ajouter un nouvel ingrédient..."}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0">
+                                <Command>
+                                    <CommandInput
+                                        placeholder="Taper le nom d'un ingrédient..."
+                                        value={ingredientInput}
+                                        onValueChange={setIngredientInput}
+                                    />
+                                    <CommandList>
+                                        <CommandEmpty>
+                                            {searching ? "Recherche en cours..." :
+                                                searchResults.length === 0 && ingredientInput ? "Aucun ingrédient trouvé." :
+                                                    "Tapez pour rechercher des ingrédients..."}
+                                        </CommandEmpty>
+                                        {(() => {
+                                            return (
+                                                <>
+                                                    {/* Option pour ajouter le texte saisi */}
+                                                    {ingredientInput.trim() && !values.ingredients_name.includes(ingredientInput.trim()) && (
+                                                        <CommandGroup heading="Ajouter">
+                                                            <CommandItem
+                                                                value={ingredientInput}
+                                                                onSelect={() => addIngredient(ingredientInput.trim())}
+                                                            >
+                                                                <PlusCircle className="mr-2 h-4 w-4" />
+                                                                "{ingredientInput.trim()}"
+                                                            </CommandItem>
+                                                        </CommandGroup>
+                                                    )}
+
+                                                    {/* Suggestions d'ingrédients existants */}
+                                                    {searchResults.length > 0 && (
+                                                        <CommandGroup heading="Suggestions">
+                                                            {searchResults.map((ingredient) => (
+                                                                <CommandItem
+                                                                    key={ingredient.id}
+                                                                    value={ingredient.name.fr}
+                                                                    onSelect={() => addIngredient(ingredient.name.fr)}
+                                                                >
+                                                                    <Check
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            values.ingredients_name.includes(ingredient.name.fr) ? "opacity-100" : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {ingredient.name.fr}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    )}
+                                                </>
+                                            )
+                                        })()}
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                        <Button type="button" onClick={() => addIngredient()} size="sm">
                             Ajouter
                         </Button>
                     </div>

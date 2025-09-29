@@ -16,6 +16,8 @@ type CookingState = {
     selectedCategories: number[]
     translationFilter: 'all' | 'incomplete' | 'complete'
     fetchIngredients: () => Promise<void>
+    fetchAllIngredients: () => Promise<void>
+    searchIngredients: (query: string) => Promise<Ingredient[]>
     fetchCategories: () => Promise<void>
     createIngredient: (payload: Omit<Ingredient, 'id' | 'created_at'>) => Promise<void>
     updateIngredient: (id: number, payload: Partial<Ingredient>) => Promise<void>
@@ -55,6 +57,30 @@ export const useCookingStore = create<CookingState>((set, get) => ({
             set({ error: e?.message ?? 'Erreur de chargement' })
         } finally {
             set({ loading: false })
+        }
+    },
+
+    async fetchAllIngredients() {
+        try {
+            // Charger tous les ingrédients pour l'autocomplétion (sans pagination)
+            const res = await fetch('/api/ingredients?page=1&pageSize=1000')
+            const json = await res.json()
+            set({ ingredients: json.data ?? [] })
+        } catch (e: any) {
+            console.error('Failed to fetch all ingredients:', e)
+        }
+    },
+
+    async searchIngredients(query: string) {
+        try {
+            if (!query.trim()) return []
+            // Recherche côté serveur avec pagination limitée pour l'autocomplétion
+            const res = await fetch(`/api/ingredients?search=${encodeURIComponent(query)}&page=1&pageSize=20`)
+            const json = await res.json()
+            return json.data ?? []
+        } catch (e: any) {
+            console.error('Failed to search ingredients:', e)
+            return []
         }
     },
     async fetchCategories() {

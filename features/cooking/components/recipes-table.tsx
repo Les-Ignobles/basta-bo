@@ -102,8 +102,8 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete }: Pro
                                                 </button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => onEdit?.(recipe)}>Éditer</DropdownMenuItem>
-                                                <DropdownMenuItem className="text-destructive" onClick={() => onDelete?.(recipe)}>Supprimer</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(recipe); }}>Éditer</DropdownMenuItem>
+                                                <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete?.(recipe); }}>Supprimer</DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>

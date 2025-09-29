@@ -2,8 +2,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { RecipeForm, type RecipeFormValues } from '@/features/cooking/components/recipe-form'
+import { RecipeForm } from '@/features/cooking/components/recipe-form'
+import type { RecipeFormValues } from '@/features/cooking/types'
 import { useRecipeStore } from '@/features/cooking/stores/recipe-store'
+import { useCookingStore } from '@/features/cooking/store'
 import { RecipesTable } from '@/features/cooking/components/recipes-table'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -11,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 export default function RecipesIndexPage() {
     const [open, setOpen] = useState(false)
     const { fetchRecipes, fetchKitchenEquipments, recipes, kitchenEquipments, createRecipe, updateRecipe, loading, setSearch, setPage, page, pageSize, total, setNoImage, noImage } = useRecipeStore()
+    // Plus besoin de charger tous les ingrédients, la recherche se fait côté serveur
 
     useEffect(() => {
         fetchKitchenEquipments()

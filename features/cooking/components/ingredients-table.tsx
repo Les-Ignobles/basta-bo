@@ -110,8 +110,8 @@ export function IngredientsTable({ ingredients, categories, loading = false, onE
                                                 </button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => onEdit?.(ing)}>Éditer</DropdownMenuItem>
-                                                <DropdownMenuItem className="text-destructive" onClick={() => onDelete?.(ing)}>Supprimer</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(ing); }}>Éditer</DropdownMenuItem>
+                                                <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete?.(ing); }}>Supprimer</DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
