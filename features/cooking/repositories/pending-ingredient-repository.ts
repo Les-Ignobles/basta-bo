@@ -52,6 +52,20 @@ export class PendingIngredientRepository extends BaseRepository<PendingIngredien
         }
     }
 
+    async create(data: { name: string }): Promise<PendingIngredient> {
+        const { data: result, error } = await this.client
+            .from(this.table)
+            .insert([data])
+            .select()
+            .single()
+
+        if (error) {
+            throw new Error(`Error creating pending ingredient: ${error.message}`)
+        }
+
+        return result
+    }
+
     async delete(id: number): Promise<void> {
         const { error } = await this.client
             .from(this.table)

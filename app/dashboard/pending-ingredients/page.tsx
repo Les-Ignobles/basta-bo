@@ -25,6 +25,7 @@ export default function PendingIngredientsPage() {
     const [generatedData, setGeneratedData] = useState<Map<number, Record<string, unknown>>>(new Map())
     const [generatingStates, setGeneratingStates] = useState<Map<number, boolean>>(new Map())
     const [bulkProgress, setBulkProgress] = useState<{ completed: number; total: number } | null>(null)
+    const [bulkResults, setBulkResults] = useState<{ success: boolean; ingredientName: string }[]>([])
     const debouncedSearch = useDebounce(searchTerm, 400)
 
     const {
@@ -139,9 +140,14 @@ export default function PendingIngredientsPage() {
 
         setBulkProcessing(true)
         setBulkResult(null)
+        setBulkResults([])
+        setBulkProgress({ completed: 0, total: previewData.ingredients.length })
         
         try {
-            const result = await bulkProcessWithAI(previewData.ingredients)
+            const result = await bulkProcessWithAI(previewData.ingredients, (completed, total, success, ingredientName) => {
+                setBulkProgress({ completed, total })
+                setBulkResults(prev => [...prev, { success, ingredientName }])
+            })
             setBulkResult(result)
             setPreviewOpen(false)
             setPreviewData(null)
@@ -150,6 +156,7 @@ export default function PendingIngredientsPage() {
             alert('Erreur lors du traitement en lot')
         } finally {
             setBulkProcessing(false)
+            setBulkProgress(null)
         }
     }
 
@@ -237,35 +244,61 @@ export default function PendingIngredientsPage() {
                 )}
             </div>
 
-            {/* Progression du traitement en lot */}
-            {bulkProgress && (
-                <Card className="border-blue-200 bg-blue-50">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Clock className="h-5 w-5 text-blue-600 animate-spin" />
-                            <h3 className="text-lg font-semibold text-blue-800">Traitement en cours...</h3>
-                        </div>
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                                <span>Ingrédients traités</span>
-                                <span>{bulkProgress.completed} / {bulkProgress.total}</span>
-                            </div>
-                            <div className="w-full bg-blue-200 rounded-full h-3">
-                                <div
-                                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-300"
-                                    style={{ width: `${(bulkProgress.completed / bulkProgress.total) * 100}%` }}
-                                />
-                            </div>
-                            <p className="text-sm text-blue-700">
-                                {bulkProgress.completed === bulkProgress.total
-                                    ? 'Traitement terminé !'
-                                    : `Traitement de ${bulkProgress.completed} ingrédient(s) sur ${bulkProgress.total}...`
-                                }
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+                   {/* Progression du traitement en lot */}
+                   {bulkProgress && (
+                       <Card className="border-blue-200 bg-blue-50">
+                           <CardContent className="pt-6">
+                               <div className="flex items-center gap-2 mb-2">
+                                   <Clock className="h-5 w-5 text-blue-600 animate-spin" />
+                                   <h3 className="text-lg font-semibold text-blue-800">Traitement en cours...</h3>
+                               </div>
+                               <div className="space-y-2">
+                                   <div className="flex justify-between text-sm">
+                                       <span>Ingrédients traités</span>
+                                       <span>{bulkProgress.completed} / {bulkProgress.total}</span>
+                                   </div>
+                                   <div className="w-full bg-blue-200 rounded-full h-3">
+                                       <div 
+                                           className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-300"
+                                           style={{ width: `${(bulkProgress.completed / bulkProgress.total) * 100}%` }}
+                                       />
+                                   </div>
+                                   <p className="text-sm text-blue-700">
+                                       {bulkProgress.completed === bulkProgress.total 
+                                           ? 'Traitement terminé !' 
+                                           : `Traitement de ${bulkProgress.completed} ingrédient(s) sur ${bulkProgress.total}...`
+                                       }
+                                   </p>
+                               </div>
+                               
+                               {/* Feedback en temps réel */}
+                               {bulkResults.length > 0 && (
+                                   <div className="mt-4 border-t pt-4">
+                                       <h4 className="text-sm font-semibold text-blue-800 mb-2">Résultats en temps réel :</h4>
+                                       <div className="max-h-32 overflow-y-auto space-y-1">
+                                           {bulkResults.map((result, index) => (
+                                               <div key={index} className="flex items-center gap-2 text-sm">
+                                                   {result.success ? (
+                                                       <>
+                                                           <Check className="h-4 w-4 text-green-600" />
+                                                           <span className="text-green-700">{result.ingredientName}</span>
+                                                           <span className="text-green-600 text-xs">✓ Créé</span>
+                                                       </>
+                                                   ) : (
+                                                       <>
+                                                           <X className="h-4 w-4 text-red-600" />
+                                                           <span className="text-red-700">{result.ingredientName}</span>
+                                                           <span className="text-red-600 text-xs">✗ Échec</span>
+                                                       </>
+                                                   )}
+                                               </div>
+                                           ))}
+                                       </div>
+                                   </div>
+                               )}
+                           </CardContent>
+                       </Card>
+                   )}
 
             {/* Résultat du traitement en lot */}
             {bulkResult && (

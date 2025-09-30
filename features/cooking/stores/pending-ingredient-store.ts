@@ -18,7 +18,7 @@ type PendingIngredientActions = {
     fetchPendingCount: () => Promise<void>
     deletePendingIngredient: (id: number) => Promise<void>
     convertToIngredient: (pendingId: number, ingredientData: IngredientFormValues) => Promise<void>
-    bulkProcessWithAI: (ingredientsToCreate: Record<string, unknown>[]) => Promise<{ success: boolean; message: string; processed: number; created: Record<string, unknown>[]; errors?: string[] }>
+    bulkProcessWithAI: (ingredientsToCreate: Record<string, unknown>[], onProgress?: (completed: number, total: number, success: boolean, ingredientName: string) => void) => Promise<{ success: boolean; message: string; processed: number; created: Record<string, unknown>[]; errors?: string[] }>
     previewBulkProcess: (onProgress?: (completed: number, total: number, result?: Record<string, unknown>) => void) => Promise<{ success: boolean; message: string; processed: number; ingredients: Record<string, unknown>[]; errors?: string[] }>
     generateIngredientData: (pendingId: number) => Promise<{ success: boolean; ingredient: Record<string, unknown>; error?: string }>
     setSearch: (search: string) => void
@@ -106,7 +106,7 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
     convertToIngredient: async (pendingId: number, ingredientData: IngredientFormValues) => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch('/api/pending-ingredients', {
+            const response = await fetch('/api/pending-ingredients/convert', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -131,7 +131,7 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
         }
     },
 
-    bulkProcessWithAI: async (ingredientsToCreate: Record<string, unknown>[]) => {
+    bulkProcessWithAI: async (ingredientsToCreate: Record<string, unknown>[], onProgress?: (completed: number, total: number, success: boolean, ingredientName: string) => void) => {
         set({ loading: true, error: null })
         try {
             const results = {
@@ -142,17 +142,24 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
                 errors: [] as string[]
             }
 
+            const total = ingredientsToCreate.length
+            let completed = 0
+
             // Traiter chaque ingrédient individuellement
             for (const ingredientData of ingredientsToCreate) {
                 try {
                     const pendingId = ingredientData.pendingId as number
+                    const ingredientName = ingredientData.pendingName as string || 'Ingrédient inconnu'
+                    
                     if (!pendingId) {
                         results.errors.push('ID pending manquant')
+                        completed++
+                        onProgress?.(completed, total, false, ingredientName)
                         continue
                     }
 
-                    // Utiliser la route POST existante pour créer l'ingrédient
-                    const response = await fetch('/api/pending-ingredients', {
+                    // Utiliser la nouvelle route de conversion
+                    const response = await fetch('/api/pending-ingredients/convert', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -172,12 +179,21 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
                     if (response.ok) {
                         results.created.push(ingredientData)
                         results.processed++
+                        completed++
+                        onProgress?.(completed, total, true, ingredientName)
                     } else {
                         const errorData = await response.json()
-                        results.errors.push(`Erreur pour ${ingredientData.pendingName}: ${errorData.error || 'Erreur inconnue'}`)
+                        const errorMsg = `Erreur pour ${ingredientName}: ${errorData.error || 'Erreur inconnue'}`
+                        results.errors.push(errorMsg)
+                        completed++
+                        onProgress?.(completed, total, false, ingredientName)
                     }
                 } catch (error) {
-                    results.errors.push(`Erreur pour ${ingredientData.pendingName}: ${error instanceof Error ? error.message : 'Erreur inconnue'}`)
+                    const ingredientName = ingredientData.pendingName as string || 'Ingrédient inconnu'
+                    const errorMsg = `Erreur pour ${ingredientName}: ${error instanceof Error ? error.message : 'Erreur inconnue'}`
+                    results.errors.push(errorMsg)
+                    completed++
+                    onProgress?.(completed, total, false, ingredientName)
                 }
             }
 
