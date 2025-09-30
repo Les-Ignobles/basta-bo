@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Check, ChevronsUpDown } from 'lucide-react'
+import { Check, ChevronsUpDown, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TranslationTextField } from '@/components/translation-text'
 import { ImageUpload } from '@/components/image-upload'
@@ -46,6 +46,58 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
     } as IngredientFormValues)
     const [loading, setLoading] = useState(false)
     const [categoryOpen, setCategoryOpen] = useState(false)
+    const [aiGenerating, setAiGenerating] = useState(false)
+
+    const handleAIGeneration = async () => {
+        if (!values.name.fr?.trim()) return
+
+        setAiGenerating(true)
+        try {
+            const response = await fetch('/api/ingredients/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ingredientName: values.name.fr.trim()
+                })
+            })
+
+            if (!response.ok) {
+                throw new Error('Erreur lors de la génération IA')
+            }
+
+            const result = await response.json()
+            if (result.success && result.ingredient) {
+                const generatedData = result.ingredient
+
+                setValues(prev => ({
+                    ...prev,
+                    name: {
+                        fr: values.name.fr,
+                        en: generatedData.name?.en || '',
+                        es: generatedData.name?.es || ''
+                    },
+                    suffix_singular: {
+                        fr: generatedData.suffix_singular?.fr || '',
+                        en: generatedData.suffix_singular?.en || '',
+                        es: generatedData.suffix_singular?.es || ''
+                    },
+                    suffix_plural: {
+                        fr: generatedData.suffix_plural?.fr || '',
+                        en: generatedData.suffix_plural?.en || '',
+                        es: generatedData.suffix_plural?.es || ''
+                    },
+                    category_id: generatedData.category_id || null
+                }))
+            }
+        } catch (error) {
+            console.error('Erreur lors de la génération IA:', error)
+            alert('Erreur lors de la génération des données')
+        } finally {
+            setAiGenerating(false)
+        }
+    }
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -59,6 +111,29 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Bouton d'autocomplétion IA en haut */}
+            <div className="flex justify-end pb-4 border-b">
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAIGeneration}
+                    disabled={!values.name.fr?.trim() || aiGenerating}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0"
+                >
+                    {aiGenerating ? (
+                        <>
+                            <Sparkles className="h-4 w-4 mr-2 animate-spin" />
+                            Génération...
+                        </>
+                    ) : (
+                        <>
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Autocomplétion IA
+                        </>
+                    )}
+                </Button>
+            </div>
             <div className="grid gap-6">
                 <TranslationTextField
                     label="Nom"

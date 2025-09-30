@@ -278,12 +278,24 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
 
     generateIngredientData: async (pendingId: number) => {
         try {
-            const response = await fetch('/api/pending-ingredients/bulk-process', {
+            // Récupérer le nom du pending ingredient
+            const { pendingIngredients } = get()
+            const pending = pendingIngredients.find(p => p.id === pendingId)
+
+            if (!pending) {
+                return {
+                    success: false,
+                    ingredient: {},
+                    error: 'Pending ingredient non trouvé'
+                }
+            }
+
+            const response = await fetch('/api/ingredients/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ pendingIds: [pendingId] })
+                body: JSON.stringify({ ingredientName: pending.name })
             })
 
             if (!response.ok) {
@@ -292,16 +304,20 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
 
             const result = await response.json()
 
-            if (result.success && result.ingredients.length > 0) {
+            if (result.success && result.ingredient) {
                 return {
                     success: true,
-                    ingredient: result.ingredients[0]
+                    ingredient: {
+                        ...result.ingredient,
+                        pendingId: pendingId,
+                        pendingName: pending.name
+                    }
                 }
             } else {
                 return {
                     success: false,
                     ingredient: {},
-                    error: result.errors?.[0] || 'Aucun résultat généré'
+                    error: result.message || 'Aucun résultat généré'
                 }
             }
         } catch (error) {
