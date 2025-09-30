@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export default function RecipesIndexPage() {
     const [open, setOpen] = useState(false)
-    const { fetchRecipes, fetchKitchenEquipments, recipes, kitchenEquipments, createRecipe, updateRecipe, loading, setSearch, setPage, page, pageSize, total, setNoImage, noImage, setDishType, dishType } = useRecipeStore()
+    const { fetchRecipes, fetchKitchenEquipments, recipes, kitchenEquipments, createRecipe, updateRecipe, loading, editingRecipe, setSearch, setPage, page, pageSize, total, setNoImage, noImage, setDishType, dishType, setEditingRecipe } = useRecipeStore()
     // Plus besoin de charger tous les ingrédients, la recherche se fait côté serveur
 
     useEffect(() => {
@@ -71,18 +71,16 @@ export default function RecipesIndexPage() {
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
                         <Button disabled={loading} onClick={() => {
-                            if (typeof window !== 'undefined') {
-                                (window as unknown as Record<string, unknown>).__editRecipe = undefined; // Clear edit state
-                            }
+                            setEditingRecipe(null) // Clear edit state
                         }}>Nouvelle recette</Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[800px] max-w-[95vw] w-full">
                         <DialogHeader>
-                            <DialogTitle className="font-christmas">{(typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__editRecipe) ? 'Modifier la recette' : 'Nouvelle recette'}</DialogTitle>
+                            <DialogTitle className="font-christmas">{editingRecipe ? 'Modifier la recette' : 'Nouvelle recette'}</DialogTitle>
                         </DialogHeader>
                         <RecipeForm
                             onSubmit={handleSubmit}
-                            defaultValues={(typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__editRecipe) || undefined}
+                            defaultValues={editingRecipe || undefined}
                             kitchenEquipments={kitchenEquipments}
                         />
                     </DialogContent>
@@ -136,7 +134,7 @@ export default function RecipesIndexPage() {
                 recipes={recipes}
                 loading={loading}
                 onEdit={(recipe) => {
-                    ; (window as unknown as Record<string, unknown>).__editRecipe = recipe
+                    setEditingRecipe(recipe)
                     setOpen(true)
                 }}
                 onDelete={async (recipe) => {

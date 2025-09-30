@@ -42,8 +42,7 @@ export class OpenaiIaService extends IaService {
                 max_output_tokens: maxTokens,
                 temperature: temperature,
                 text: {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    format: zodTextFormat(schemaType as any, schemaName),
+                    format: zodTextFormat(schemaType, schemaName),
                 },
             });
 

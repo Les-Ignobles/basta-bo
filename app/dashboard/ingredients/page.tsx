@@ -12,7 +12,7 @@ import { ChevronDown, Filter } from 'lucide-react'
 
 export default function IngredientsIndexPage() {
     const [open, setOpen] = useState(false)
-    const { fetchIngredients, fetchCategories, ingredients, categories, createIngredient, updateIngredient, loading, setSearch, setPage, page, pageSize, total, setNoImage, noImage, selectedCategories, setSelectedCategories, translationFilter, setTranslationFilter } = useCookingStore()
+    const { fetchIngredients, fetchCategories, ingredients, categories, createIngredient, updateIngredient, loading, editingIngredient, setSearch, setPage, page, pageSize, total, setNoImage, noImage, selectedCategories, setSelectedCategories, translationFilter, setTranslationFilter, setEditingIngredient } = useCookingStore()
 
     useEffect(() => {
         fetchCategories()
@@ -70,18 +70,16 @@ export default function IngredientsIndexPage() {
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
                         <Button disabled={loading} onClick={() => {
-                        if (typeof window !== 'undefined') {
-                            (window as unknown as Record<string, unknown>).__editIngredient = undefined; // Clear edit state
-                        }
+                            setEditingIngredient(null) // Clear edit state
                         }}>Nouvel ingrédient</Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[800px] max-w-[95vw] w-full">
                         <DialogHeader>
-                            <DialogTitle className="font-christmas">{(typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__editIngredient) ? 'Modifier l\'ingrédient' : 'Nouvel ingrédient'}</DialogTitle>
+                            <DialogTitle className="font-christmas">{editingIngredient ? 'Modifier l\'ingrédient' : 'Nouvel ingrédient'}</DialogTitle>
                         </DialogHeader>
                         <IngredientForm
                             onSubmit={handleSubmit}
-                            defaultValues={(typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__editIngredient) || undefined}
+                            defaultValues={editingIngredient || undefined}
                             categories={categories.map((c: Record<string, unknown>) => ({ id: Number(c.id), label: `${c.emoji ?? ''} ${(c.title as Record<string, string>)?.fr ?? ''}`.trim() }))}
                         />
                     </DialogContent>
@@ -211,7 +209,7 @@ export default function IngredientsIndexPage() {
                 categories={categories}
                 loading={loading}
                 onEdit={(ing) => {
-                    ; (window as unknown as Record<string, unknown>).__editIngredient = ing
+                    setEditingIngredient(ing)
                     setOpen(true)
                 }}
                 onDelete={async (ing) => {

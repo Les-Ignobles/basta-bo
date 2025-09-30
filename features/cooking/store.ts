@@ -7,6 +7,8 @@ type CookingState = {
     categories: IngredientCategory[]
     loading: boolean
     error?: string
+    // editing state
+    editingIngredient: Ingredient | null
     // filters
     page: number
     pageSize: number
@@ -27,6 +29,7 @@ type CookingState = {
     setNoImage: (b: boolean) => void
     setSelectedCategories: (categories: number[]) => void
     setTranslationFilter: (filter: 'all' | 'incomplete' | 'complete') => void
+    setEditingIngredient: (ingredient: Ingredient | null) => void
 }
 
 export const useCookingStore = create<CookingState>((set, get) => ({
@@ -34,6 +37,7 @@ export const useCookingStore = create<CookingState>((set, get) => ({
     categories: [],
     loading: false,
     error: undefined,
+    editingIngredient: null,
     page: 1,
     pageSize: 50,
     total: 0,
@@ -150,6 +154,9 @@ export const useCookingStore = create<CookingState>((set, get) => ({
     },
     setTranslationFilter(filter) {
         set({ translationFilter: filter, page: 1 })
+    },
+    setEditingIngredient(ingredient) {
+        set({ editingIngredient: ingredient })
     },
 }))
 

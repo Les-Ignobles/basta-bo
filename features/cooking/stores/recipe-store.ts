@@ -6,6 +6,8 @@ type RecipeState = {
     kitchenEquipments: KitchenEquipment[]
     loading: boolean
     error?: string
+    // editing state
+    editingRecipe: Recipe | null
     // filters
     page: number
     pageSize: number
@@ -22,6 +24,7 @@ type RecipeState = {
     setPage: (p: number) => void
     setNoImage: (b: boolean) => void
     setDishType: (d: DishType | 'all') => void
+    setEditingRecipe: (recipe: Recipe | null) => void
 }
 
 export const useRecipeStore = create<RecipeState>((set, get) => ({
@@ -29,6 +32,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     kitchenEquipments: [],
     loading: false,
     error: undefined,
+    editingRecipe: null,
     page: 1,
     pageSize: 50,
     total: 0,
@@ -120,5 +124,8 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     },
     setDishType(d) {
         set({ dishType: d, page: 1 })
+    },
+    setEditingRecipe(recipe) {
+        set({ editingRecipe: recipe })
     },
 }))
