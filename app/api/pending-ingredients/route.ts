@@ -3,6 +3,7 @@ import { PendingIngredientRepository } from '@/features/cooking/repositories/pen
 import { IngredientRepository } from '@/features/cooking/repositories/ingredient-repository'
 import { createClient } from '@/lib/supabase/server'
 import type { IngredientFormValues } from '@/features/cooking/components/ingredient-form'
+import type { Ingredient } from '@/features/cooking/types'
 
 export async function GET(request: NextRequest) {
     try {
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Créer l'ingrédient (exclure l'id pour éviter les conflits de clé primaire)
-        const ingredientToCreate = {
+        const ingredientToCreate: Omit<Ingredient, 'id'> = {
             name: ingredientData.name,
             suffix_singular: ingredientData.suffix_singular,
             suffix_plural: ingredientData.suffix_plural,
@@ -79,6 +80,8 @@ export async function POST(request: NextRequest) {
             img_path: ingredientData.img_path ?? null,
             created_at: new Date().toISOString()
         }
+        
+        console.log('Creating ingredient with data:', JSON.stringify(ingredientToCreate, null, 2))
         const newIngredient = await ingredientRepo.create(ingredientToCreate)
 
         // Supprimer le pending ingredient
