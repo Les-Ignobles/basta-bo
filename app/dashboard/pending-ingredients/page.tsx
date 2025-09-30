@@ -88,7 +88,7 @@ export default function PendingIngredientsPage() {
 
         setBulkProcessing(true)
         setPreviewData(null)
-        
+
         try {
             const result = await previewBulkProcess()
             setPreviewData({ ingredients: result.ingredients, errors: result.errors })
@@ -106,7 +106,7 @@ export default function PendingIngredientsPage() {
 
         setBulkProcessing(true)
         setBulkResult(null)
-        
+
         try {
             const result = await bulkProcessWithAI()
             setBulkResult(result)
@@ -320,7 +320,7 @@ export default function PendingIngredientsPage() {
                             Prévisualisation du traitement IA
                         </DialogTitle>
                     </DialogHeader>
-                    
+
                     {previewData && (
                         <div className="space-y-4">
                             {/* Barre de progression */}
@@ -330,7 +330,7 @@ export default function PendingIngredientsPage() {
                                     <span>{previewData.ingredients.length} / {pendingIngredients.length}</span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div 
+                                    <div
                                         className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
                                         style={{ width: `${(previewData.ingredients.length / pendingIngredients.length) * 100}%` }}
                                     />
@@ -384,10 +384,9 @@ export default function PendingIngredientsPage() {
                                                         <span className="font-medium">Suffixe pluriel:</span> {(ingredient.suffix_plural as Record<string, string>)?.fr}
                                                     </div>
                                                     <div>
-                                                        <span className="font-medium">Catégorie:</span> 
-                                                        <span className={`ml-1 px-2 py-1 rounded text-xs ${
-                                                            ingredient.category_name ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                                        }`}>
+                                                        <span className="font-medium">Catégorie:</span>
+                                                        <span className={`ml-1 px-2 py-1 rounded text-xs ${ingredient.category_name ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                                            }`}>
                                                             {(ingredient.category_name as string) || 'Aucune catégorie'}
                                                         </span>
                                                     </div>

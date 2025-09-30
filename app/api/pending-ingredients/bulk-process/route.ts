@@ -25,19 +25,19 @@ const BulkIngredientSchema = z.object({
             en: z.string(),
             es: z.string()
         }),
-        category_suggestion: z.string().optional()
+        category_suggestion: z.string().nullable()
     }))
 })
 
 export async function POST(request: Request) {
-  try {
-    const body = await request.json()
-    const { preview = false } = body
+    try {
+        const body = await request.json()
+        const { preview = false } = body
 
-    const supabase = await createClient()
-    const pendingRepo = new PendingIngredientRepository(supabase)
-    const ingredientRepo = new IngredientRepository(supabase)
-    const categoryRepo = new IngredientCategoryRepository(supabase)
+        const supabase = await createClient()
+        const pendingRepo = new PendingIngredientRepository(supabase)
+        const ingredientRepo = new IngredientRepository(supabase)
+        const categoryRepo = new IngredientCategoryRepository(supabase)
 
         // Récupérer tous les pending ingredients
         const pendingIngredients = await pendingRepo.findAll()
@@ -80,24 +80,24 @@ Retourne un JSON avec un tableau d'objets. Pour chaque ingrédient, utilise le n
 
         const aiResults = response.ingredients
 
-    // Traiter les résultats IA
-    const processedIngredients = []
-    const errors = []
+        // Traiter les résultats IA
+        const processedIngredients = []
+        const errors = []
 
-    for (let i = 0; i < pendingIngredients.length; i++) {
-      try {
-        const pending = pendingIngredients[i]
-        const aiResult = aiResults[i]
+        for (let i = 0; i < pendingIngredients.length; i++) {
+            try {
+                const pending = pendingIngredients[i]
+                const aiResult = aiResults[i]
 
-        if (!aiResult) {
-          errors.push(`Pas de résultat IA pour ${pending.name}`)
-          continue
-        }
+                if (!aiResult) {
+                    errors.push(`Pas de résultat IA pour ${pending.name}`)
+                    continue
+                }
 
         // Trouver la catégorie suggérée
         let categoryId = null
         let categoryName = null
-        if (aiResult.category_suggestion) {
+        if (aiResult.category_suggestion && aiResult.category_suggestion !== null) {
           const suggestedCategory = categories.find(cat => 
             cat.title.fr.toLowerCase().includes(aiResult.category_suggestion!.toLowerCase()) ||
             aiResult.category_suggestion!.toLowerCase().includes(cat.title.fr.toLowerCase())
@@ -108,57 +108,57 @@ Retourne un JSON avec un tableau d'objets. Pour chaque ingrédient, utilise le n
           }
         }
 
-        // Préparer les données de l'ingrédient
-        const ingredientData = {
-          pendingId: pending.id,
-          pendingName: pending.name,
-          name: aiResult.name,
-          suffix_singular: aiResult.suffix_singular,
-          suffix_plural: aiResult.suffix_plural,
-          category_id: categoryId,
-          category_name: categoryName,
-          category_suggestion: aiResult.category_suggestion,
-          img_path: null,
-          created_at: new Date().toISOString()
+                // Préparer les données de l'ingrédient
+                const ingredientData = {
+                    pendingId: pending.id,
+                    pendingName: pending.name,
+                    name: aiResult.name,
+                    suffix_singular: aiResult.suffix_singular,
+                    suffix_plural: aiResult.suffix_plural,
+                    category_id: categoryId,
+                    category_name: categoryName,
+                    category_suggestion: aiResult.category_suggestion,
+                    img_path: null,
+                    created_at: new Date().toISOString()
+                }
+
+                processedIngredients.push(ingredientData)
+
+            } catch (error) {
+                console.error(`Erreur pour ${pendingIngredients[i].name}:`, error)
+                errors.push(`Erreur pour ${pendingIngredients[i].name}: ${error}`)
+            }
         }
 
-        processedIngredients.push(ingredientData)
+        // Si c'est un preview, retourner les données sans les insérer
+        if (preview) {
+            return NextResponse.json({
+                success: true,
+                preview: true,
+                message: `Prévisualisation générée : ${processedIngredients.length} ingrédients traités`,
+                processed: pendingIngredients.length,
+                ingredients: processedIngredients,
+                errors: errors.length > 0 ? errors : undefined
+            })
+        }
 
-      } catch (error) {
-        console.error(`Erreur pour ${pendingIngredients[i].name}:`, error)
-        errors.push(`Erreur pour ${pendingIngredients[i].name}: ${error}`)
-      }
-    }
+        // Mode normal : créer les ingrédients et supprimer les pending
+        const createdIngredients = []
+        for (const ingredientData of processedIngredients) {
+            try {
+                const { pendingId, ...ingredientToCreate } = ingredientData
 
-    // Si c'est un preview, retourner les données sans les insérer
-    if (preview) {
-      return NextResponse.json({
-        success: true,
-        preview: true,
-        message: `Prévisualisation générée : ${processedIngredients.length} ingrédients traités`,
-        processed: pendingIngredients.length,
-        ingredients: processedIngredients,
-        errors: errors.length > 0 ? errors : undefined
-      })
-    }
+                const newIngredient = await ingredientRepo.create(ingredientToCreate)
+                createdIngredients.push(newIngredient)
 
-    // Mode normal : créer les ingrédients et supprimer les pending
-    const createdIngredients = []
-    for (const ingredientData of processedIngredients) {
-      try {
-        const { pendingId, ...ingredientToCreate } = ingredientData
-        
-        const newIngredient = await ingredientRepo.create(ingredientToCreate)
-        createdIngredients.push(newIngredient)
+                // Supprimer le pending ingredient
+                await pendingRepo.delete(pendingId)
 
-        // Supprimer le pending ingredient
-        await pendingRepo.delete(pendingId)
-
-      } catch (error) {
-        console.error(`Erreur lors de la création de ${ingredientData.pendingName}:`, error)
-        errors.push(`Erreur lors de la création de ${ingredientData.pendingName}: ${error}`)
-      }
-    }
+            } catch (error) {
+                console.error(`Erreur lors de la création de ${ingredientData.pendingName}:`, error)
+                errors.push(`Erreur lors de la création de ${ingredientData.pendingName}: ${error}`)
+            }
+        }
 
         return NextResponse.json({
             success: true,
