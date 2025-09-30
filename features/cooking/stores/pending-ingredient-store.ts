@@ -150,7 +150,7 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
                 try {
                     const pendingId = ingredientData.pendingId as number
                     const ingredientName = ingredientData.pendingName as string || 'Ingrédient inconnu'
-                    
+
                     if (!pendingId) {
                         results.errors.push('ID pending manquant')
                         completed++
@@ -198,11 +198,11 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
             }
 
             results.message = `Traitement terminé : ${results.created.length} ingrédient(s) créé(s) sur ${results.processed} traité(s)`
-            
+
             // Refresh the list and count
             await get().fetchPendingIngredients()
             await get().fetchPendingCount()
-            
+
             set({ loading: false })
             return results
         } catch (error) {
