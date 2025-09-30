@@ -43,14 +43,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const sessionPromise = supabase.auth.getSession()
 
                 const result = await Promise.race([sessionPromise, timeoutPromise])
-                
+
                 // Si c'est une erreur de timeout, on gère différemment
                 if (result instanceof Error) {
                     console.error('getSession timeout')
                     setLoading(false)
                     return
                 }
-                
+
                 // Type assertion pour le résultat de getSession
                 const sessionResult = result as { data: { session: Session | null }, error: AuthError | null }
                 const { data: { session }, error } = sessionResult
