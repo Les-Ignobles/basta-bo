@@ -30,47 +30,47 @@ const BulkIngredientSchema = z.object({
 })
 
 export async function POST(request: Request) {
-  try {
-    const body = await request.json()
-    const { pendingIds } = body
+    try {
+        const body = await request.json()
+        const { pendingIds } = body
 
-    if (!pendingIds || !Array.isArray(pendingIds) || pendingIds.length === 0) {
-      return NextResponse.json(
-        { error: 'pendingIds array is required' },
-        { status: 400 }
-      )
-    }
+        if (!pendingIds || !Array.isArray(pendingIds) || pendingIds.length === 0) {
+            return NextResponse.json(
+                { error: 'pendingIds array is required' },
+                { status: 400 }
+            )
+        }
 
-    const supabase = await createClient()
-    const pendingRepo = new PendingIngredientRepository(supabase)
-    const categoryRepo = new IngredientCategoryRepository(supabase)
+        const supabase = await createClient()
+        const pendingRepo = new PendingIngredientRepository(supabase)
+        const categoryRepo = new IngredientCategoryRepository(supabase)
 
-    // Récupérer les pending ingredients spécifiés
-    const pendingIngredients = []
-    for (const id of pendingIds) {
-      const pending = await pendingRepo.findById(id)
-      if (pending) {
-        pendingIngredients.push(pending)
-      }
-    }
-    
-    if (pendingIngredients.length === 0) {
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Aucun ingrédient en attente trouvé',
-        processed: 0,
-        ingredients: []
-      })
-    }
+        // Récupérer les pending ingredients spécifiés
+        const pendingIngredients = []
+        for (const id of pendingIds) {
+            const pending = await pendingRepo.findById(id)
+            if (pending) {
+                pendingIngredients.push(pending)
+            }
+        }
 
-    // Récupérer les catégories pour l'IA
-    const categories = await categoryRepo.findAll()
-    const categoryList = categories.map(cat => `${cat.emoji || ''} ${cat.title.fr} (ID: ${cat.id})`.trim()).join(', ')
+        if (pendingIngredients.length === 0) {
+            return NextResponse.json({
+                success: true,
+                message: 'Aucun ingrédient en attente trouvé',
+                processed: 0,
+                ingredients: []
+            })
+        }
 
-    // Préparer le prompt pour l'IA
-    const pendingNames = pendingIngredients.map(p => p.name).join(', ')
-    
-    const prompt = `Tu es un expert culinaire. Je vais te donner une liste d'ingrédients en attente et tu dois me retourner pour chacun :
+        // Récupérer les catégories pour l'IA
+        const categories = await categoryRepo.findAll()
+        const categoryList = categories.map(cat => `${cat.emoji || ''} ${cat.title.fr} (ID: ${cat.id})`.trim()).join(', ')
+
+        // Préparer le prompt pour l'IA
+        const pendingNames = pendingIngredients.map(p => p.name).join(', ')
+
+        const prompt = `Tu es un expert culinaire. Je vais te donner une liste d'ingrédients en attente et tu dois me retourner pour chacun :
 1. Le nom en français (tel quel), anglais et espagnol
 2. Le suffixe singulier (ex: "1 cuillère à soupe de...") en 3 langues
 3. Le suffixe pluriel (ex: "2 cuillères à soupe de...") en 3 langues
@@ -92,61 +92,61 @@ Retourne un JSON avec un tableau d'objets. Pour chaque ingrédient, utilise le n
 
         const aiResults = response.ingredients
 
-    // Traiter les résultats IA et retourner les données générées
-    const processedIngredients = []
-    const errors = []
+        // Traiter les résultats IA et retourner les données générées
+        const processedIngredients = []
+        const errors = []
 
-    for (let i = 0; i < pendingIngredients.length; i++) {
-      try {
-        const pending = pendingIngredients[i]
-        const aiResult = aiResults[i]
+        for (let i = 0; i < pendingIngredients.length; i++) {
+            try {
+                const pending = pendingIngredients[i]
+                const aiResult = aiResults[i]
 
-        if (!aiResult) {
-          errors.push(`Pas de résultat IA pour ${pending.name}`)
-          continue
+                if (!aiResult) {
+                    errors.push(`Pas de résultat IA pour ${pending.name}`)
+                    continue
+                }
+
+                // Récupérer la catégorie directement depuis l'ID retourné par l'IA
+                let categoryId = aiResult.category_id
+                let categoryName = null
+                if (categoryId !== null) {
+                    const suggestedCategory = categories.find(cat => cat.id === categoryId)
+                    if (suggestedCategory) {
+                        categoryName = suggestedCategory.title.fr
+                    } else {
+                        // Si l'ID n'existe pas, on met null
+                        categoryId = null
+                    }
+                }
+
+                // Préparer les données de l'ingrédient générées par l'IA
+                const ingredientData = {
+                    pendingId: pending.id,
+                    pendingName: pending.name,
+                    name: aiResult.name,
+                    suffix_singular: aiResult.suffix_singular,
+                    suffix_plural: aiResult.suffix_plural,
+                    category_id: categoryId,
+                    category_name: categoryName,
+                    img_path: null,
+                    created_at: new Date().toISOString()
+                }
+
+                processedIngredients.push(ingredientData)
+
+            } catch (error) {
+                console.error(`Erreur pour ${pendingIngredients[i].name}:`, error)
+                errors.push(`Erreur pour ${pendingIngredients[i].name}: ${error}`)
+            }
         }
 
-        // Récupérer la catégorie directement depuis l'ID retourné par l'IA
-        let categoryId = aiResult.category_id
-        let categoryName = null
-        if (categoryId !== null) {
-          const suggestedCategory = categories.find(cat => cat.id === categoryId)
-          if (suggestedCategory) {
-            categoryName = suggestedCategory.title.fr
-          } else {
-            // Si l'ID n'existe pas, on met null
-            categoryId = null
-          }
-        }
-
-        // Préparer les données de l'ingrédient générées par l'IA
-        const ingredientData = {
-          pendingId: pending.id,
-          pendingName: pending.name,
-          name: aiResult.name,
-          suffix_singular: aiResult.suffix_singular,
-          suffix_plural: aiResult.suffix_plural,
-          category_id: categoryId,
-          category_name: categoryName,
-          img_path: null,
-          created_at: new Date().toISOString()
-        }
-
-        processedIngredients.push(ingredientData)
-
-      } catch (error) {
-        console.error(`Erreur pour ${pendingIngredients[i].name}:`, error)
-        errors.push(`Erreur pour ${pendingIngredients[i].name}: ${error}`)
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: `Génération IA terminée : ${processedIngredients.length} ingrédients traités`,
-      processed: pendingIngredients.length,
-      ingredients: processedIngredients,
-      errors: errors.length > 0 ? errors : undefined
-    })
+        return NextResponse.json({
+            success: true,
+            message: `Génération IA terminée : ${processedIngredients.length} ingrédients traités`,
+            processed: pendingIngredients.length,
+            ingredients: processedIngredients,
+            errors: errors.length > 0 ? errors : undefined
+        })
 
     } catch (error) {
         console.error('Error in bulk process:', error)

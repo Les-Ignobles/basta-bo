@@ -19,7 +19,7 @@ type PendingIngredientActions = {
     deletePendingIngredient: (id: number) => Promise<void>
     convertToIngredient: (pendingId: number, ingredientData: IngredientFormValues) => Promise<void>
     bulkProcessWithAI: () => Promise<{ success: boolean; message: string; processed: number; created: Record<string, unknown>[]; errors?: string[] }>
-    previewBulkProcess: () => Promise<{ success: boolean; message: string; processed: number; ingredients: Record<string, unknown>[]; errors?: string[] }>
+    previewBulkProcess: (onProgress?: (completed: number, total: number, result?: Record<string, unknown>) => void) => Promise<{ success: boolean; message: string; processed: number; ingredients: Record<string, unknown>[]; errors?: string[] }>
     generateIngredientData: (pendingId: number) => Promise<{ success: boolean; ingredient: Record<string, unknown>; error?: string }>
     setSearch: (search: string) => void
     setPage: (page: number) => void
@@ -147,11 +147,11 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
             }
 
             const result = await response.json()
-            
+
             // Refresh the list and count
             await get().fetchPendingIngredients()
             await get().fetchPendingCount()
-            
+
             set({ loading: false })
             return result
         } catch (error) {
@@ -163,25 +163,49 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
         }
     },
 
-    previewBulkProcess: async () => {
+    previewBulkProcess: async (onProgress?: (completed: number, total: number, result?: Record<string, unknown>) => void) => {
         set({ loading: true, error: null })
         try {
             const { pendingIngredients } = get()
-            const results = []
-            const errors = []
+            const results: Record<string, unknown>[] = []
+            const errors: string[] = []
+            const BATCH_SIZE = 5 // Traiter par paquets de 5
 
-            // Traiter chaque pending ingredient individuellement
-            for (const pending of pendingIngredients) {
-                try {
-                    const result = await get().generateIngredientData(pending.id)
-                    if (result.success) {
-                        results.push(result.ingredient)
-                    } else {
-                        errors.push(result.error || `Erreur pour ${pending.name}`)
+            // Diviser en paquets
+            const batches = []
+            for (let i = 0; i < pendingIngredients.length; i += BATCH_SIZE) {
+                batches.push(pendingIngredients.slice(i, i + BATCH_SIZE))
+            }
+
+            let completed = 0
+
+            // Traiter chaque paquet en parallèle
+            for (const batch of batches) {
+                const batchPromises = batch.map(async (pending) => {
+                    try {
+                        const result = await get().generateIngredientData(pending.id)
+                        completed++
+                        
+                        if (result.success) {
+                            results.push(result.ingredient)
+                            // Callback de progression avec le résultat
+                            onProgress?.(completed, pendingIngredients.length, result.ingredient)
+                            return { success: true, ingredient: result.ingredient }
+                        } else {
+                            errors.push(result.error || `Erreur pour ${pending.name}`)
+                            onProgress?.(completed, pendingIngredients.length)
+                            return { success: false, error: result.error }
+                        }
+                    } catch (error) {
+                        completed++
+                        errors.push(`Erreur pour ${pending.name}: ${error}`)
+                        onProgress?.(completed, pendingIngredients.length)
+                        return { success: false, error: error }
                     }
-                } catch (error) {
-                    errors.push(`Erreur pour ${pending.name}: ${error}`)
-                }
+                })
+
+                // Attendre que le paquet soit terminé avant de passer au suivant
+                await Promise.all(batchPromises)
             }
 
             set({ loading: false })
@@ -216,7 +240,7 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
             }
 
             const result = await response.json()
-            
+
             if (result.success && result.ingredients.length > 0) {
                 return {
                     success: true,

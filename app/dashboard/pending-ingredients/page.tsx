@@ -23,6 +23,7 @@ export default function PendingIngredientsPage() {
     const [previewData, setPreviewData] = useState<{ ingredients: Record<string, unknown>[]; errors?: string[] } | null>(null)
     const [generatedData, setGeneratedData] = useState<Map<number, Record<string, unknown>>>(new Map())
     const [generatingStates, setGeneratingStates] = useState<Map<number, boolean>>(new Map())
+    const [bulkProgress, setBulkProgress] = useState<{ completed: number; total: number } | null>(null)
     const debouncedSearch = useDebounce(searchTerm, 400)
 
     const {
@@ -38,7 +39,6 @@ export default function PendingIngredientsPage() {
         fetchPendingCount,
         deletePendingIngredient,
         bulkProcessWithAI,
-        previewBulkProcess,
         generateIngredientData,
         setSearch,
         setPage,
@@ -91,9 +91,18 @@ export default function PendingIngredientsPage() {
 
         setBulkProcessing(true)
         setPreviewData(null)
-
+        setBulkProgress({ completed: 0, total: pendingIngredients.length })
+        
         try {
-            const result = await previewBulkProcess()
+            const result = await usePendingIngredientStore.getState().previewBulkProcess((completed, total, ingredientResult) => {
+                setBulkProgress({ completed, total })
+                
+                // Si on a un résultat, l'ajouter immédiatement aux données générées
+                if (ingredientResult && ingredientResult.pendingId) {
+                    setGeneratedData(prev => new Map(prev).set(ingredientResult.pendingId as number, ingredientResult))
+                }
+            })
+            
             setPreviewData({ ingredients: result.ingredients, errors: result.errors })
             setPreviewOpen(true)
         } catch (error) {
@@ -101,12 +110,13 @@ export default function PendingIngredientsPage() {
             alert('Erreur lors de la prévisualisation')
         } finally {
             setBulkProcessing(false)
+            setBulkProgress(null)
         }
     }
 
     const handleGenerateForIngredient = async (pendingId: number) => {
         setGeneratingStates(prev => new Map(prev).set(pendingId, true))
-        
+
         try {
             const result = await generateIngredientData(pendingId)
             if (result.success) {
@@ -128,7 +138,7 @@ export default function PendingIngredientsPage() {
 
         setBulkProcessing(true)
         setBulkResult(null)
-        
+
         try {
             const result = await bulkProcessWithAI()
             setBulkResult(result)
@@ -192,6 +202,36 @@ export default function PendingIngredientsPage() {
                 )}
             </div>
 
+            {/* Progression du traitement en lot */}
+            {bulkProgress && (
+                <Card className="border-blue-200 bg-blue-50">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Clock className="h-5 w-5 text-blue-600 animate-spin" />
+                            <h3 className="text-lg font-semibold text-blue-800">Traitement en cours...</h3>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                                <span>Ingrédients traités</span>
+                                <span>{bulkProgress.completed} / {bulkProgress.total}</span>
+                            </div>
+                            <div className="w-full bg-blue-200 rounded-full h-3">
+                                <div 
+                                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-300"
+                                    style={{ width: `${(bulkProgress.completed / bulkProgress.total) * 100}%` }}
+                                />
+                            </div>
+                            <p className="text-sm text-blue-700">
+                                {bulkProgress.completed === bulkProgress.total 
+                                    ? 'Traitement terminé !' 
+                                    : `Traitement de ${bulkProgress.completed} ingrédient(s) sur ${bulkProgress.total}...`
+                                }
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Résultat du traitement en lot */}
             {bulkResult && (
                 <Card className="border-green-200 bg-green-50">
@@ -244,8 +284,20 @@ export default function PendingIngredientsPage() {
                         </CardContent>
                     </Card>
                 ) : (
-                    pendingIngredients.map((pendingIngredient) => (
-                        <Card key={pendingIngredient.id} className="hover:shadow-md transition-shadow">
+                    pendingIngredients.map((pendingIngredient) => {
+                        const isGenerating = generatingStates.get(pendingIngredient.id) || false
+                        const hasGeneratedData = generatedData.has(pendingIngredient.id)
+                        const isInBulkProcessing = bulkProcessing && bulkProgress
+                        
+                        return (
+                        <Card 
+                            key={pendingIngredient.id} 
+                            className={`hover:shadow-md transition-shadow ${
+                                isGenerating ? 'border-blue-300 bg-blue-50' : 
+                                hasGeneratedData ? 'border-green-300 bg-green-50' : 
+                                isInBulkProcessing ? 'border-purple-300 bg-purple-50' : ''
+                            }`}
+                        >
                             <CardHeader className="pb-3">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -291,7 +343,7 @@ export default function PendingIngredientsPage() {
                                     </div>
                                 </div>
                             </CardHeader>
-                            
+
                             {/* Affichage des données générées par l'IA */}
                             {generatedData.has(pendingIngredient.id) && (
                                 <CardContent className="pt-0">
@@ -322,10 +374,9 @@ export default function PendingIngredientsPage() {
                                                     <span className="font-medium">Suffixe pluriel:</span> {(generatedData.get(pendingIngredient.id)?.suffix_plural as Record<string, string>)?.fr}
                                                 </div>
                                                 <div>
-                                                    <span className="font-medium">Catégorie:</span> 
-                                                    <span className={`ml-1 px-2 py-1 rounded text-xs ${
-                                                        generatedData.get(pendingIngredient.id)?.category_name ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                                    }`}>
+                                                    <span className="font-medium">Catégorie:</span>
+                                                    <span className={`ml-1 px-2 py-1 rounded text-xs ${generatedData.get(pendingIngredient.id)?.category_name ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                                        }`}>
                                                         {(generatedData.get(pendingIngredient.id)?.category_name as string) || 'Aucune catégorie'}
                                                     </span>
                                                 </div>
@@ -335,7 +386,8 @@ export default function PendingIngredientsPage() {
                                 </CardContent>
                             )}
                         </Card>
-                    ))
+                        )
+                    })
                 )}
             </div>
 
