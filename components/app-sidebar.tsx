@@ -59,7 +59,10 @@ export function AppSidebar() {
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={signOut}
+                        onClick={() => {
+                            console.log('Déconnexion cliquée')
+                            signOut()
+                        }}
                         className="w-full justify-start"
                     >
                         <LogOut className="size-4 mr-2" />

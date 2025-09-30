@@ -1,5 +1,6 @@
 "use client"
 import { createContext, useContext, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 
@@ -24,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
     const [loading, setLoading] = useState(true)
+    const router = useRouter()
     const supabase = createClient()
 
     useEffect(() => {
@@ -116,17 +118,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             clearTimeout(timeoutId)
             subscription.unsubscribe()
         }
-    }, [supabase])
+    }, [supabase, router])
 
     const signOut = async () => {
         try {
             await supabase.auth.signOut()
-            // Force a hard redirect to clear all cached state
-            window.location.replace('/login')
+            // Use Next.js router for navigation
+            router.push('/login')
+            router.refresh() // Force refresh to clear cached state
         } catch (error) {
             console.error('Error signing out:', error)
             // Even if signOut fails, redirect to login
-            window.location.replace('/login')
+            router.push('/login')
         }
     }
 
