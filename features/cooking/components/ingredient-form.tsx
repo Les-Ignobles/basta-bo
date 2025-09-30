@@ -27,9 +27,14 @@ type Props = {
 }
 
 export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', categories }: Props) {
-    // Trier les catégories par ordre alphabétique
-    const sortedCategories = [...categories].sort((a, b) => a.label.localeCompare(b.label))
-    
+    // Trier les catégories par ordre alphabétique (en retirant l'emoji du tri)
+    const sortedCategories = [...categories].sort((a, b) => {
+        // Extraire le nom sans l'emoji (tout ce qui vient après le premier espace)
+        const nameA = a.label.replace(/^[^\s]*\s/, '').trim()
+        const nameB = b.label.replace(/^[^\s]*\s/, '').trim()
+        return nameA.localeCompare(nameB)
+    })
+
     const [values, setValues] = useState<IngredientFormValues>({
         name: { fr: '' },
         suffix_singular: { fr: '' },
