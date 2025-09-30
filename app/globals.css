@@ -184,4 +184,27 @@
   .border-basta-blue {
     border-color: #3A14E2;
   }
+
+  /* Améliorer le scroll dans les composants Command */
+  [cmdk-list] {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground)) transparent;
+  }
+
+  [cmdk-list]::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  [cmdk-list]::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  [cmdk-list]::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground));
+    border-radius: 3px;
+  }
+
+  [cmdk-list]::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--foreground));
+  }
 }
