@@ -70,12 +70,14 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Créer l'ingrédient
+        // Créer l'ingrédient (exclure l'id pour éviter les conflits de clé primaire)
         const ingredientToCreate = {
-            ...ingredientData,
-            created_at: new Date().toISOString(),
+            name: ingredientData.name,
+            suffix_singular: ingredientData.suffix_singular,
+            suffix_plural: ingredientData.suffix_plural,
+            category_id: ingredientData.category_id ?? null,
             img_path: ingredientData.img_path ?? null,
-            category_id: ingredientData.category_id ?? null
+            created_at: new Date().toISOString()
         }
         const newIngredient = await ingredientRepo.create(ingredientToCreate)
 
