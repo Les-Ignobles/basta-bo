@@ -53,7 +53,7 @@ export default function PendingIngredientsPage() {
 
     const handleConvert = async (ingredientData: IngredientFormValues) => {
         if (!editingPendingIngredient) return
-        
+
         await usePendingIngredientStore.getState().convertToIngredient(editingPendingIngredient.id, ingredientData)
         // Rafraîchir le compteur dans la sidebar
         fetchPendingCount()

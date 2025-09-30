@@ -59,7 +59,7 @@ export function AppSidebar() {
                                         <Clock className="size-4" />
                                         <span>Pending Ingredients</span>
                                         {total > 0 && (
-                                            <Badge variant="destructive" className="ml-auto h-5 w-5 rounded-full p-0 text-xs">
+                                            <Badge variant="destructive" className="ml-auto h-5 min-w-5 rounded-full px-1 text-xs flex items-center justify-center">
                                                 {total > 99 ? '99+' : total}
                                             </Badge>
                                         )}
