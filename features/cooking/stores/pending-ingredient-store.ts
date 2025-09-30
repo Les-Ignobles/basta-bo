@@ -169,7 +169,7 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
             const { pendingIngredients } = get()
             const results: Record<string, unknown>[] = []
             const errors: string[] = []
-            const BATCH_SIZE = 5 // Traiter par paquets de 5
+                   const BATCH_SIZE = 15 // Traiter par paquets de 15
 
             // Diviser en paquets
             const batches = []
