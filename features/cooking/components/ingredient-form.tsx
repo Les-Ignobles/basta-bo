@@ -2,8 +2,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TranslationTextField } from '@/components/translation-text'
 import { ImageUpload } from '@/components/image-upload'
 // Plus besoin d'imports pour Check, ChevronsUpDown et cn
@@ -76,7 +75,7 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                 </div>
                 <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">Catégorie</div>
-                    <RadioGroup
+                    <Select
                         value={values.category_id?.toString() || "none"}
                         onValueChange={(value) => {
                             setValues((s) => ({ 
@@ -84,21 +83,19 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                                 category_id: value === "none" ? null : parseInt(value) 
                             }))
                         }}
-                        className="grid grid-cols-2 gap-2"
                     >
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="none" id="none" />
-                            <Label htmlFor="none" className="text-sm">Aucune catégorie</Label>
-                        </div>
-                        {sortedCategories.map((category) => (
-                            <div key={category.id} className="flex items-center space-x-2">
-                                <RadioGroupItem value={category.id.toString()} id={category.id.toString()} />
-                                <Label htmlFor={category.id.toString()} className="text-sm">
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Sélectionner une catégorie..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[200px]">
+                            <SelectItem value="none">Aucune catégorie</SelectItem>
+                            {sortedCategories.map((category) => (
+                                <SelectItem key={category.id} value={category.id.toString()}>
                                     {category.label}
-                                </Label>
-                            </div>
-                        ))}
-                    </RadioGroup>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">Image</div>
