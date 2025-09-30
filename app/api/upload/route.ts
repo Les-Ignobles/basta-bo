@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
             .from(bucket)
             .upload(fileName, file, {
                 cacheControl: '3600',
-                upsert: false
+                upsert: true
             })
 
         if (error) {
@@ -38,10 +38,10 @@ export async function POST(request: NextRequest) {
             .from(bucket)
             .getPublicUrl(fileName)
 
-        return NextResponse.json({ 
-            success: true, 
+        return NextResponse.json({
+            success: true,
             url: publicUrl,
-            path: data.path 
+            path: data.path
         })
     } catch (error) {
         console.error('Upload error:', error)

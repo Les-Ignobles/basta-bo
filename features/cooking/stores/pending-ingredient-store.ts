@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import type { PendingIngredient, PendingIngredientFormValues } from '../types'
+import type { PendingIngredient } from '../types'
+import type { IngredientFormValues } from '../components/ingredient-form'
 
 type PendingIngredientState = {
     pendingIngredients: PendingIngredient[]
@@ -15,7 +16,7 @@ type PendingIngredientState = {
 type PendingIngredientActions = {
     fetchPendingIngredients: () => Promise<void>
     deletePendingIngredient: (id: number) => Promise<void>
-    convertToIngredient: (pendingId: number, ingredientData: PendingIngredientFormValues) => Promise<void>
+    convertToIngredient: (pendingId: number, ingredientData: IngredientFormValues) => Promise<void>
     setSearch: (search: string) => void
     setPage: (page: number) => void
     setEditingPendingIngredient: (pendingIngredient: PendingIngredient | null) => void
@@ -84,7 +85,7 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
         }
     },
 
-    convertToIngredient: async (pendingId: number, ingredientData: PendingIngredientFormValues) => {
+    convertToIngredient: async (pendingId: number, ingredientData: IngredientFormValues) => {
         set({ loading: true, error: null })
         try {
             const response = await fetch('/api/pending-ingredients', {

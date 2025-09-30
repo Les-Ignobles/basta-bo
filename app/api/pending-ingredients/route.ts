@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PendingIngredientRepository } from '@/features/cooking/repositories/pending-ingredient-repository'
 import { IngredientRepository } from '@/features/cooking/repositories/ingredient-repository'
 import { createClient } from '@/lib/supabase/server'
-import type { PendingIngredientFormValues } from '@/features/cooking/types'
+import type { IngredientFormValues } from '@/features/cooking/components/ingredient-form'
 
 export async function GET(request: NextRequest) {
     try {
@@ -58,9 +58,9 @@ export async function POST(request: NextRequest) {
         const ingredientRepo = new IngredientRepository(supabase)
 
         const body = await request.json()
-        const { pendingId, ingredientData }: {
+        const { pendingId, ingredientData }: { 
             pendingId: number
-            ingredientData: PendingIngredientFormValues
+            ingredientData: IngredientFormValues 
         } = body
 
         if (!pendingId || !ingredientData) {
@@ -74,7 +74,8 @@ export async function POST(request: NextRequest) {
         const ingredientToCreate = {
             ...ingredientData,
             created_at: new Date().toISOString(),
-            img_path: ingredientData.img_path ?? null
+            img_path: ingredientData.img_path ?? null,
+            category_id: ingredientData.category_id ?? null
         }
         const newIngredient = await ingredientRepo.create(ingredientToCreate)
 

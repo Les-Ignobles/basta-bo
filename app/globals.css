@@ -154,6 +154,14 @@
     @apply bg-background text-foreground;
     font-family: 'Martian Grotesk', var(--font-geist-sans), sans-serif;
   }
+
+  /* Curseur pointer pour tous les boutons et éléments cliquables */
+  button,
+  [role="button"],
+  .cursor-pointer,
+  a {
+    cursor: pointer;
+  }
 }
 
 @layer utilities {

@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { usePendingIngredientStore } from '@/features/cooking/stores/pending-ingredient-store'
 import { useCookingStore } from '@/features/cooking/store'
-import type { PendingIngredient, PendingIngredientFormValues } from '@/features/cooking/types'
-import { PendingIngredientForm } from './pending-ingredient-form'
+import type { PendingIngredient } from '@/features/cooking/types'
+import type { IngredientFormValues } from '@/features/cooking/components/ingredient-form'
+import { IngredientForm } from '@/features/cooking/components/ingredient-form'
 import { Clock, Search, Trash2, Plus } from 'lucide-react'
 import { useDebounce } from '@/hooks/use-debounce'
 
@@ -49,8 +50,10 @@ export default function PendingIngredientsPage() {
         fetchPendingIngredients()
     }, [page, search, fetchPendingIngredients])
 
-    const handleConvert = async (pendingId: number, ingredientData: PendingIngredientFormValues) => {
-        await usePendingIngredientStore.getState().convertToIngredient(pendingId, ingredientData)
+    const handleConvert = async (ingredientData: IngredientFormValues) => {
+        if (!editingPendingIngredient) return
+        
+        await usePendingIngredientStore.getState().convertToIngredient(editingPendingIngredient.id, ingredientData)
         setOpen(false)
         setEditingPendingIngredient(null)
     }
@@ -192,17 +195,20 @@ export default function PendingIngredientsPage() {
                         </DialogTitle>
                     </DialogHeader>
                     {editingPendingIngredient && (
-                        <PendingIngredientForm
-                            pendingIngredient={editingPendingIngredient}
+                        <IngredientForm
+                            defaultValues={{
+                                name: { fr: editingPendingIngredient.name, en: '', es: '' },
+                                suffix_singular: { fr: '', en: '', es: '' },
+                                suffix_plural: { fr: '', en: '', es: '' },
+                                category_id: null,
+                                img_path: null
+                            }}
                             categories={categories.map((c: Record<string, unknown>) => ({
                                 id: Number(c.id),
                                 label: `${c.emoji ?? ''} ${(c.title as Record<string, string>)?.fr ?? ''}`.trim()
                             }))}
-                            onSubmit={(data) => handleConvert(editingPendingIngredient.id, data)}
-                            onCancel={() => {
-                                setOpen(false)
-                                setEditingPendingIngredient(null)
-                            }}
+                            onSubmit={handleConvert}
+                            submittingLabel="Conversion..."
                         />
                     )}
                 </DialogContent>
