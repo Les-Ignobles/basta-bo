@@ -1,5 +1,5 @@
 "use client"
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,8 +13,22 @@ export default function LoginPage() {
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
+    const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
     const router = useRouter()
     const supabase = createClient()
+
+    // Effet parallax basé sur la position de la souris
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            setMousePosition({
+                x: (e.clientX / window.innerWidth) * 100,
+                y: (e.clientY / window.innerHeight) * 100
+            })
+        }
+
+        window.addEventListener('mousemove', handleMouseMove)
+        return () => window.removeEventListener('mousemove', handleMouseMove)
+    }, [])
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -44,16 +58,63 @@ export default function LoginPage() {
         <div className="min-h-screen relative overflow-hidden">
             {/* Background avec gradient et formes géométriques */}
             <div className="absolute inset-0 bg-gradient-to-br from-[#3A14E2] via-[#4A24F2] to-[#2A04D2]">
-                {/* Formes géométriques décoratives */}
-                <div className="absolute top-0 left-0 w-full h-full">
-                    <div className="absolute top-20 left-20 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
-                    <div className="absolute top-40 right-32 w-24 h-24 bg-white/15 rounded-full blur-lg"></div>
-                    <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
-                    <div className="absolute bottom-20 right-20 w-28 h-28 bg-white/10 rounded-full blur-xl"></div>
+                {/* Formes géométriques décoratives avec effet parallax */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
+                    {/* Couche 1 - Mouvement lent (fond) */}
+                    <div 
+                        className="absolute top-20 left-20 w-32 h-32 bg-white/10 rounded-full blur-xl transition-transform duration-1000 ease-out"
+                        style={{
+                            transform: `translate(${mousePosition.x * 0.02}px, ${mousePosition.y * 0.02}px)`
+                        }}
+                    ></div>
+                    <div 
+                        className="absolute bottom-32 left-1/4 w-40 h-40 bg-white/5 rounded-full blur-2xl transition-transform duration-1000 ease-out"
+                        style={{
+                            transform: `translate(${mousePosition.x * 0.01}px, ${mousePosition.y * 0.01}px)`
+                        }}
+                    ></div>
 
-                    {/* Formes triangulaires */}
-                    <div className="absolute top-1/3 right-1/4 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[50px] border-l-transparent border-r-transparent border-b-white/10 rotate-45"></div>
-                    <div className="absolute bottom-1/3 left-1/3 w-0 h-0 border-l-[20px] border-r-[20px] border-b-[35px] border-l-transparent border-r-transparent border-b-white/15 rotate-12"></div>
+                    {/* Couche 2 - Mouvement moyen */}
+                    <div 
+                        className="absolute top-40 right-32 w-24 h-24 bg-white/15 rounded-full blur-lg transition-transform duration-700 ease-out"
+                        style={{
+                            transform: `translate(${mousePosition.x * 0.05}px, ${mousePosition.y * 0.05}px)`
+                        }}
+                    ></div>
+                    <div 
+                        className="absolute bottom-20 right-20 w-28 h-28 bg-white/10 rounded-full blur-xl transition-transform duration-700 ease-out"
+                        style={{
+                            transform: `translate(${mousePosition.x * 0.03}px, ${mousePosition.y * 0.03}px)`
+                        }}
+                    ></div>
+
+                    {/* Couche 3 - Mouvement rapide (premier plan) */}
+                    <div 
+                        className="absolute top-1/3 right-1/4 w-0 h-0 border-l-[30px] border-r-[30px] border-b-[50px] border-l-transparent border-r-transparent border-b-white/10 rotate-45 transition-transform duration-500 ease-out"
+                        style={{
+                            transform: `translate(${mousePosition.x * 0.08}px, ${mousePosition.y * 0.08}px) rotate(45deg)`
+                        }}
+                    ></div>
+                    <div 
+                        className="absolute bottom-1/3 left-1/3 w-0 h-0 border-l-[20px] border-r-[20px] border-b-[35px] border-l-transparent border-r-transparent border-b-white/15 rotate-12 transition-transform duration-500 ease-out"
+                        style={{
+                            transform: `translate(${mousePosition.x * 0.06}px, ${mousePosition.y * 0.06}px) rotate(12deg)`
+                        }}
+                    ></div>
+
+                    {/* Formes flottantes supplémentaires */}
+                    <div 
+                        className="absolute top-1/4 left-1/2 w-16 h-16 bg-white/8 rounded-full blur-lg transition-transform duration-600 ease-out"
+                        style={{
+                            transform: `translate(${mousePosition.x * 0.04}px, ${mousePosition.y * 0.04}px)`
+                        }}
+                    ></div>
+                    <div 
+                        className="absolute bottom-1/4 right-1/3 w-20 h-20 bg-white/12 rounded-full blur-xl transition-transform duration-800 ease-out"
+                        style={{
+                            transform: `translate(${mousePosition.x * 0.07}px, ${mousePosition.y * 0.07}px)`
+                        }}
+                    ></div>
                 </div>
             </div>
 
@@ -63,11 +124,11 @@ export default function LoginPage() {
                     {/* Logo et titre */}
                     <div className="text-center mb-8">
                         <div className="mb-4">
-                            <Image 
-                                src="/img/logo.png" 
-                                alt="Basta Logo" 
-                                width={96} 
-                                height={80} 
+                            <Image
+                                src="/img/logo.png"
+                                alt="Basta Logo"
+                                width={96}
+                                height={80}
                                 className="mx-auto"
                                 priority
                             />
