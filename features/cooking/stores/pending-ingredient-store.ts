@@ -19,6 +19,7 @@ type PendingIngredientActions = {
     deletePendingIngredient: (id: number) => Promise<void>
     convertToIngredient: (pendingId: number, ingredientData: IngredientFormValues) => Promise<void>
     bulkProcessWithAI: () => Promise<{ success: boolean; message: string; processed: number; created: Record<string, unknown>[]; errors?: string[] }>
+    previewBulkProcess: () => Promise<{ success: boolean; message: string; processed: number; ingredients: Record<string, unknown>[]; errors?: string[] }>
     setSearch: (search: string) => void
     setPage: (page: number) => void
     setEditingPendingIngredient: (pendingIngredient: PendingIngredient | null) => void
@@ -136,7 +137,8 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({ preview: false })
             })
 
             if (!response.ok) {
@@ -149,6 +151,33 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
             await get().fetchPendingIngredients()
             await get().fetchPendingCount()
             
+            set({ loading: false })
+            return result
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : 'Unknown error',
+                loading: false
+            })
+            throw error
+        }
+    },
+
+    previewBulkProcess: async () => {
+        set({ loading: true, error: null })
+        try {
+            const response = await fetch('/api/pending-ingredients/bulk-process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ preview: true })
+            })
+
+            if (!response.ok) {
+                throw new Error('Failed to preview pending ingredients with AI')
+            }
+
+            const result = await response.json()
             set({ loading: false })
             return result
         } catch (error) {

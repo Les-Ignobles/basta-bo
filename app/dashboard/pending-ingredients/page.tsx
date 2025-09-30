@@ -11,7 +11,7 @@ import { useCookingStore } from '@/features/cooking/store'
 import type { PendingIngredient } from '@/features/cooking/types'
 import type { IngredientFormValues } from '@/features/cooking/components/ingredient-form'
 import { IngredientForm } from '@/features/cooking/components/ingredient-form'
-import { Clock, Search, Trash2, Plus, Sparkles } from 'lucide-react'
+import { Clock, Search, Trash2, Plus, Sparkles, Eye, Check, X } from 'lucide-react'
 import { useDebounce } from '@/hooks/use-debounce'
 
 export default function PendingIngredientsPage() {
@@ -19,6 +19,8 @@ export default function PendingIngredientsPage() {
     const [searchTerm, setSearchTerm] = useState('')
     const [bulkProcessing, setBulkProcessing] = useState(false)
     const [bulkResult, setBulkResult] = useState<{ message: string; processed: number; created: Record<string, unknown>[]; errors?: string[] } | null>(null)
+    const [previewOpen, setPreviewOpen] = useState(false)
+    const [previewData, setPreviewData] = useState<{ ingredients: Record<string, unknown>[]; errors?: string[] } | null>(null)
     const debouncedSearch = useDebounce(searchTerm, 400)
 
     const {
@@ -34,6 +36,7 @@ export default function PendingIngredientsPage() {
         fetchPendingCount,
         deletePendingIngredient,
         bulkProcessWithAI,
+        previewBulkProcess,
         setSearch,
         setPage,
         setEditingPendingIngredient
@@ -77,15 +80,29 @@ export default function PendingIngredientsPage() {
         }
     }
 
-    const handleBulkProcess = async () => {
+    const handlePreviewBulkProcess = async () => {
         if (pendingIngredients.length === 0) {
             alert('Aucun ingrédient en attente à traiter')
             return
         }
 
-        if (!confirm(`Êtes-vous sûr de vouloir traiter automatiquement ${pendingIngredients.length} ingrédient(s) avec l'IA ?`)) {
-            return
+        setBulkProcessing(true)
+        setPreviewData(null)
+        
+        try {
+            const result = await previewBulkProcess()
+            setPreviewData({ ingredients: result.ingredients, errors: result.errors })
+            setPreviewOpen(true)
+        } catch (error) {
+            console.error('Erreur lors de la prévisualisation:', error)
+            alert('Erreur lors de la prévisualisation')
+        } finally {
+            setBulkProcessing(false)
         }
+    }
+
+    const handleConfirmBulkProcess = async () => {
+        if (!previewData) return
 
         setBulkProcessing(true)
         setBulkResult(null)
@@ -93,6 +110,8 @@ export default function PendingIngredientsPage() {
         try {
             const result = await bulkProcessWithAI()
             setBulkResult(result)
+            setPreviewOpen(false)
+            setPreviewData(null)
         } catch (error) {
             console.error('Erreur lors du traitement en lot:', error)
             alert('Erreur lors du traitement en lot')
@@ -129,22 +148,22 @@ export default function PendingIngredientsPage() {
                         className="pl-10"
                     />
                 </div>
-                
+
                 {pendingIngredients.length > 0 && (
                     <Button
-                        onClick={handleBulkProcess}
+                        onClick={handlePreviewBulkProcess}
                         disabled={bulkProcessing || loading}
                         className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
                     >
                         {bulkProcessing ? (
                             <>
                                 <Clock className="h-4 w-4 mr-2 animate-spin" />
-                                Traitement IA...
+                                Génération prévisualisation...
                             </>
                         ) : (
                             <>
-                                <Sparkles className="h-4 w-4 mr-2" />
-                                Traitement magique ({pendingIngredients.length})
+                                <Eye className="h-4 w-4 mr-2" />
+                                Prévisualiser ({pendingIngredients.length})
                             </>
                         )}
                     </Button>
@@ -288,6 +307,125 @@ export default function PendingIngredientsPage() {
                             onSubmit={handleConvert}
                             submittingLabel="Conversion..."
                         />
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Modal de prévisualisation */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className="sm:max-w-[1000px] max-w-[95vw] w-full max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="font-christmas flex items-center gap-2">
+                            <Sparkles className="h-5 w-5 text-purple-500" />
+                            Prévisualisation du traitement IA
+                        </DialogTitle>
+                    </DialogHeader>
+                    
+                    {previewData && (
+                        <div className="space-y-4">
+                            {/* Barre de progression */}
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                    <span>Ingrédients traités</span>
+                                    <span>{previewData.ingredients.length} / {pendingIngredients.length}</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div 
+                                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                                        style={{ width: `${(previewData.ingredients.length / pendingIngredients.length) * 100}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Erreurs */}
+                            {previewData.errors && previewData.errors.length > 0 && (
+                                <Card className="border-red-200 bg-red-50">
+                                    <CardContent className="pt-4">
+                                        <h4 className="font-semibold text-red-800 mb-2">Erreurs détectées :</h4>
+                                        <ul className="text-sm text-red-700 space-y-1">
+                                            {previewData.errors.map((error, index) => (
+                                                <li key={index} className="flex items-start gap-2">
+                                                    <X className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                                    {error}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* Liste des ingrédients */}
+                            <div className="space-y-3 max-h-96 overflow-y-auto">
+                                {previewData.ingredients.map((ingredient, index) => (
+                                    <Card key={index} className="border-gray-200">
+                                        <CardContent className="pt-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <h4 className="font-semibold text-lg mb-2">
+                                                        {ingredient.pendingName as string}
+                                                    </h4>
+                                                    <div className="space-y-2 text-sm">
+                                                        <div>
+                                                            <span className="font-medium">Nom FR:</span> {(ingredient.name as Record<string, string>)?.fr}
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-medium">Nom EN:</span> {(ingredient.name as Record<string, string>)?.en}
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-medium">Nom ES:</span> {(ingredient.name as Record<string, string>)?.es}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2 text-sm">
+                                                    <div>
+                                                        <span className="font-medium">Suffixe singulier:</span> {(ingredient.suffix_singular as Record<string, string>)?.fr}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium">Suffixe pluriel:</span> {(ingredient.suffix_plural as Record<string, string>)?.fr}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium">Catégorie:</span> 
+                                                        <span className={`ml-1 px-2 py-1 rounded text-xs ${
+                                                            ingredient.category_name ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                                        }`}>
+                                                            {(ingredient.category_name as string) || 'Aucune catégorie'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex justify-end gap-3 pt-4 border-t">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setPreviewOpen(false)}
+                                    disabled={bulkProcessing}
+                                >
+                                    Annuler
+                                </Button>
+                                <Button
+                                    onClick={handleConfirmBulkProcess}
+                                    disabled={bulkProcessing}
+                                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+                                >
+                                    {bulkProcessing ? (
+                                        <>
+                                            <Clock className="h-4 w-4 mr-2 animate-spin" />
+                                            Traitement...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Check className="h-4 w-4 mr-2" />
+                                            Confirmer et traiter ({previewData.ingredients.length})
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
                     )}
                 </DialogContent>
             </Dialog>
