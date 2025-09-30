@@ -31,19 +31,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         let isMounted = true
 
-        console.log('AuthProvider useEffect - supabase client:', !!supabase)
-        console.log('AuthProvider useEffect - supabase.auth:', !!supabase.auth)
-
-        // Test direct pour voir si getSession fonctionne
-        supabase.auth.getSession().then(({ data, error }) => {
-            console.log('Direct getSession result:', { hasSession: !!data.session, error })
-        }).catch(err => {
-            console.error('Direct getSession error:', err)
-        })
-
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
-                console.log('onAuthStateChange triggered:', event, session?.user?.id)
                 if (!isMounted) return
 
                 try {
