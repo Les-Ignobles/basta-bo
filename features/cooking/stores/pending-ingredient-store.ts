@@ -18,7 +18,7 @@ type PendingIngredientActions = {
     fetchPendingCount: () => Promise<void>
     deletePendingIngredient: (id: number) => Promise<void>
     convertToIngredient: (pendingId: number, ingredientData: IngredientFormValues) => Promise<void>
-    bulkProcessWithAI: () => Promise<{ success: boolean; message: string; processed: number; created: Record<string, unknown>[]; errors?: string[] }>
+    bulkProcessWithAI: (ingredientsToCreate: Record<string, unknown>[]) => Promise<{ success: boolean; message: string; processed: number; created: Record<string, unknown>[]; errors?: string[] }>
     previewBulkProcess: (onProgress?: (completed: number, total: number, result?: Record<string, unknown>) => void) => Promise<{ success: boolean; message: string; processed: number; ingredients: Record<string, unknown>[]; errors?: string[] }>
     generateIngredientData: (pendingId: number) => Promise<{ success: boolean; ingredient: Record<string, unknown>; error?: string }>
     setSearch: (search: string) => void
@@ -131,29 +131,64 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
         }
     },
 
-    bulkProcessWithAI: async () => {
+    bulkProcessWithAI: async (ingredientsToCreate: Record<string, unknown>[]) => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch('/api/pending-ingredients/bulk-process', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ preview: false })
-            })
-
-            if (!response.ok) {
-                throw new Error('Failed to process pending ingredients with AI')
+            const results = {
+                success: true,
+                message: '',
+                processed: 0,
+                created: [] as Record<string, unknown>[],
+                errors: [] as string[]
             }
 
-            const result = await response.json()
+            // Traiter chaque ingrédient individuellement
+            for (const ingredientData of ingredientsToCreate) {
+                try {
+                    const pendingId = ingredientData.pendingId as number
+                    if (!pendingId) {
+                        results.errors.push('ID pending manquant')
+                        continue
+                    }
 
+                    // Utiliser la route POST existante pour créer l'ingrédient
+                    const response = await fetch('/api/pending-ingredients', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            pendingId,
+                            ingredientData: {
+                                name: ingredientData.name,
+                                suffix_singular: ingredientData.suffix_singular,
+                                suffix_plural: ingredientData.suffix_plural,
+                                category_id: ingredientData.category_id,
+                                img_path: null
+                            }
+                        })
+                    })
+
+                    if (response.ok) {
+                        results.created.push(ingredientData)
+                        results.processed++
+                    } else {
+                        const errorData = await response.json()
+                        results.errors.push(`Erreur pour ${ingredientData.pendingName}: ${errorData.error || 'Erreur inconnue'}`)
+                    }
+                } catch (error) {
+                    results.errors.push(`Erreur pour ${ingredientData.pendingName}: ${error instanceof Error ? error.message : 'Erreur inconnue'}`)
+                }
+            }
+
+            results.message = `Traitement terminé : ${results.created.length} ingrédient(s) créé(s) sur ${results.processed} traité(s)`
+            
             // Refresh the list and count
             await get().fetchPendingIngredients()
             await get().fetchPendingCount()
-
+            
             set({ loading: false })
-            return result
+            return results
         } catch (error) {
             set({
                 error: error instanceof Error ? error.message : 'Unknown error',
@@ -169,7 +204,7 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
             const { pendingIngredients } = get()
             const results: Record<string, unknown>[] = []
             const errors: string[] = []
-                   const BATCH_SIZE = 15 // Traiter par paquets de 15
+            const BATCH_SIZE = 15 // Traiter par paquets de 15
 
             // Diviser en paquets
             const batches = []

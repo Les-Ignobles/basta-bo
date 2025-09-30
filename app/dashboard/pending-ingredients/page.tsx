@@ -139,9 +139,9 @@ export default function PendingIngredientsPage() {
 
         setBulkProcessing(true)
         setBulkResult(null)
-
+        
         try {
-            const result = await bulkProcessWithAI()
+            const result = await bulkProcessWithAI(previewData.ingredients)
             setBulkResult(result)
             setPreviewOpen(false)
             setPreviewData(null)
