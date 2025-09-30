@@ -189,6 +189,8 @@
   [cmdk-list] {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted-foreground)) transparent;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
   }
 
   [cmdk-list]::-webkit-scrollbar {
@@ -206,5 +208,20 @@
 
   [cmdk-list]::-webkit-scrollbar-thumb:hover {
     background-color: hsl(var(--foreground));
+  }
+
+  /* Forcer le scroll sur les CommandList */
+  [cmdk-list][data-max-height] {
+    max-height: 200px !important;
+    overflow-y: auto !important;
+  }
+
+  /* S'assurer que le scroll fonctionne avec la molette */
+  [cmdk-root] {
+    overflow: visible;
+  }
+
+  [cmdk-list] {
+    touch-action: pan-y;
   }
 }

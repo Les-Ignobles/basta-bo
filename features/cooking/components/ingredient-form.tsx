@@ -113,9 +113,9 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-full p-0">
-                                <Command>
+                                <Command className="max-h-[200px]">
                                     <CommandInput placeholder="Rechercher une catégorie..." />
-                                    <CommandList className="max-h-[200px] overflow-y-auto">
+                                    <CommandList className="max-h-[200px] overflow-y-auto overscroll-contain">
                                         <CommandEmpty>Aucune catégorie trouvée.</CommandEmpty>
                                         <CommandGroup>
                                             <CommandItem
