@@ -197,7 +197,7 @@ export default function IngredientsIndexPage() {
                         Précédent
                     </Button>
                     <span className="text-muted-foreground">
-                        Page {page} / {totalPages} (Total: {total}, PageSize: {pageSize})
+                        Page {page} / {totalPages}
                     </span>
                     <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
                         Suivant

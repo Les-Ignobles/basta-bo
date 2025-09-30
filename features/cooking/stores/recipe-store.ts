@@ -101,10 +101,8 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     async deleteRecipe(id) {
         set({ loading: true })
         try {
-            await fetch('/api/recipes', {
+            await fetch(`/api/recipes?id=${id}`, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id }),
             })
             get().fetchRecipes() // Refresh list
         } catch (error) {

@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export default function RecipesIndexPage() {
     const [open, setOpen] = useState(false)
-    const { fetchRecipes, fetchKitchenEquipments, recipes, kitchenEquipments, createRecipe, updateRecipe, loading, editingRecipe, setSearch, setPage, page, pageSize, total, setNoImage, noImage, setDishType, dishType, setEditingRecipe } = useRecipeStore()
+    const { fetchRecipes, fetchKitchenEquipments, recipes, kitchenEquipments, createRecipe, updateRecipe, deleteRecipe, loading, editingRecipe, setSearch, setPage, page, pageSize, total, setNoImage, noImage, setDishType, dishType, setEditingRecipe } = useRecipeStore()
     // Plus besoin de charger tous les ingrédients, la recherche se fait côté serveur
 
     useEffect(() => {
@@ -138,7 +138,7 @@ export default function RecipesIndexPage() {
                     setOpen(true)
                 }}
                 onDelete={async (recipe) => {
-                    await (useRecipeStore.getState().deleteRecipe)(Number(recipe.id))
+                    await deleteRecipe(Number(recipe.id))
                 }}
             />
         </div>
