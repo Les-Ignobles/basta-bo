@@ -2,12 +2,10 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TranslationTextField } from '@/components/translation-text'
 import { ImageUpload } from '@/components/image-upload'
-import { Check, ChevronsUpDown } from 'lucide-react'
-import { cn } from '@/lib/utils'
+// Plus besoin d'imports pour Check, ChevronsUpDown et cn
 import type { TranslationText } from '@/lib/i18n'
 
 export type IngredientFormValues = {
@@ -44,7 +42,6 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
         ...defaultValues,
     } as IngredientFormValues)
     const [loading, setLoading] = useState(false)
-    const [categoryOpen, setCategoryOpen] = useState(false)
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -97,65 +94,27 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                     )}
                     <div className="space-y-1">
                         <div className="text-xs text-muted-foreground">Catégorie</div>
-                        <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={categoryOpen}
-                                    className="w-full justify-between"
-                                >
-                                    {values.category_id
-                                        ? sortedCategories.find(c => c.id === values.category_id)?.label || "Catégorie inconnue"
-                                        : "Sélectionner une catégorie..."
-                                    }
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-full p-0">
-                                <Command className="max-h-[200px]">
-                                    <CommandInput placeholder="Rechercher une catégorie..." />
-                                    <CommandList className="max-h-[200px] overflow-y-auto overscroll-contain">
-                                        <CommandEmpty>Aucune catégorie trouvée.</CommandEmpty>
-                                        <CommandGroup>
-                                            <CommandItem
-                                                value=""
-                                                onSelect={() => {
-                                                    setValues((s) => ({ ...s, category_id: null }))
-                                                    setCategoryOpen(false)
-                                                }}
-                                            >
-                                                <Check
-                                                    className={cn(
-                                                        "mr-2 h-4 w-4",
-                                                        values.category_id === null ? "opacity-100" : "opacity-0"
-                                                    )}
-                                                />
-                                                Aucune catégorie
-                                            </CommandItem>
-                                            {sortedCategories.map((category) => (
-                                                <CommandItem
-                                                    key={category.id}
-                                                    value={category.label}
-                                                    onSelect={() => {
-                                                        setValues((s) => ({ ...s, category_id: category.id }))
-                                                        setCategoryOpen(false)
-                                                    }}
-                                                >
-                                                    <Check
-                                                        className={cn(
-                                                            "mr-2 h-4 w-4",
-                                                            values.category_id === category.id ? "opacity-100" : "opacity-0"
-                                                        )}
-                                                    />
-                                                    {category.label}
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
+                        <Select
+                            value={values.category_id?.toString() || "none"}
+                            onValueChange={(value) => {
+                                setValues((s) => ({ 
+                                    ...s, 
+                                    category_id: value === "none" ? null : parseInt(value) 
+                                }))
+                            }}
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Sélectionner une catégorie..." />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-[200px]">
+                                <SelectItem value="none">Aucune catégorie</SelectItem>
+                                {sortedCategories.map((category) => (
+                                    <SelectItem key={category.id} value={category.id.toString()}>
+                                        {category.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
             </div>
