@@ -44,12 +44,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         }, 10000) // 10 secondes max
 
-        // Test de connexion directe
+        // Test de connexion directe avec timeout
         const testConnection = async () => {
             try {
                 console.log('Testing Supabase connection...')
                 const startTime = Date.now()
-                const { data, error } = await supabase.auth.getSession()
+                
+                // Ajouter un timeout de 5 secondes
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('getSession timeout after 5s')), 5000)
+                )
+                
+                const sessionPromise = supabase.auth.getSession()
+                
+                const { data, error } = await Promise.race([sessionPromise, timeoutPromise]) as any
                 const endTime = Date.now()
                 console.log(`Direct getSession took ${endTime - startTime}ms:`, { data: data?.session?.user?.id, error })
             } catch (err) {
@@ -72,13 +80,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         // Fetch user profile
                         console.log('Fetching user profile for user:', session.user.id)
                         const startTime = Date.now()
-                        
+
                         try {
-                            const { data: profile, error } = await supabase
+                            // Ajouter un timeout de 8 secondes pour la requête user_profiles
+                            const timeoutPromise = new Promise((_, reject) => 
+                                setTimeout(() => reject(new Error('user_profiles query timeout after 8s')), 8000)
+                            )
+                            
+                            const profilePromise = supabase
                                 .from('user_profiles')
                                 .select('id, email, firstname, avatar, is_admin')
                                 .eq('uuid', session.user.id)
                                 .single()
+
+                            const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any
 
                             const endTime = Date.now()
                             console.log(`User profile query took ${endTime - startTime}ms`)
