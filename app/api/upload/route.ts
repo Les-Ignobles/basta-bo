@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseServer } from '@/lib/supabase/server-client'
 
 export async function POST(request: NextRequest) {
     try {
@@ -15,10 +15,8 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        const supabase = await createClient()
-
         // Upload file to Supabase Storage
-        const { data, error } = await supabase.storage
+        const { data, error } = await supabaseServer.storage
             .from(bucket)
             .upload(fileName, file, {
                 cacheControl: '3600',
@@ -34,7 +32,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Get public URL
-        const { data: { publicUrl } } = supabase.storage
+        const { data: { publicUrl } } = supabaseServer.storage
             .from(bucket)
             .getPublicUrl(fileName)
 
