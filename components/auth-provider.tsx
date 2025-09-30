@@ -1,7 +1,7 @@
 "use client"
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
+import { User, Session, AuthError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 
 type UserProfile = {
@@ -42,7 +42,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 const sessionPromise = supabase.auth.getSession()
 
-                const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]) as any
+                const result = await Promise.race([sessionPromise, timeoutPromise])
+                
+                // Si c'est une erreur de timeout, on gère différemment
+                if (result instanceof Error) {
+                    console.error('getSession timeout')
+                    setLoading(false)
+                    return
+                }
+                
+                // Type assertion pour le résultat de getSession
+                const sessionResult = result as { data: { session: Session | null }, error: AuthError | null }
+                const { data: { session }, error } = sessionResult
 
                 if (!isMounted) return
 

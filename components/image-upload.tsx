@@ -1,6 +1,7 @@
 "use client"
 import { useState, useRef } from 'react'
 import { X, Image as ImageIcon } from 'lucide-react'
+import Image from 'next/image'
 import { slugify } from '@/lib/utils'
 
 type Props = {
@@ -81,9 +82,11 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
 
             {value ? (
                 <div className="relative inline-block">
-                    <img
+                    <Image
                         src={value}
                         alt="Preview"
+                        width={80}
+                        height={80}
                         className="h-20 w-20 rounded object-cover border"
                     />
                     <button
