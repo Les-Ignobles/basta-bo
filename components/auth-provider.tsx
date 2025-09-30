@@ -36,14 +36,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const checkAuth = async () => {
             try {
                 // Timeout de 3 secondes pour éviter que getSession reste bloqué
-                const timeoutPromise = new Promise((_, reject) => 
+                const timeoutPromise = new Promise((_, reject) =>
                     setTimeout(() => reject(new Error('getSession timeout')), 3000)
                 )
-                
+
                 const sessionPromise = supabase.auth.getSession()
-                
+
                 const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]) as any
-                
+
                 if (!isMounted) return
 
                 if (error) {
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 if (session?.user) {
                     setUser(session.user)
-                    
+
                     // Fetch user profile
                     const { data: profile, error: profileError } = await supabase
                         .from('user_profiles')
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     setUser(null)
                     setUserProfile(null)
                 }
-                
+
                 setLoading(false)
             } catch (error) {
                 console.error('Error in checkAuth:', error)
