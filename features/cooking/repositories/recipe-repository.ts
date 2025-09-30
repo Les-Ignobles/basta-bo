@@ -6,7 +6,7 @@ export class RecipeRepository extends BaseRepository<Recipe> {
         super(client, 'recipes')
     }
 
-    async findPage({ search, page, pageSize, noImage }: { search?: string; page: number; pageSize: number; noImage?: boolean }): Promise<{ data: Recipe[]; total: number }> {
+    async findPage({ search, page, pageSize, noImage, dishType }: { search?: string; page: number; pageSize: number; noImage?: boolean; dishType?: number }): Promise<{ data: Recipe[]; total: number }> {
         const from = (page - 1) * pageSize
         const to = from + pageSize - 1
         let query = (this.client as any).from(this.table).select('*', { count: 'exact' })
@@ -17,6 +17,10 @@ export class RecipeRepository extends BaseRepository<Recipe> {
 
         if (noImage) {
             query = query.is('img_path', null)
+        }
+
+        if (dishType !== undefined) {
+            query = query.eq('dish_type', dishType)
         }
 
         query = query.order('title', { ascending: true })

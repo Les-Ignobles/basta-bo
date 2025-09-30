@@ -4,15 +4,17 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { RecipeForm } from '@/features/cooking/components/recipe-form'
 import type { RecipeFormValues } from '@/features/cooking/types'
+import { DishType, DISH_TYPE_LABELS } from '@/features/cooking/types'
 import { useRecipeStore } from '@/features/cooking/stores/recipe-store'
 import { useCookingStore } from '@/features/cooking/store'
 import { RecipesTable } from '@/features/cooking/components/recipes-table'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 export default function RecipesIndexPage() {
     const [open, setOpen] = useState(false)
-    const { fetchRecipes, fetchKitchenEquipments, recipes, kitchenEquipments, createRecipe, updateRecipe, loading, setSearch, setPage, page, pageSize, total, setNoImage, noImage } = useRecipeStore()
+    const { fetchRecipes, fetchKitchenEquipments, recipes, kitchenEquipments, createRecipe, updateRecipe, loading, setSearch, setPage, page, pageSize, total, setNoImage, noImage, setDishType, dishType } = useRecipeStore()
     // Plus besoin de charger tous les ingrédients, la recherche se fait côté serveur
 
     useEffect(() => {
@@ -21,7 +23,7 @@ export default function RecipesIndexPage() {
 
     useEffect(() => {
         fetchRecipes()
-    }, [fetchRecipes, page, noImage])
+    }, [fetchRecipes, page, noImage, dishType])
 
     const totalPages = useMemo(() => Math.max(1, Math.ceil((total || 0) / (pageSize || 10))), [total, pageSize])
 
@@ -93,6 +95,25 @@ export default function RecipesIndexPage() {
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
                     />
+                    <Select
+                        value={dishType.toString()}
+                        onValueChange={(value) => {
+                            setDishType(value as DishType | 'all')
+                            fetchRecipes()
+                        }}
+                    >
+                        <SelectTrigger className="w-40">
+                            <SelectValue placeholder="Type de plat" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Tous</SelectItem>
+                            {Object.entries(DISH_TYPE_LABELS).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                    {label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     <label className="flex items-center gap-2 text-sm whitespace-nowrap">
                         <Checkbox checked={noImage} onCheckedChange={(v) => { setNoImage(Boolean(v)); setPage(1); fetchRecipes(); }} />
                         Sans image

@@ -1,5 +1,17 @@
 import type { TranslationText } from '@/lib/i18n'
 
+export enum DishType {
+    ENTREE = 1,
+    PLAT = 2,
+    DESSERT = 3
+}
+
+export const DISH_TYPE_LABELS = {
+    [DishType.ENTREE]: 'Entrée',
+    [DishType.PLAT]: 'Plat',
+    [DishType.DESSERT]: 'Dessert'
+} as const
+
 export type Ingredient = {
     id: number
     created_at: string
@@ -26,6 +38,7 @@ export type Recipe = {
     seasonality_mask: number | null
     kitchen_equipments_mask: number | null
     instructions: string | null
+    dish_type: DishType
 }
 
 export type KitchenEquipment = {
@@ -44,5 +57,6 @@ export type RecipeFormValues = {
     seasonality_mask?: number | null
     kitchen_equipments_mask?: number | null
     instructions?: string | null
+    dish_type: DishType
 }
 

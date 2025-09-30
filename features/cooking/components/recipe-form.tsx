@@ -7,9 +7,11 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { ImageUpload } from '@/components/image-upload'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Check, ChevronsUpDown, PlusCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { RecipeFormValues, KitchenEquipment, Ingredient } from '@/features/cooking/types'
+import { DishType, DISH_TYPE_LABELS } from '@/features/cooking/types'
 import { useCookingStore } from '@/features/cooking/store'
 
 export type { RecipeFormValues }
@@ -26,6 +28,12 @@ const MONTHS = [
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
 ]
 
+const DISH_TYPES = [
+    { value: DishType.ENTREE, label: DISH_TYPE_LABELS[DishType.ENTREE] },
+    { value: DishType.PLAT, label: DISH_TYPE_LABELS[DishType.PLAT] },
+    { value: DishType.DESSERT, label: DISH_TYPE_LABELS[DishType.DESSERT] }
+]
+
 export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments }: Props) {
     const [values, setValues] = useState<RecipeFormValues>({
         title: '',
@@ -34,6 +42,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
         seasonality_mask: null,
         kitchen_equipments_mask: null,
         instructions: '',
+        dish_type: DishType.PLAT, // Par défaut "plat"
         ...defaultValues,
     } as RecipeFormValues)
     const [loading, setLoading] = useState(false)
@@ -152,6 +161,25 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                         placeholder="Titre de la recette"
                         required
                     />
+                </div>
+
+                <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">Type de plat</div>
+                    <Select
+                        value={values.dish_type.toString()}
+                        onValueChange={(value) => setValues(prev => ({ ...prev, dish_type: parseInt(value) as DishType }))}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner un type de plat" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {DISH_TYPES.map((dishType) => (
+                                <SelectItem key={dishType.value} value={dishType.value.toString()}>
+                                    {dishType.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 <div className="space-y-1">

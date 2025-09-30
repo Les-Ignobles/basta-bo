@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Recipe, KitchenEquipment, RecipeFormValues } from '../types'
+import { Recipe, KitchenEquipment, RecipeFormValues, DishType } from '../types'
 
 type RecipeState = {
     recipes: Recipe[]
@@ -12,6 +12,7 @@ type RecipeState = {
     total: number
     search: string
     noImage: boolean
+    dishType: DishType | 'all'
     fetchRecipes: () => Promise<void>
     fetchKitchenEquipments: () => Promise<void>
     createRecipe: (payload: Omit<RecipeFormValues, 'id'>) => Promise<void>
@@ -20,6 +21,7 @@ type RecipeState = {
     setSearch: (s: string) => void
     setPage: (p: number) => void
     setNoImage: (b: boolean) => void
+    setDishType: (d: DishType | 'all') => void
 }
 
 export const useRecipeStore = create<RecipeState>((set, get) => ({
@@ -32,13 +34,15 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     total: 0,
     search: '',
     noImage: false,
+    dishType: 'all',
     async fetchRecipes() {
         set({ loading: true, error: undefined })
         try {
-            const { page, pageSize, search, noImage } = get()
+            const { page, pageSize, search, noImage, dishType } = get()
             const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
             if (search) params.set('search', search)
             if (noImage) params.set('noImage', 'true')
+            if (dishType !== 'all') params.set('dishType', String(dishType))
             const res = await fetch(`/api/recipes?${params.toString()}`)
             const json = await res.json()
             set({ recipes: json.data ?? [], total: json.total ?? 0 })
@@ -113,5 +117,8 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     },
     setNoImage(b) {
         set({ noImage: b, page: 1 })
+    },
+    setDishType(d) {
+        set({ dishType: d, page: 1 })
     },
 }))

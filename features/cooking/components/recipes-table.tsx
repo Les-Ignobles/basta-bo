@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { MoreHorizontal, Loader2 } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import type { Recipe } from '@/features/cooking/types'
+import { DISH_TYPE_LABELS } from '@/features/cooking/types'
 
 type Props = {
     recipes: Recipe[]
@@ -35,6 +36,7 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete }: Pro
                     <TableRow>
                         <TableHead className="w-[60px]">ID</TableHead>
                         <TableHead>Titre</TableHead>
+                        <TableHead>Type</TableHead>
                         <TableHead>Image</TableHead>
                         <TableHead>Ingrédients</TableHead>
                         <TableHead>Saisonnalité</TableHead>
@@ -45,7 +47,7 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete }: Pro
                 <TableBody>
                     {loading ? (
                         <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8">
+                            <TableCell colSpan={8} className="text-center py-8">
                                 <div className="flex items-center justify-center gap-2 text-muted-foreground">
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                     <span>Chargement des recettes...</span>
@@ -62,6 +64,11 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete }: Pro
                                 >
                                     <TableCell>{recipe.id}</TableCell>
                                     <TableCell className="font-medium">{recipe.title}</TableCell>
+                                    <TableCell>
+                                        <span className="text-sm">
+                                            {DISH_TYPE_LABELS[recipe.dish_type as keyof typeof DISH_TYPE_LABELS]}
+                                        </span>
+                                    </TableCell>
                                     <TableCell>
                                         {recipe.img_path ? (
                                             // eslint-disable-next-line @next/next/no-img-element
