@@ -10,6 +10,7 @@ import { usePendingIngredientStore } from '@/features/cooking/stores/pending-ing
 import { useCookingStore } from '@/features/cooking/store'
 import type { PendingIngredient } from '@/features/cooking/types'
 import type { IngredientFormValues } from '@/features/cooking/components/ingredient-form'
+import type { TranslationText } from '@/lib/i18n'
 import { IngredientForm } from '@/features/cooking/components/ingredient-form'
 import { Clock, Search, Trash2, Plus, Sparkles, Eye, Check, X } from 'lucide-react'
 import { useDebounce } from '@/hooks/use-debounce'
@@ -138,7 +139,7 @@ export default function PendingIngredientsPage() {
 
         setBulkProcessing(true)
         setBulkResult(null)
-        
+
         try {
             const result = await bulkProcessWithAI()
             setBulkResult(result)
@@ -159,26 +160,26 @@ export default function PendingIngredientsPage() {
         try {
             // Convertir les données IA en format IngredientFormValues
             const ingredientData: IngredientFormValues = {
-                name: aiData.name as { fr: string; en?: string; es?: string },
-                suffix_singular: aiData.suffix_singular as { fr: string; en?: string; es?: string },
-                suffix_plural: aiData.suffix_plural as { fr: string; en?: string; es?: string },
+                name: aiData.name as TranslationText,
+                suffix_singular: aiData.suffix_singular as TranslationText,
+                suffix_plural: aiData.suffix_plural as TranslationText,
                 category_id: aiData.category_id as number | null,
                 img_path: null
             }
 
             // Créer l'ingrédient
             await usePendingIngredientStore.getState().convertToIngredient(pendingId, ingredientData)
-            
+
             // Rafraîchir le compteur dans la sidebar
             fetchPendingCount()
-            
+
             // Supprimer les données générées pour cet ingrédient
             setGeneratedData(prev => {
                 const newMap = new Map(prev)
                 newMap.delete(pendingId)
                 return newMap
             })
-            
+
             alert('Ingrédient créé avec succès !')
         } catch (error) {
             console.error('Erreur lors de la création:', error)
@@ -399,22 +400,22 @@ export default function PendingIngredientsPage() {
                                                 <div>
                                                     <div className="space-y-2">
                                                         <div>
-                                                            <span className="font-medium">Nom FR:</span> {(generatedData.get(pendingIngredient.id)?.name as Record<string, string>)?.fr}
+                                                            <span className="font-medium">Nom FR:</span> {(generatedData.get(pendingIngredient.id)?.name as TranslationText)?.fr}
                                                         </div>
                                                         <div>
-                                                            <span className="font-medium">Nom EN:</span> {(generatedData.get(pendingIngredient.id)?.name as Record<string, string>)?.en}
+                                                            <span className="font-medium">Nom EN:</span> {(generatedData.get(pendingIngredient.id)?.name as TranslationText)?.en}
                                                         </div>
                                                         <div>
-                                                            <span className="font-medium">Nom ES:</span> {(generatedData.get(pendingIngredient.id)?.name as Record<string, string>)?.es}
+                                                            <span className="font-medium">Nom ES:</span> {(generatedData.get(pendingIngredient.id)?.name as TranslationText)?.es}
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2">
                                                     <div>
-                                                        <span className="font-medium">Suffixe singulier:</span> {(generatedData.get(pendingIngredient.id)?.suffix_singular as Record<string, string>)?.fr}
+                                                        <span className="font-medium">Suffixe singulier:</span> {(generatedData.get(pendingIngredient.id)?.suffix_singular as TranslationText)?.fr}
                                                     </div>
                                                     <div>
-                                                        <span className="font-medium">Suffixe pluriel:</span> {(generatedData.get(pendingIngredient.id)?.suffix_plural as Record<string, string>)?.fr}
+                                                        <span className="font-medium">Suffixe pluriel:</span> {(generatedData.get(pendingIngredient.id)?.suffix_plural as TranslationText)?.fr}
                                                     </div>
                                                     <div>
                                                         <span className="font-medium">Catégorie:</span>
