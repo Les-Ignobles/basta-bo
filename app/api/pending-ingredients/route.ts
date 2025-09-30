@@ -59,9 +59,9 @@ export async function POST(request: NextRequest) {
         const ingredientRepo = new IngredientRepository(supabase)
 
         const body = await request.json()
-        const { pendingId, ingredientData }: { 
+        const { pendingId, ingredientData }: {
             pendingId: number
-            ingredientData: IngredientFormValues 
+            ingredientData: IngredientFormValues
         } = body
 
         if (!pendingId || !ingredientData) {

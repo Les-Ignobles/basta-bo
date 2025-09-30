@@ -27,6 +27,9 @@ type Props = {
 }
 
 export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', categories }: Props) {
+    // Trier les catégories par ordre alphabétique
+    const sortedCategories = [...categories].sort((a, b) => a.label.localeCompare(b.label))
+    
     const [values, setValues] = useState<IngredientFormValues>({
         name: { fr: '' },
         suffix_singular: { fr: '' },
@@ -98,7 +101,7 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                                     className="w-full justify-between"
                                 >
                                     {values.category_id
-                                        ? categories.find(c => c.id === values.category_id)?.label || "Catégorie inconnue"
+                                        ? sortedCategories.find(c => c.id === values.category_id)?.label || "Catégorie inconnue"
                                         : "Sélectionner une catégorie..."
                                     }
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -125,7 +128,7 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                                                 />
                                                 Aucune catégorie
                                             </CommandItem>
-                                            {categories.map((category) => (
+                                            {sortedCategories.map((category) => (
                                                 <CommandItem
                                                     key={category.id}
                                                     value={category.label}
