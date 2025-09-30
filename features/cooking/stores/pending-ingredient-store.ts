@@ -20,6 +20,7 @@ type PendingIngredientActions = {
     convertToIngredient: (pendingId: number, ingredientData: IngredientFormValues) => Promise<void>
     bulkProcessWithAI: () => Promise<{ success: boolean; message: string; processed: number; created: Record<string, unknown>[]; errors?: string[] }>
     previewBulkProcess: () => Promise<{ success: boolean; message: string; processed: number; ingredients: Record<string, unknown>[]; errors?: string[] }>
+    generateIngredientData: (pendingId: number) => Promise<{ success: boolean; ingredient: Record<string, unknown>; error?: string }>
     setSearch: (search: string) => void
     setPage: (page: number) => void
     setEditingPendingIngredient: (pendingIngredient: PendingIngredient | null) => void
@@ -165,27 +166,75 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
     previewBulkProcess: async () => {
         set({ loading: true, error: null })
         try {
-            const response = await fetch('/api/pending-ingredients/bulk-process', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ preview: true })
-            })
+            const { pendingIngredients } = get()
+            const results = []
+            const errors = []
 
-            if (!response.ok) {
-                throw new Error('Failed to preview pending ingredients with AI')
+            // Traiter chaque pending ingredient individuellement
+            for (const pending of pendingIngredients) {
+                try {
+                    const result = await get().generateIngredientData(pending.id)
+                    if (result.success) {
+                        results.push(result.ingredient)
+                    } else {
+                        errors.push(result.error || `Erreur pour ${pending.name}`)
+                    }
+                } catch (error) {
+                    errors.push(`Erreur pour ${pending.name}: ${error}`)
+                }
             }
 
-            const result = await response.json()
             set({ loading: false })
-            return result
+            return {
+                success: true,
+                message: `Génération IA terminée : ${results.length} ingrédients traités`,
+                processed: pendingIngredients.length,
+                ingredients: results,
+                errors: errors.length > 0 ? errors : undefined
+            }
         } catch (error) {
             set({
                 error: error instanceof Error ? error.message : 'Unknown error',
                 loading: false
             })
             throw error
+        }
+    },
+
+    generateIngredientData: async (pendingId: number) => {
+        try {
+            const response = await fetch('/api/pending-ingredients/bulk-process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ pendingIds: [pendingId] })
+            })
+
+            if (!response.ok) {
+                throw new Error('Failed to generate ingredient data with AI')
+            }
+
+            const result = await response.json()
+            
+            if (result.success && result.ingredients.length > 0) {
+                return {
+                    success: true,
+                    ingredient: result.ingredients[0]
+                }
+            } else {
+                return {
+                    success: false,
+                    ingredient: {},
+                    error: result.errors?.[0] || 'Aucun résultat généré'
+                }
+            }
+        } catch (error) {
+            return {
+                success: false,
+                ingredient: {},
+                error: error instanceof Error ? error.message : 'Unknown error'
+            }
         }
     },
 

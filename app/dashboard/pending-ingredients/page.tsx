@@ -21,6 +21,8 @@ export default function PendingIngredientsPage() {
     const [bulkResult, setBulkResult] = useState<{ message: string; processed: number; created: Record<string, unknown>[]; errors?: string[] } | null>(null)
     const [previewOpen, setPreviewOpen] = useState(false)
     const [previewData, setPreviewData] = useState<{ ingredients: Record<string, unknown>[]; errors?: string[] } | null>(null)
+    const [generatedData, setGeneratedData] = useState<Map<number, Record<string, unknown>>>(new Map())
+    const [generatingStates, setGeneratingStates] = useState<Map<number, boolean>>(new Map())
     const debouncedSearch = useDebounce(searchTerm, 400)
 
     const {
@@ -37,6 +39,7 @@ export default function PendingIngredientsPage() {
         deletePendingIngredient,
         bulkProcessWithAI,
         previewBulkProcess,
+        generateIngredientData,
         setSearch,
         setPage,
         setEditingPendingIngredient
@@ -101,12 +104,31 @@ export default function PendingIngredientsPage() {
         }
     }
 
+    const handleGenerateForIngredient = async (pendingId: number) => {
+        setGeneratingStates(prev => new Map(prev).set(pendingId, true))
+        
+        try {
+            const result = await generateIngredientData(pendingId)
+            if (result.success) {
+                setGeneratedData(prev => new Map(prev).set(pendingId, result.ingredient))
+            } else {
+                console.error('Erreur génération:', result.error)
+                alert(`Erreur lors de la génération: ${result.error}`)
+            }
+        } catch (error) {
+            console.error('Erreur lors de la génération:', error)
+            alert('Erreur lors de la génération')
+        } finally {
+            setGeneratingStates(prev => new Map(prev).set(pendingId, false))
+        }
+    }
+
     const handleConfirmBulkProcess = async () => {
         if (!previewData) return
 
         setBulkProcessing(true)
         setBulkResult(null)
-
+        
         try {
             const result = await bulkProcessWithAI()
             setBulkResult(result)
@@ -236,6 +258,24 @@ export default function PendingIngredientsPage() {
                                         <Button
                                             variant="outline"
                                             size="sm"
+                                            onClick={() => handleGenerateForIngredient(pendingIngredient.id)}
+                                            disabled={generatingStates.get(pendingIngredient.id) || false}
+                                        >
+                                            {generatingStates.get(pendingIngredient.id) ? (
+                                                <>
+                                                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                                                    Génération...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Sparkles className="h-4 w-4 mr-2" />
+                                                    Générer IA
+                                                </>
+                                            )}
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
                                             onClick={() => handleEdit(pendingIngredient)}
                                         >
                                             <Plus className="h-4 w-4 mr-2" />
@@ -251,6 +291,49 @@ export default function PendingIngredientsPage() {
                                     </div>
                                 </div>
                             </CardHeader>
+                            
+                            {/* Affichage des données générées par l'IA */}
+                            {generatedData.has(pendingIngredient.id) && (
+                                <CardContent className="pt-0">
+                                    <div className="border-t pt-4">
+                                        <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                                            <Sparkles className="h-4 w-4 text-purple-500" />
+                                            Données générées par l&apos;IA
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                            <div>
+                                                <div className="space-y-2">
+                                                    <div>
+                                                        <span className="font-medium">Nom FR:</span> {(generatedData.get(pendingIngredient.id)?.name as Record<string, string>)?.fr}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium">Nom EN:</span> {(generatedData.get(pendingIngredient.id)?.name as Record<string, string>)?.en}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium">Nom ES:</span> {(generatedData.get(pendingIngredient.id)?.name as Record<string, string>)?.es}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div>
+                                                    <span className="font-medium">Suffixe singulier:</span> {(generatedData.get(pendingIngredient.id)?.suffix_singular as Record<string, string>)?.fr}
+                                                </div>
+                                                <div>
+                                                    <span className="font-medium">Suffixe pluriel:</span> {(generatedData.get(pendingIngredient.id)?.suffix_plural as Record<string, string>)?.fr}
+                                                </div>
+                                                <div>
+                                                    <span className="font-medium">Catégorie:</span> 
+                                                    <span className={`ml-1 px-2 py-1 rounded text-xs ${
+                                                        generatedData.get(pendingIngredient.id)?.category_name ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                                    }`}>
+                                                        {(generatedData.get(pendingIngredient.id)?.category_name as string) || 'Aucune catégorie'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            )}
                         </Card>
                     ))
                 )}
