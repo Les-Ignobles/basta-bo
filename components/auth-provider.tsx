@@ -31,6 +31,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         let isMounted = true
 
+        console.log('AuthProvider useEffect started')
+        console.log('Supabase client:', supabase)
+        console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+        console.log('Supabase Anon Key:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Present' : 'Missing')
+
         // Timeout de sécurité pour éviter le loading infini
         const timeoutId = setTimeout(() => {
             if (isMounted) {
@@ -39,6 +44,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         }, 10000) // 10 secondes max
 
+        // Test de connexion directe
+        const testConnection = async () => {
+            try {
+                console.log('Testing Supabase connection...')
+                const { data, error } = await supabase.auth.getSession()
+                console.log('Direct getSession result:', { data, error })
+            } catch (err) {
+                console.error('Direct getSession error:', err)
+            }
+        }
+        testConnection()
+
+        console.log('Setting up auth state change listener...')
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
                 console.log('Auth state changed:', event, session?.user?.id)
