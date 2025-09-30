@@ -63,7 +63,7 @@ export class IngredientRepository extends BaseRepository<Ingredient> {
         // Si on a un filtre de traduction, on doit compter le total après filtrage
         // Sinon, on utilise le count de Supabase
         let actualTotal = count || 0
-        
+
         if (translationFilter) {
             // Pour le filtre de traduction, on doit compter tous les ingrédients qui matchent
             // On fait une requête séparée pour compter le total
@@ -77,10 +77,10 @@ export class IngredientRepository extends BaseRepository<Ingredient> {
             if (categories && categories.length > 0) {
                 countQuery = countQuery.in('category_id', categories)
             }
-            
+
             const { data: allData, count: allCount } = await countQuery
             const allIngredients = (allData ?? []) as Ingredient[]
-            
+
             // Appliquer le même filtre de traduction
             const filteredAllData = allIngredients.filter(ingredient => {
                 const supportedLanguages = ['en', 'es']
@@ -109,7 +109,7 @@ export class IngredientRepository extends BaseRepository<Ingredient> {
 
                 return true
             })
-            
+
             actualTotal = filteredAllData.length
         }
 

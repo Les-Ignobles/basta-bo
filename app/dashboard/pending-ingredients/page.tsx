@@ -468,11 +468,6 @@ export default function PendingIngredientsPage() {
                 )}
             </div>
 
-            {/* Debug info */}
-            <div className="text-sm text-gray-600 mb-4">
-                Debug: Total = {total}, PageSize = {pageSize}, Page = {page}, TotalPages = {totalPages}
-            </div>
-
             {/* Pagination */}
             {totalPages > 1 && (
                 <div className="flex items-center justify-between">
