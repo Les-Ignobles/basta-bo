@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const getInitialSession = async () => {
             try {
                 const { data: { session }, error } = await supabase.auth.getSession()
-                
+
                 if (error) {
                     console.error('Error getting session:', error)
                     setUser(null)
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
                 console.log('Auth state changed:', event, session?.user?.id)
-                
+
                 try {
                     setUser(session?.user ?? null)
 
@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     setUser(null)
                     setUserProfile(null)
                 }
-                
+
                 // Only set loading to false on initial load or sign out
                 if (event === 'INITIAL_SESSION' || event === 'SIGNED_OUT') {
                     setLoading(false)
