@@ -3,7 +3,10 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Salad, UtensilsCrossed, LogOut, User, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/components/auth-provider"
+import { usePendingIngredientStore } from "@/features/cooking/stores/pending-ingredient-store"
+import { useEffect } from "react"
 
 import {
     Sidebar,
@@ -20,6 +23,12 @@ import {
 export function AppSidebar() {
     const pathname = usePathname()
     const { userProfile, signOut } = useAuth()
+    const { total, fetchPendingCount } = usePendingIngredientStore()
+
+    // Charger le nombre de pending ingredients au montage du composant
+    useEffect(() => {
+        fetchPendingCount()
+    }, [fetchPendingCount])
 
     return (
         <Sidebar>
@@ -49,6 +58,11 @@ export function AppSidebar() {
                                     <Link href="/dashboard/pending-ingredients" className="flex items-center gap-2">
                                         <Clock className="size-4" />
                                         <span>Pending Ingredients</span>
+                                        {total > 0 && (
+                                            <Badge variant="destructive" className="ml-auto h-5 w-5 rounded-full p-0 text-xs">
+                                                {total > 99 ? '99+' : total}
+                                            </Badge>
+                                        )}
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>

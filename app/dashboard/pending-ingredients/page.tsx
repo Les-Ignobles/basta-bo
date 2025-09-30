@@ -18,7 +18,7 @@ export default function PendingIngredientsPage() {
     const [open, setOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const debouncedSearch = useDebounce(searchTerm, 400)
-    
+
     const {
         pendingIngredients,
         loading,
@@ -29,6 +29,7 @@ export default function PendingIngredientsPage() {
         search,
         editingPendingIngredient,
         fetchPendingIngredients,
+        fetchPendingCount,
         deletePendingIngredient,
         setSearch,
         setPage,
@@ -54,6 +55,8 @@ export default function PendingIngredientsPage() {
         if (!editingPendingIngredient) return
         
         await usePendingIngredientStore.getState().convertToIngredient(editingPendingIngredient.id, ingredientData)
+        // Rafraîchir le compteur dans la sidebar
+        fetchPendingCount()
         setOpen(false)
         setEditingPendingIngredient(null)
     }
@@ -66,6 +69,8 @@ export default function PendingIngredientsPage() {
     const handleDelete = async (id: number) => {
         if (confirm('Êtes-vous sûr de vouloir supprimer cet ingrédient en attente ?')) {
             await deletePendingIngredient(id)
+            // Rafraîchir le compteur dans la sidebar
+            fetchPendingCount()
         }
     }
 

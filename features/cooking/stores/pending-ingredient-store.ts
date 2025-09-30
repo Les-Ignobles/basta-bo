@@ -15,6 +15,7 @@ type PendingIngredientState = {
 
 type PendingIngredientActions = {
     fetchPendingIngredients: () => Promise<void>
+    fetchPendingCount: () => Promise<void>
     deletePendingIngredient: (id: number) => Promise<void>
     convertToIngredient: (pendingId: number, ingredientData: IngredientFormValues) => Promise<void>
     setSearch: (search: string) => void
@@ -61,6 +62,20 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
                 error: error instanceof Error ? error.message : 'Unknown error',
                 loading: false
             })
+        }
+    },
+
+    fetchPendingCount: async () => {
+        try {
+            const response = await fetch('/api/pending-ingredients?page=1&pageSize=1')
+            if (!response.ok) {
+                throw new Error('Failed to fetch pending count')
+            }
+
+            const data = await response.json()
+            set({ total: data.total })
+        } catch (error) {
+            console.error('Error fetching pending count:', error)
         }
     },
 
