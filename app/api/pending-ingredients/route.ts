@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     try {
         const supabase = await createClient()
         const pendingIngredientRepo = new PendingIngredientRepository(supabase)
-        
+
         const { searchParams } = new URL(request.url)
         const page = parseInt(searchParams.get('page') || '1')
         const pageSize = parseInt(searchParams.get('pageSize') || '50')
@@ -29,7 +29,7 @@ export async function DELETE(request: NextRequest) {
     try {
         const supabase = await createClient()
         const pendingIngredientRepo = new PendingIngredientRepository(supabase)
-        
+
         const { searchParams } = new URL(request.url)
         const id = searchParams.get('id')
 
@@ -56,11 +56,11 @@ export async function POST(request: NextRequest) {
         const supabase = await createClient()
         const pendingIngredientRepo = new PendingIngredientRepository(supabase)
         const ingredientRepo = new IngredientRepository(supabase)
-        
+
         const body = await request.json()
-        const { pendingId, ingredientData }: { 
+        const { pendingId, ingredientData }: {
             pendingId: number
-            ingredientData: PendingIngredientFormValues 
+            ingredientData: PendingIngredientFormValues
         } = body
 
         if (!pendingId || !ingredientData) {
@@ -81,9 +81,9 @@ export async function POST(request: NextRequest) {
         // Supprimer le pending ingredient
         await pendingIngredientRepo.delete(pendingId)
 
-        return NextResponse.json({ 
-            success: true, 
-            ingredient: newIngredient 
+        return NextResponse.json({
+            success: true,
+            ingredient: newIngredient
         })
     } catch (error) {
         console.error('Error converting pending ingredient:', error)

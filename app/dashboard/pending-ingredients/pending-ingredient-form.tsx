@@ -93,14 +93,14 @@ export function PendingIngredientForm({ pendingIngredient, categories, onSubmit,
                     <div>
                         <Label htmlFor="category">Catégorie</Label>
                         <Select
-                            value={formData.category_id?.toString() || ''}
-                            onValueChange={(value) => handleFieldChange('category_id', value ? parseInt(value) : null)}
+                            value={formData.category_id?.toString() || 'none'}
+                            onValueChange={(value) => handleFieldChange('category_id', value === 'none' ? null : parseInt(value))}
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Sélectionner une catégorie" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">Aucune catégorie</SelectItem>
+                                <SelectItem value="none">Aucune catégorie</SelectItem>
                                 {categories.map((category) => (
                                     <SelectItem key={category.id} value={category.id.toString()}>
                                         {category.label}
