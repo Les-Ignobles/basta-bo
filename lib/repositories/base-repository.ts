@@ -18,20 +18,20 @@ export abstract class BaseRepository<T extends { id: number }> {
     async findById(id: number): Promise<T | null> {
         const { data, error } = await this.client.from(this.table).select('*').eq('id', id).single()
         if (error) {
-            if ((error as any).code === 'PGRST116') return null
+            if ((error as unknown as Record<string, unknown>).code === 'PGRST116') return null
             throw error
         }
         return (data as T) ?? null
     }
 
     async create(payload: Omit<T, 'id'>): Promise<T> {
-        const { data, error } = await this.client.from(this.table).insert(payload as any).select('*').single()
+        const { data, error } = await this.client.from(this.table).insert(payload as Record<string, unknown>).select('*').single()
         if (error) throw error
         return data as T
     }
 
     async update(id: number, payload: Partial<T>): Promise<T> {
-        const { data, error } = await this.client.from(this.table).update(payload as any).eq('id', id).select('*').single()
+        const { data, error } = await this.client.from(this.table).update(payload as Record<string, unknown>).eq('id', id).select('*').single()
         if (error) throw error
         return data as T
     }

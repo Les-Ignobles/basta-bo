@@ -49,7 +49,7 @@ export default function IngredientsIndexPage() {
                 suffix_plural: values.suffix_plural,
                 img_path: values.img_path ?? null,
                 category_id: values.category_id ?? null,
-            } as any)
+            })
         } else {
             // Create new ingredient
             await createIngredient({
@@ -58,7 +58,7 @@ export default function IngredientsIndexPage() {
                 suffix_plural: values.suffix_plural,
                 img_path: values.img_path ?? null,
                 category_id: values.category_id ?? null,
-            } as any)
+            })
         }
         setOpen(false)
     }
@@ -70,19 +70,19 @@ export default function IngredientsIndexPage() {
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
                         <Button disabled={loading} onClick={() => {
-                            if (typeof window !== 'undefined') {
-                                (window as any).__editIngredient = undefined; // Clear edit state
-                            }
+                        if (typeof window !== 'undefined') {
+                            (window as unknown as Record<string, unknown>).__editIngredient = undefined; // Clear edit state
+                        }
                         }}>Nouvel ingrédient</Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[800px] max-w-[95vw] w-full">
                         <DialogHeader>
-                            <DialogTitle className="font-christmas">{(typeof window !== 'undefined' && (window as any).__editIngredient) ? 'Modifier l\'ingrédient' : 'Nouvel ingrédient'}</DialogTitle>
+                            <DialogTitle className="font-christmas">{(typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__editIngredient) ? 'Modifier l\'ingrédient' : 'Nouvel ingrédient'}</DialogTitle>
                         </DialogHeader>
                         <IngredientForm
                             onSubmit={handleSubmit}
-                            defaultValues={(typeof window !== 'undefined' && (window as any).__editIngredient) || undefined}
-                            categories={categories.map((c: any) => ({ id: Number(c.id), label: `${c.emoji ?? ''} ${c.title?.fr ?? ''}`.trim() }))}
+                            defaultValues={(typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__editIngredient) || undefined}
+                            categories={categories.map((c: Record<string, unknown>) => ({ id: Number(c.id), label: `${c.emoji ?? ''} ${(c.title as Record<string, string>)?.fr ?? ''}`.trim() }))}
                         />
                     </DialogContent>
                 </Dialog>
@@ -112,19 +112,19 @@ export default function IngredientsIndexPage() {
                             <div className="space-y-2">
                                 <div className="text-sm font-medium">Filtrer par catégories</div>
                                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                                    {categories.map((category: any) => (
-                                        <label key={category.id} className="flex items-center gap-2 text-sm">
+                                    {categories.map((category: Record<string, unknown>) => (
+                                        <label key={String(category.id)} className="flex items-center gap-2 text-sm">
                                             <Checkbox
-                                                checked={selectedCategories.includes(category.id)}
+                                                checked={selectedCategories.includes(Number(category.id))}
                                                 onCheckedChange={(checked) => {
                                                     if (checked) {
-                                                        setSelectedCategories([...selectedCategories, category.id])
+                                                        setSelectedCategories([...selectedCategories, Number(category.id)])
                                                     } else {
-                                                        setSelectedCategories(selectedCategories.filter(id => id !== category.id))
+                                                        setSelectedCategories(selectedCategories.filter(id => id !== Number(category.id)))
                                                     }
                                                 }}
                                             />
-                                            <span>{category.emoji} {category.title?.fr}</span>
+                                            <span>{String(category.emoji)} {(category.title as Record<string, string>)?.fr}</span>
                                         </label>
                                     ))}
                                 </div>
@@ -207,11 +207,11 @@ export default function IngredientsIndexPage() {
                 </div>
             </div>
             <IngredientsTable
-                ingredients={ingredients as any}
-                categories={categories as any}
+                ingredients={ingredients}
+                categories={categories}
                 loading={loading}
                 onEdit={(ing) => {
-                    ; (window as any).__editIngredient = ing
+                    ; (window as unknown as Record<string, unknown>).__editIngredient = ing
                     setOpen(true)
                 }}
                 onDelete={async (ing) => {

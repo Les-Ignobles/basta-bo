@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { TranslationText, ISO639_1 } from '@/lib/i18n'
+import { TranslationText } from '@/lib/i18n'
 import { Progress } from '@/components/ui/progress'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Loader2 } from 'lucide-react'
@@ -18,15 +18,16 @@ export function TranslationTextField({ label, value, onChange, disabled }: Props
     const [loading, setLoading] = useState(false)
 
     // Only count the languages we actually support (en, es)
-    const supportedLanguages = ['en', 'es']
+    const supportedLanguages = useMemo(() => ['en', 'es'], [])
     const totalTranslatable = supportedLanguages.length
     const translatedCount = useMemo(() => {
         let count = 0
         for (const lang of supportedLanguages) {
-            if ((value as any)[lang] && (value as any)[lang].length > 0) count += 1
+            const text = value[lang as keyof TranslationText]
+            if (text && text.length > 0) count += 1
         }
         return count
-    }, [value])
+    }, [value, supportedLanguages])
     const progress = totalTranslatable > 0 ? Math.round((translatedCount / totalTranslatable) * 100) : 0
 
     async function translateAll() {
@@ -115,8 +116,8 @@ export function TranslationTextField({ label, value, onChange, disabled }: Props
                             <div className="space-y-1">
                                 <div className="text-xs text-muted-foreground">Espagnol (es)</div>
                                 <Input
-                                    value={(value as any).es ?? ''}
-                                    onChange={(e) => onChange({ ...(value as any), es: e.target.value } as TranslationText)}
+                                    value={value.es ?? ''}
+                                    onChange={(e) => onChange({ ...value, es: e.target.value } as TranslationText)}
                                     placeholder="Texto en español"
                                     disabled={disabled}
                                 />

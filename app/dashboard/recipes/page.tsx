@@ -6,7 +6,6 @@ import { RecipeForm } from '@/features/cooking/components/recipe-form'
 import type { RecipeFormValues } from '@/features/cooking/types'
 import { DishType, DISH_TYPE_LABELS } from '@/features/cooking/types'
 import { useRecipeStore } from '@/features/cooking/stores/recipe-store'
-import { useCookingStore } from '@/features/cooking/store'
 import { RecipesTable } from '@/features/cooking/components/recipes-table'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -48,7 +47,8 @@ export default function RecipesIndexPage() {
                 seasonality_mask: values.seasonality_mask ?? null,
                 kitchen_equipments_mask: values.kitchen_equipments_mask ?? null,
                 instructions: values.instructions ?? null,
-            } as any)
+                dish_type: values.dish_type,
+            })
         } else {
             // Create new recipe
             await createRecipe({
@@ -58,7 +58,8 @@ export default function RecipesIndexPage() {
                 seasonality_mask: values.seasonality_mask ?? null,
                 kitchen_equipments_mask: values.kitchen_equipments_mask ?? null,
                 instructions: values.instructions ?? null,
-            } as any)
+                dish_type: values.dish_type,
+            })
         }
         setOpen(false)
     }
@@ -71,17 +72,17 @@ export default function RecipesIndexPage() {
                     <DialogTrigger asChild>
                         <Button disabled={loading} onClick={() => {
                             if (typeof window !== 'undefined') {
-                                (window as any).__editRecipe = undefined; // Clear edit state
+                                (window as unknown as Record<string, unknown>).__editRecipe = undefined; // Clear edit state
                             }
                         }}>Nouvelle recette</Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[800px] max-w-[95vw] w-full">
                         <DialogHeader>
-                            <DialogTitle className="font-christmas">{(typeof window !== 'undefined' && (window as any).__editRecipe) ? 'Modifier la recette' : 'Nouvelle recette'}</DialogTitle>
+                            <DialogTitle className="font-christmas">{(typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__editRecipe) ? 'Modifier la recette' : 'Nouvelle recette'}</DialogTitle>
                         </DialogHeader>
                         <RecipeForm
                             onSubmit={handleSubmit}
-                            defaultValues={(typeof window !== 'undefined' && (window as any).__editRecipe) || undefined}
+                            defaultValues={(typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__editRecipe) || undefined}
                             kitchenEquipments={kitchenEquipments}
                         />
                     </DialogContent>
@@ -132,10 +133,10 @@ export default function RecipesIndexPage() {
                 </div>
             </div>
             <RecipesTable
-                recipes={recipes as any}
+                recipes={recipes}
                 loading={loading}
                 onEdit={(recipe) => {
-                    ; (window as any).__editRecipe = recipe
+                    ; (window as unknown as Record<string, unknown>).__editRecipe = recipe
                     setOpen(true)
                 }}
                 onDelete={async (recipe) => {

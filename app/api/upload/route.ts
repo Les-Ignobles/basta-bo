@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
             url: publicUrl,
             path: data.path
         })
-    } catch (error) {
+        } catch {
         return Response.json({ error: 'Upload failed' }, { status: 500 })
     }
 }

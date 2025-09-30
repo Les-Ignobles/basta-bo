@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { supabaseServer } from '@/lib/supabase/server-client'
 import { IngredientRepository } from '@/features/cooking/repositories/ingredient-repository'
-import { log } from 'console'
 
 export async function GET(req: NextRequest) {
     const repo = new IngredientRepository(supabaseServer)

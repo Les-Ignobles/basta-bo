@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
             })
 
         return Response.json(result)
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error('Translation error:', e)
         return new Response(JSON.stringify({ error: 'Translation failed' }), { status: 500 })
     }

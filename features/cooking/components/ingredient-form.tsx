@@ -74,7 +74,6 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                             value={values.img_path ?? undefined}
                             onChange={(url) => setValues((s) => ({ ...s, img_path: url }))}
                             bucket="ingredients"
-                            ingredientId={defaultValues?.id ? String(defaultValues.id) : undefined}
                             ingredientName={values.name?.fr}
                         />
                     ) : (

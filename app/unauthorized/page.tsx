@@ -23,12 +23,12 @@ export default function UnauthorizedPage() {
                     </div>
                     <CardTitle className="text-2xl font-bold text-red-600 font-christmas">Accès non autorisé</CardTitle>
                     <CardDescription>
-                        Vous n'avez pas les droits d'administration nécessaires pour accéder à cette page.
+                        Vous n&apos;avez pas les droits d&apos;administration nécessaires pour accéder à cette page.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="text-sm text-gray-600 text-center">
-                        <p>Si vous pensez qu'il s'agit d'une erreur, contactez votre administrateur.</p>
+                        <p>Si vous pensez qu&apos;il s&apos;agit d&apos;une erreur, contactez votre administrateur.</p>
                     </div>
                     <div className="flex flex-col gap-2">
                         <Button

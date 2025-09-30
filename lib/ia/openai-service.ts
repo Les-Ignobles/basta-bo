@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { zodTextFormat } from 'openai/helpers/zod';
+;
+import { zodTextFormat } from 'openai/helpers/zod'
 import {
     CompletionOptions,
     EmbeddingOptions,
@@ -7,8 +7,8 @@ import {
 import { IaService } from './ia-service';
 
 // Mock createOpenAiClient function - replace with your actual implementation
-function createOpenAiClient() {
-    const { OpenAI } = require('openai');
+async function createOpenAiClient() {
+    const { OpenAI } = await import('openai');
     return new OpenAI({
         apiKey: process.env.OPENAI_API_KEY,
     });
@@ -17,7 +17,7 @@ function createOpenAiClient() {
 export class OpenaiIaService extends IaService {
 
     async generateEmbedding({ input }: EmbeddingOptions): Promise<Array<number>> {
-        const client = createOpenAiClient();
+        const client = await createOpenAiClient();
 
         const result = await client.embeddings.create({
             model: this.model,
@@ -29,20 +29,21 @@ export class OpenaiIaService extends IaService {
     }
 
     async getCompletionResult<T>(options: CompletionOptions): Promise<T> {
-        const client = createOpenAiClient();
+        const client = await createOpenAiClient();
 
         const { temperature, schemaType, schemaName, maxTokens } = options;
 
         const schemaProvided = schemaType && schemaName;
 
-        if (schemaProvided) {
+        if (schemaProvided && schemaType) {
             const result = await client.responses.parse({
                 model: this.model,
                 input: this.messages,
                 max_output_tokens: maxTokens,
                 temperature: temperature,
                 text: {
-                    format: zodTextFormat(schemaType, schemaName),
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    format: zodTextFormat(schemaType as any, schemaName),
                 },
             });
 

@@ -5,7 +5,7 @@ export interface ChatMessage {
 
 export interface CompletionOptions {
     temperature?: number;
-    schemaType?: any;
+    schemaType?: unknown;
     schemaName?: string;
     maxTokens?: number;
 }

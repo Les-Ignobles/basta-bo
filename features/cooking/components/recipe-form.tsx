@@ -290,7 +290,6 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                         value={values.img_path ?? undefined}
                         onChange={(url) => setValues(prev => ({ ...prev, img_path: url }))}
                         bucket="recipes"
-                        ingredientId={defaultValues?.id ? String(defaultValues.id) : undefined}
                         ingredientName={values.title}
                     />
 

@@ -1,7 +1,6 @@
 "use client"
 import { useState, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { Upload, X, Image as ImageIcon } from 'lucide-react'
+import { X, Image as ImageIcon } from 'lucide-react'
 import { slugify } from '@/lib/utils'
 
 type Props = {
@@ -9,11 +8,10 @@ type Props = {
     onChange: (url: string | null) => void
     bucket?: 'ingredients' | 'recipes'
     disabled?: boolean
-    ingredientId?: string
     ingredientName?: string
 }
 
-export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled, ingredientId, ingredientName }: Props) {
+export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled, ingredientName }: Props) {
     const [uploading, setUploading] = useState(false)
     const [dragOver, setDragOver] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -58,7 +56,7 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
             } else {
                 alert('Erreur lors de l\'upload: ' + (json.error || 'Erreur inconnue'))
             }
-        } catch (error) {
+        } catch {
             alert('Erreur lors de l\'upload')
         } finally {
             setUploading(false)
