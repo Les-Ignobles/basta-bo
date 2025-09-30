@@ -59,9 +59,11 @@ export async function POST(request: NextRequest) {
         const ingredientRepo = new IngredientRepository(supabase)
 
         const body = await request.json()
-        const { pendingId, ingredientData }: {
+        console.log('Received request body:', JSON.stringify(body, null, 2))
+        
+        const { pendingId, ingredientData }: { 
             pendingId: number
-            ingredientData: IngredientFormValues
+            ingredientData: IngredientFormValues 
         } = body
 
         if (!pendingId || !ingredientData) {
@@ -70,6 +72,9 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             )
         }
+
+        console.log('ingredientData.id:', ingredientData.id)
+        console.log('ingredientData keys:', Object.keys(ingredientData))
 
         // Créer l'ingrédient (exclure l'id pour éviter les conflits de clé primaire)
         const ingredientToCreate: Omit<Ingredient, 'id'> = {
@@ -80,7 +85,7 @@ export async function POST(request: NextRequest) {
             img_path: ingredientData.img_path ?? null,
             created_at: new Date().toISOString()
         }
-        
+
         console.log('Creating ingredient with data:', JSON.stringify(ingredientToCreate, null, 2))
         const newIngredient = await ingredientRepo.create(ingredientToCreate)
 
