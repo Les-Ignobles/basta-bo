@@ -60,7 +60,60 @@ export class IngredientRepository extends BaseRepository<Ingredient> {
             })
         }
 
-        return { data: filteredData, total: filteredData.length }
+        // Si on a un filtre de traduction, on doit compter le total après filtrage
+        // Sinon, on utilise le count de Supabase
+        let actualTotal = count || 0
+        
+        if (translationFilter) {
+            // Pour le filtre de traduction, on doit compter tous les ingrédients qui matchent
+            // On fait une requête séparée pour compter le total
+            let countQuery = (this.client as any).from(this.table).select('*', { count: 'exact' })
+            if (search && search.trim()) {
+                countQuery = countQuery.ilike('name->>fr', `%${search}%`)
+            }
+            if (noImage) {
+                countQuery = countQuery.is('img_path', null)
+            }
+            if (categories && categories.length > 0) {
+                countQuery = countQuery.in('category_id', categories)
+            }
+            
+            const { data: allData, count: allCount } = await countQuery
+            const allIngredients = (allData ?? []) as Ingredient[]
+            
+            // Appliquer le même filtre de traduction
+            const filteredAllData = allIngredients.filter(ingredient => {
+                const supportedLanguages = ['en', 'es']
+                const fields = ['name', 'suffix_singular', 'suffix_plural']
+
+                let totalFields = 0
+                let translatedFields = 0
+
+                for (const lang of supportedLanguages) {
+                    for (const field of fields) {
+                        totalFields++
+                        const fieldValue = ingredient[field as keyof Ingredient] as any
+                        if (fieldValue?.[lang] && fieldValue[lang].trim().length > 0) {
+                            translatedFields++
+                        }
+                    }
+                }
+
+                const progress = totalFields > 0 ? (translatedFields / totalFields) * 100 : 0
+
+                if (translationFilter === 'complete') {
+                    return progress === 100
+                } else if (translationFilter === 'incomplete') {
+                    return progress < 100
+                }
+
+                return true
+            })
+            
+            actualTotal = filteredAllData.length
+        }
+
+        return { data: filteredData, total: actualTotal }
     }
 }
 

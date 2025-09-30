@@ -468,6 +468,11 @@ export default function PendingIngredientsPage() {
                 )}
             </div>
 
+            {/* Debug info */}
+            <div className="text-sm text-gray-600 mb-4">
+                Debug: Total = {total}, PageSize = {pageSize}, Page = {page}, TotalPages = {totalPages}
+            </div>
+
             {/* Pagination */}
             {totalPages > 1 && (
                 <div className="flex items-center justify-between">
@@ -623,12 +628,12 @@ export default function PendingIngredientsPage() {
                                                 <span>{bulkProgress.completed} / {bulkProgress.total}</span>
                                             </div>
                                             <div className="w-full bg-blue-200 rounded-full h-2">
-                                                <div 
+                                                <div
                                                     className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
                                                     style={{ width: `${(bulkProgress.completed / bulkProgress.total) * 100}%` }}
                                                 />
                                             </div>
-                                            
+
                                             {/* Résultats en temps réel */}
                                             {bulkResults.length > 0 && (
                                                 <div className="mt-3 border-t pt-3">
