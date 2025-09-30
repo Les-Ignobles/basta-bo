@@ -31,6 +31,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         let isMounted = true
 
+        // Récupérer la session existante immédiatement au démarrage
+        const getInitialSession = async () => {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession()
+                if (!isMounted) return
+
+                if (error) {
+                    console.error('Error getting initial session:', error)
+                    setLoading(false)
+                    return
+                }
+
+                if (session?.user) {
+                    setUser(session.user)
+                    
+                    // Fetch user profile
+                    const { data: profile, error: profileError } = await supabase
+                        .from('user_profiles')
+                        .select('id, email, firstname, avatar, is_admin')
+                        .eq('uuid', session.user.id)
+                        .single()
+
+                    if (!isMounted) return
+
+                    if (profileError) {
+                        console.error('Error fetching user profile:', profileError)
+                        setUserProfile(null)
+                    } else {
+                        setUserProfile(profile)
+                    }
+                } else {
+                    setUser(null)
+                    setUserProfile(null)
+                }
+                
+                setLoading(false)
+            } catch (error) {
+                console.error('Error in getInitialSession:', error)
+                if (isMounted) {
+                    setLoading(false)
+                }
+            }
+        }
+
+        getInitialSession()
+
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
                 if (!isMounted) return
