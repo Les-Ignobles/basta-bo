@@ -30,7 +30,7 @@ export async function updateSession(request: NextRequest) {
 
     // Temporairement désactivé pour debug
     console.log('Middleware running for:', request.nextUrl.pathname)
-    
+
     // const {
     //     data: { user },
     // } = await supabase.auth.getUser()

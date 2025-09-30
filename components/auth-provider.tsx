@@ -48,8 +48,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const testConnection = async () => {
             try {
                 console.log('Testing Supabase connection...')
+                const startTime = Date.now()
                 const { data, error } = await supabase.auth.getSession()
-                console.log('Direct getSession result:', { data, error })
+                const endTime = Date.now()
+                console.log(`Direct getSession took ${endTime - startTime}ms:`, { data: data?.session?.user?.id, error })
             } catch (err) {
                 console.error('Direct getSession error:', err)
             }
@@ -68,21 +70,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                     if (session?.user) {
                         // Fetch user profile
-                        console.log('Fetching user profile...')
-                        const { data: profile, error } = await supabase
-                            .from('user_profiles')
-                            .select('id, email, firstname, avatar, is_admin')
-                            .eq('uuid', session.user.id)
-                            .single()
+                        console.log('Fetching user profile for user:', session.user.id)
+                        const startTime = Date.now()
+                        
+                        try {
+                            const { data: profile, error } = await supabase
+                                .from('user_profiles')
+                                .select('id, email, firstname, avatar, is_admin')
+                                .eq('uuid', session.user.id)
+                                .single()
 
-                        if (!isMounted) return
+                            const endTime = Date.now()
+                            console.log(`User profile query took ${endTime - startTime}ms`)
 
-                        if (error) {
-                            console.error('Error fetching user profile:', error)
-                            setUserProfile(null)
-                        } else {
-                            console.log('User profile loaded:', profile.firstname)
-                            setUserProfile(profile)
+                            if (!isMounted) return
+
+                            if (error) {
+                                console.error('Error fetching user profile:', error)
+                                setUserProfile(null)
+                            } else {
+                                console.log('User profile loaded:', profile?.firstname || 'No firstname')
+                                setUserProfile(profile)
+                            }
+                        } catch (err) {
+                            const endTime = Date.now()
+                            console.error(`User profile query failed after ${endTime - startTime}ms:`, err)
+                            if (isMounted) {
+                                setUserProfile(null)
+                            }
                         }
                     } else {
                         setUserProfile(null)
