@@ -185,7 +185,7 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
                     try {
                         const result = await get().generateIngredientData(pending.id)
                         completed++
-                        
+
                         if (result.success) {
                             results.push(result.ingredient)
                             // Callback de progression avec le résultat

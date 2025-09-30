@@ -92,17 +92,17 @@ export default function PendingIngredientsPage() {
         setBulkProcessing(true)
         setPreviewData(null)
         setBulkProgress({ completed: 0, total: pendingIngredients.length })
-        
+
         try {
             const result = await usePendingIngredientStore.getState().previewBulkProcess((completed, total, ingredientResult) => {
                 setBulkProgress({ completed, total })
-                
+
                 // Si on a un résultat, l'ajouter immédiatement aux données générées
                 if (ingredientResult && ingredientResult.pendingId) {
                     setGeneratedData(prev => new Map(prev).set(ingredientResult.pendingId as number, ingredientResult))
                 }
             })
-            
+
             setPreviewData({ ingredients: result.ingredients, errors: result.errors })
             setPreviewOpen(true)
         } catch (error) {
@@ -216,14 +216,14 @@ export default function PendingIngredientsPage() {
                                 <span>{bulkProgress.completed} / {bulkProgress.total}</span>
                             </div>
                             <div className="w-full bg-blue-200 rounded-full h-3">
-                                <div 
+                                <div
                                     className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-300"
                                     style={{ width: `${(bulkProgress.completed / bulkProgress.total) * 100}%` }}
                                 />
                             </div>
                             <p className="text-sm text-blue-700">
-                                {bulkProgress.completed === bulkProgress.total 
-                                    ? 'Traitement terminé !' 
+                                {bulkProgress.completed === bulkProgress.total
+                                    ? 'Traitement terminé !'
                                     : `Traitement de ${bulkProgress.completed} ingrédient(s) sur ${bulkProgress.total}...`
                                 }
                             </p>
@@ -288,104 +288,103 @@ export default function PendingIngredientsPage() {
                         const isGenerating = generatingStates.get(pendingIngredient.id) || false
                         const hasGeneratedData = generatedData.has(pendingIngredient.id)
                         const isInBulkProcessing = bulkProcessing && bulkProgress
-                        
-                        return (
-                        <Card 
-                            key={pendingIngredient.id} 
-                            className={`hover:shadow-md transition-shadow ${
-                                isGenerating ? 'border-blue-300 bg-blue-50' : 
-                                hasGeneratedData ? 'border-green-300 bg-green-50' : 
-                                isInBulkProcessing ? 'border-purple-300 bg-purple-50' : ''
-                            }`}
-                        >
-                            <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <CardTitle className="text-lg">{pendingIngredient.name}</CardTitle>
-                                        <CardDescription>
-                                            Ajouté le {new Date(pendingIngredient.created_at).toLocaleDateString('fr-FR')}
-                                        </CardDescription>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleGenerateForIngredient(pendingIngredient.id)}
-                                            disabled={generatingStates.get(pendingIngredient.id) || false}
-                                        >
-                                            {generatingStates.get(pendingIngredient.id) ? (
-                                                <>
-                                                    <Clock className="h-4 w-4 mr-2 animate-spin" />
-                                                    Génération...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Sparkles className="h-4 w-4 mr-2" />
-                                                    Générer IA
-                                                </>
-                                            )}
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleEdit(pendingIngredient)}
-                                        >
-                                            <Plus className="h-4 w-4 mr-2" />
-                                            Convertir
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleDelete(pendingIngredient.id)}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardHeader>
 
-                            {/* Affichage des données générées par l'IA */}
-                            {generatedData.has(pendingIngredient.id) && (
-                                <CardContent className="pt-0">
-                                    <div className="border-t pt-4">
-                                        <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                                            <Sparkles className="h-4 w-4 text-purple-500" />
-                                            Données générées par l&apos;IA
-                                        </h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                            <div>
+                        return (
+                            <Card
+                                key={pendingIngredient.id}
+                                className={`hover:shadow-md transition-shadow ${isGenerating ? 'border-blue-300 bg-blue-50' :
+                                    hasGeneratedData ? 'border-green-300 bg-green-50' :
+                                        isInBulkProcessing ? 'border-purple-300 bg-purple-50' : ''
+                                    }`}
+                            >
+                                <CardHeader className="pb-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <CardTitle className="text-lg">{pendingIngredient.name}</CardTitle>
+                                            <CardDescription>
+                                                Ajouté le {new Date(pendingIngredient.created_at).toLocaleDateString('fr-FR')}
+                                            </CardDescription>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleGenerateForIngredient(pendingIngredient.id)}
+                                                disabled={generatingStates.get(pendingIngredient.id) || false}
+                                            >
+                                                {generatingStates.get(pendingIngredient.id) ? (
+                                                    <>
+                                                        <Clock className="h-4 w-4 mr-2 animate-spin" />
+                                                        Génération...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles className="h-4 w-4 mr-2" />
+                                                        Générer IA
+                                                    </>
+                                                )}
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleEdit(pendingIngredient)}
+                                            >
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Convertir
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleDelete(pendingIngredient.id)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+
+                                {/* Affichage des données générées par l'IA */}
+                                {generatedData.has(pendingIngredient.id) && (
+                                    <CardContent className="pt-0">
+                                        <div className="border-t pt-4">
+                                            <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                                                <Sparkles className="h-4 w-4 text-purple-500" />
+                                                Données générées par l&apos;IA
+                                            </h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                                <div>
+                                                    <div className="space-y-2">
+                                                        <div>
+                                                            <span className="font-medium">Nom FR:</span> {(generatedData.get(pendingIngredient.id)?.name as Record<string, string>)?.fr}
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-medium">Nom EN:</span> {(generatedData.get(pendingIngredient.id)?.name as Record<string, string>)?.en}
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-medium">Nom ES:</span> {(generatedData.get(pendingIngredient.id)?.name as Record<string, string>)?.es}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                                 <div className="space-y-2">
                                                     <div>
-                                                        <span className="font-medium">Nom FR:</span> {(generatedData.get(pendingIngredient.id)?.name as Record<string, string>)?.fr}
+                                                        <span className="font-medium">Suffixe singulier:</span> {(generatedData.get(pendingIngredient.id)?.suffix_singular as Record<string, string>)?.fr}
                                                     </div>
                                                     <div>
-                                                        <span className="font-medium">Nom EN:</span> {(generatedData.get(pendingIngredient.id)?.name as Record<string, string>)?.en}
+                                                        <span className="font-medium">Suffixe pluriel:</span> {(generatedData.get(pendingIngredient.id)?.suffix_plural as Record<string, string>)?.fr}
                                                     </div>
                                                     <div>
-                                                        <span className="font-medium">Nom ES:</span> {(generatedData.get(pendingIngredient.id)?.name as Record<string, string>)?.es}
+                                                        <span className="font-medium">Catégorie:</span>
+                                                        <span className={`ml-1 px-2 py-1 rounded text-xs ${generatedData.get(pendingIngredient.id)?.category_name ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                                            }`}>
+                                                            {(generatedData.get(pendingIngredient.id)?.category_name as string) || 'Aucune catégorie'}
+                                                        </span>
                                                     </div>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <div>
-                                                    <span className="font-medium">Suffixe singulier:</span> {(generatedData.get(pendingIngredient.id)?.suffix_singular as Record<string, string>)?.fr}
-                                                </div>
-                                                <div>
-                                                    <span className="font-medium">Suffixe pluriel:</span> {(generatedData.get(pendingIngredient.id)?.suffix_plural as Record<string, string>)?.fr}
-                                                </div>
-                                                <div>
-                                                    <span className="font-medium">Catégorie:</span>
-                                                    <span className={`ml-1 px-2 py-1 rounded text-xs ${generatedData.get(pendingIngredient.id)?.category_name ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                                        }`}>
-                                                        {(generatedData.get(pendingIngredient.id)?.category_name as string) || 'Aucune catégorie'}
-                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </CardContent>
-                            )}
-                        </Card>
+                                    </CardContent>
+                                )}
+                            </Card>
                         )
                     })
                 )}
