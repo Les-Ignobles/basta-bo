@@ -18,6 +18,7 @@ type PendingIngredientActions = {
     fetchPendingCount: () => Promise<void>
     deletePendingIngredient: (id: number) => Promise<void>
     convertToIngredient: (pendingId: number, ingredientData: IngredientFormValues) => Promise<void>
+    bulkProcessWithAI: () => Promise<{ success: boolean; message: string; processed: number; created: Record<string, unknown>[]; errors?: string[] }>
     setSearch: (search: string) => void
     setPage: (page: number) => void
     setEditingPendingIngredient: (pendingIngredient: PendingIngredient | null) => void
@@ -125,6 +126,37 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
                 error: error instanceof Error ? error.message : 'Unknown error',
                 loading: false
             })
+        }
+    },
+
+    bulkProcessWithAI: async () => {
+        set({ loading: true, error: null })
+        try {
+            const response = await fetch('/api/pending-ingredients/bulk-process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            if (!response.ok) {
+                throw new Error('Failed to process pending ingredients with AI')
+            }
+
+            const result = await response.json()
+            
+            // Refresh the list and count
+            await get().fetchPendingIngredients()
+            await get().fetchPendingCount()
+            
+            set({ loading: false })
+            return result
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : 'Unknown error',
+                loading: false
+            })
+            throw error
         }
     },
 

@@ -11,12 +11,14 @@ import { useCookingStore } from '@/features/cooking/store'
 import type { PendingIngredient } from '@/features/cooking/types'
 import type { IngredientFormValues } from '@/features/cooking/components/ingredient-form'
 import { IngredientForm } from '@/features/cooking/components/ingredient-form'
-import { Clock, Search, Trash2, Plus } from 'lucide-react'
+import { Clock, Search, Trash2, Plus, Sparkles } from 'lucide-react'
 import { useDebounce } from '@/hooks/use-debounce'
 
 export default function PendingIngredientsPage() {
     const [open, setOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
+    const [bulkProcessing, setBulkProcessing] = useState(false)
+    const [bulkResult, setBulkResult] = useState<{ message: string; processed: number; created: Record<string, unknown>[]; errors?: string[] } | null>(null)
     const debouncedSearch = useDebounce(searchTerm, 400)
 
     const {
@@ -31,6 +33,7 @@ export default function PendingIngredientsPage() {
         fetchPendingIngredients,
         fetchPendingCount,
         deletePendingIngredient,
+        bulkProcessWithAI,
         setSearch,
         setPage,
         setEditingPendingIngredient
@@ -74,6 +77,30 @@ export default function PendingIngredientsPage() {
         }
     }
 
+    const handleBulkProcess = async () => {
+        if (pendingIngredients.length === 0) {
+            alert('Aucun ingrédient en attente à traiter')
+            return
+        }
+
+        if (!confirm(`Êtes-vous sûr de vouloir traiter automatiquement ${pendingIngredients.length} ingrédient(s) avec l'IA ?`)) {
+            return
+        }
+
+        setBulkProcessing(true)
+        setBulkResult(null)
+        
+        try {
+            const result = await bulkProcessWithAI()
+            setBulkResult(result)
+        } catch (error) {
+            console.error('Erreur lors du traitement en lot:', error)
+            alert('Erreur lors du traitement en lot')
+        } finally {
+            setBulkProcessing(false)
+        }
+    }
+
     const totalPages = Math.ceil(total / pageSize)
 
     return (
@@ -91,8 +118,8 @@ export default function PendingIngredientsPage() {
                 </Badge>
             </div>
 
-            {/* Barre de recherche */}
-            <div className="flex items-center space-x-2">
+            {/* Barre de recherche et bouton magique */}
+            <div className="flex items-center justify-between gap-4">
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
@@ -102,7 +129,53 @@ export default function PendingIngredientsPage() {
                         className="pl-10"
                     />
                 </div>
+                
+                {pendingIngredients.length > 0 && (
+                    <Button
+                        onClick={handleBulkProcess}
+                        disabled={bulkProcessing || loading}
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                    >
+                        {bulkProcessing ? (
+                            <>
+                                <Clock className="h-4 w-4 mr-2 animate-spin" />
+                                Traitement IA...
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                Traitement magique ({pendingIngredients.length})
+                            </>
+                        )}
+                    </Button>
+                )}
             </div>
+
+            {/* Résultat du traitement en lot */}
+            {bulkResult && (
+                <Card className="border-green-200 bg-green-50">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Sparkles className="h-5 w-5 text-green-600" />
+                            <h3 className="text-lg font-semibold text-green-800">Traitement terminé !</h3>
+                        </div>
+                        <p className="text-green-700 mb-2">{bulkResult.message}</p>
+                        <p className="text-sm text-green-600">
+                            {bulkResult.created.length} ingrédient(s) créé(s) sur {bulkResult.processed} traité(s)
+                        </p>
+                        {bulkResult.errors && bulkResult.errors.length > 0 && (
+                            <div className="mt-3">
+                                <p className="text-sm font-medium text-red-600 mb-1">Erreurs :</p>
+                                <ul className="text-sm text-red-600 list-disc list-inside">
+                                    {bulkResult.errors.map((error, index) => (
+                                        <li key={index}>{error}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Liste des pending ingredients */}
             <div className="grid gap-4">

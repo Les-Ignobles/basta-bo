@@ -140,7 +140,6 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                     </Popover>
                 </div>
                 <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Image</div>
                     {values.name?.fr && values.name.fr.trim() ? (
                         <ImageUpload
                             value={values.img_path ?? undefined}
