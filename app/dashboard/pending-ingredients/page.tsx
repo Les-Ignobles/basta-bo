@@ -138,7 +138,7 @@ export default function PendingIngredientsPage() {
 
         setBulkProcessing(true)
         setBulkResult(null)
-
+        
         try {
             const result = await bulkProcessWithAI()
             setBulkResult(result)
@@ -149,6 +149,40 @@ export default function PendingIngredientsPage() {
             alert('Erreur lors du traitement en lot')
         } finally {
             setBulkProcessing(false)
+        }
+    }
+
+    const handleCreateFromAI = async (pendingId: number) => {
+        const aiData = generatedData.get(pendingId)
+        if (!aiData) return
+
+        try {
+            // Convertir les données IA en format IngredientFormValues
+            const ingredientData: IngredientFormValues = {
+                name: aiData.name as { fr: string; en?: string; es?: string },
+                suffix_singular: aiData.suffix_singular as { fr: string; en?: string; es?: string },
+                suffix_plural: aiData.suffix_plural as { fr: string; en?: string; es?: string },
+                category_id: aiData.category_id as number | null,
+                img_path: null
+            }
+
+            // Créer l'ingrédient
+            await usePendingIngredientStore.getState().convertToIngredient(pendingId, ingredientData)
+            
+            // Rafraîchir le compteur dans la sidebar
+            fetchPendingCount()
+            
+            // Supprimer les données générées pour cet ingrédient
+            setGeneratedData(prev => {
+                const newMap = new Map(prev)
+                newMap.delete(pendingId)
+                return newMap
+            })
+            
+            alert('Ingrédient créé avec succès !')
+        } catch (error) {
+            console.error('Erreur lors de la création:', error)
+            alert('Erreur lors de la création de l\'ingrédient')
         }
     }
 
@@ -347,10 +381,20 @@ export default function PendingIngredientsPage() {
                                 {generatedData.has(pendingIngredient.id) && (
                                     <CardContent className="pt-0">
                                         <div className="border-t pt-4">
-                                            <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                                                <Sparkles className="h-4 w-4 text-purple-500" />
-                                                Données générées par l&apos;IA
-                                            </h4>
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h4 className="font-semibold text-sm flex items-center gap-2">
+                                                    <Sparkles className="h-4 w-4 text-purple-500" />
+                                                    Données générées par l&apos;IA
+                                                </h4>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleCreateFromAI(pendingIngredient.id)}
+                                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                                >
+                                                    <Check className="h-4 w-4 mr-2" />
+                                                    Créer cet ingrédient
+                                                </Button>
+                                            </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                                 <div>
                                                     <div className="space-y-2">
