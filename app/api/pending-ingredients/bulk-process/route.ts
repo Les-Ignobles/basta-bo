@@ -72,14 +72,16 @@ export async function POST(request: Request) {
 
         const prompt = `Tu es un expert culinaire. Je vais te donner une liste d'ingrédients en attente et tu dois me retourner pour chacun :
 1. Le nom en français (tel quel), anglais et espagnol
-2. Le suffixe singulier pour l'affichage dans les recettes (ex: "de fruit de la passion" pour "1 cuillère à soupe de fruit de la passion") en 3 langues
-3. Le suffixe pluriel pour l'affichage dans les recettes (ex: "de fruits de la passion" pour "2 cuillères à soupe de fruits de la passion") en 3 langues
+2. Le suffixe singulier pour l'affichage dans les recettes (ex: "de fruit de la passion" - SANS "cuillère" ou autre unité) en 3 langues
+3. Le suffixe pluriel pour l'affichage dans les recettes (ex: "de fruits de la passion" - SANS "cuillères" ou autre unité) en 3 langues
 4. L'ID de la catégorie appropriée parmi : ${categoryList}
 
-IMPORTANT : Les suffixes doivent être adaptés au singulier/pluriel selon la quantité dans la recette. Par exemple :
+IMPORTANT : Les suffixes sont SEULEMENT la partie "de..." qui suit l'unité de mesure. Par exemple :
 - "Fruit de la passion" → singulier: "de fruit de la passion", pluriel: "de fruits de la passion"
 - "Tomate" → singulier: "de tomate", pluriel: "de tomates"
 - "Sel" → singulier: "de sel", pluriel: "de sel" (invariable)
+
+NE PAS inclure les unités de mesure (cuillère, gramme, etc.) dans les suffixes.
 
 Ingrédients à traiter : ${pendingNames}
 
