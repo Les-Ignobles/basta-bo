@@ -1,0 +1,95 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { PendingIngredientRepository } from '@/features/cooking/repositories/pending-ingredient-repository'
+import { IngredientRepository } from '@/features/cooking/repositories/ingredient-repository'
+import { createClient } from '@/lib/supabase/server'
+import type { PendingIngredientFormValues } from '@/features/cooking/types'
+
+export async function GET(request: NextRequest) {
+    try {
+        const supabase = await createClient()
+        const pendingIngredientRepo = new PendingIngredientRepository(supabase)
+        
+        const { searchParams } = new URL(request.url)
+        const page = parseInt(searchParams.get('page') || '1')
+        const pageSize = parseInt(searchParams.get('pageSize') || '50')
+        const search = searchParams.get('search') || undefined
+
+        const result = await pendingIngredientRepo.findPage(page, pageSize, search)
+        return NextResponse.json(result)
+    } catch (error) {
+        console.error('Error fetching pending ingredients:', error)
+        return NextResponse.json(
+            { error: 'Failed to fetch pending ingredients' },
+            { status: 500 }
+        )
+    }
+}
+
+export async function DELETE(request: NextRequest) {
+    try {
+        const supabase = await createClient()
+        const pendingIngredientRepo = new PendingIngredientRepository(supabase)
+        
+        const { searchParams } = new URL(request.url)
+        const id = searchParams.get('id')
+
+        if (!id) {
+            return NextResponse.json(
+                { error: 'ID is required' },
+                { status: 400 }
+            )
+        }
+
+        await pendingIngredientRepo.delete(parseInt(id))
+        return NextResponse.json({ success: true })
+    } catch (error) {
+        console.error('Error deleting pending ingredient:', error)
+        return NextResponse.json(
+            { error: 'Failed to delete pending ingredient' },
+            { status: 500 }
+        )
+    }
+}
+
+export async function POST(request: NextRequest) {
+    try {
+        const supabase = await createClient()
+        const pendingIngredientRepo = new PendingIngredientRepository(supabase)
+        const ingredientRepo = new IngredientRepository(supabase)
+        
+        const body = await request.json()
+        const { pendingId, ingredientData }: { 
+            pendingId: number
+            ingredientData: PendingIngredientFormValues 
+        } = body
+
+        if (!pendingId || !ingredientData) {
+            return NextResponse.json(
+                { error: 'pendingId and ingredientData are required' },
+                { status: 400 }
+            )
+        }
+
+        // Créer l'ingrédient
+        const ingredientToCreate = {
+            ...ingredientData,
+            created_at: new Date().toISOString(),
+            img_path: ingredientData.img_path ?? null
+        }
+        const newIngredient = await ingredientRepo.create(ingredientToCreate)
+
+        // Supprimer le pending ingredient
+        await pendingIngredientRepo.delete(pendingId)
+
+        return NextResponse.json({ 
+            success: true, 
+            ingredient: newIngredient 
+        })
+    } catch (error) {
+        console.error('Error converting pending ingredient:', error)
+        return NextResponse.json(
+            { error: 'Failed to convert pending ingredient' },
+            { status: 500 }
+        )
+    }
+}

@@ -60,3 +60,18 @@ export type RecipeFormValues = {
     dish_type: DishType
 }
 
+export type PendingIngredient = {
+    id: number
+    created_at: string
+    name: string
+}
+
+export type PendingIngredientFormValues = {
+    id?: number
+    name: TranslationText
+    suffix_singular: TranslationText
+    suffix_plural: TranslationText
+    category_id: number | null
+    img_path?: string | null
+}
+

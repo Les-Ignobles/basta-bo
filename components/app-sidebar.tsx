@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Salad, UtensilsCrossed, LogOut, User } from "lucide-react"
+import { Salad, UtensilsCrossed, LogOut, User, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/components/auth-provider"
 
@@ -41,6 +41,14 @@ export function AppSidebar() {
                                     <Link href="/dashboard/recipes" className="flex items-center gap-2">
                                         <UtensilsCrossed className="size-4" />
                                         <span>Recipes</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton asChild isActive={pathname === '/dashboard/pending-ingredients'}>
+                                    <Link href="/dashboard/pending-ingredients" className="flex items-center gap-2">
+                                        <Clock className="size-4" />
+                                        <span>Pending Ingredients</span>
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
