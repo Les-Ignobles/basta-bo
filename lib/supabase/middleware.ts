@@ -28,43 +28,40 @@ export async function updateSession(request: NextRequest) {
     // supabase.auth.getUser(). A simple mistake could make it very hard to debug
     // issues with users being randomly logged out.
 
-    // Temporairement désactivé pour debug
-    console.log('Middleware running for:', request.nextUrl.pathname)
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
 
-    // const {
-    //     data: { user },
-    // } = await supabase.auth.getUser()
+    // Protect dashboard routes
+    if (request.nextUrl.pathname.startsWith('/dashboard')) {
+        if (!user) {
+            // Redirect to login page if not authenticated
+            const url = request.nextUrl.clone()
+            url.pathname = '/login'
+            return NextResponse.redirect(url)
+        }
 
-    // // Protect dashboard routes
-    // if (request.nextUrl.pathname.startsWith('/dashboard')) {
-    //     if (!user) {
-    //         // Redirect to login page if not authenticated
-    //         const url = request.nextUrl.clone()
-    //         url.pathname = '/login'
-    //         return NextResponse.redirect(url)
-    //     }
+        // Check if user has admin rights
+        const { data: userProfile } = await supabase
+            .from('user_profiles')
+            .select('id, email, is_admin')
+            .eq('uuid', user.id)
+            .single()
 
-    //     // Check if user has admin rights
-    //     const { data: userProfile } = await supabase
-    //         .from('user_profiles')
-    //         .select('id, email, is_admin')
-    //         .eq('uuid', user.id)
-    //         .single()
+        // If user doesn't have admin rights, redirect to unauthorized page
+        if (!userProfile?.is_admin) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/unauthorized'
+            return NextResponse.redirect(url)
+        }
+    }
 
-    //     // If user doesn't have admin rights, redirect to unauthorized page
-    //     if (!userProfile?.is_admin) {
-    //         const url = request.nextUrl.clone()
-    //         url.pathname = '/unauthorized'
-    //         return NextResponse.redirect(url)
-    //     }
-    // }
-
-    // // Redirect authenticated users away from login page
-    // if (request.nextUrl.pathname === '/login' && user) {
-    //     const url = request.nextUrl.clone()
-    //     url.pathname = '/dashboard'
-    //     return NextResponse.redirect(url)
-    // }
+    // Redirect authenticated users away from login page
+    if (request.nextUrl.pathname === '/login' && user) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/dashboard'
+        return NextResponse.redirect(url)
+    }
 
     // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
     // creating a new response object with NextResponse.next() make sure to:

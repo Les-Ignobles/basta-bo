@@ -31,46 +31,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         let isMounted = true
 
-        console.log('AuthProvider useEffect started')
-        console.log('Supabase client:', supabase)
-        console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
-        console.log('Supabase Anon Key:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Present' : 'Missing')
-
-        // Timeout de sécurité pour éviter le loading infini
-        const timeoutId = setTimeout(() => {
-            if (isMounted) {
-                console.warn('Auth loading timeout - forcing loading to false')
-                setLoading(false)
-            }
-        }, 10000) // 10 secondes max
-
-        // Test de connexion directe avec timeout
-        const testConnection = async () => {
-            try {
-                console.log('Testing Supabase connection...')
-                const startTime = Date.now()
-                
-                // Ajouter un timeout de 5 secondes
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('getSession timeout after 5s')), 5000)
-                )
-                
-                const sessionPromise = supabase.auth.getSession()
-                
-                const { data, error } = await Promise.race([sessionPromise, timeoutPromise]) as any
-                const endTime = Date.now()
-                console.log(`Direct getSession took ${endTime - startTime}ms:`, { data: data?.session?.user?.id, error })
-            } catch (err) {
-                console.error('Direct getSession error:', err)
-            }
-        }
-        testConnection()
-
-        console.log('Setting up auth state change listener...')
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
-                console.log('Auth state changed:', event, session?.user?.id)
-
                 if (!isMounted) return
 
                 try {
@@ -78,41 +40,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                     if (session?.user) {
                         // Fetch user profile
-                        console.log('Fetching user profile for user:', session.user.id)
-                        const startTime = Date.now()
+                        const { data: profile, error } = await supabase
+                            .from('user_profiles')
+                            .select('id, email, firstname, avatar, is_admin')
+                            .eq('uuid', session.user.id)
+                            .single()
 
-                        try {
-                            // Ajouter un timeout de 8 secondes pour la requête user_profiles
-                            const timeoutPromise = new Promise((_, reject) => 
-                                setTimeout(() => reject(new Error('user_profiles query timeout after 8s')), 8000)
-                            )
-                            
-                            const profilePromise = supabase
-                                .from('user_profiles')
-                                .select('id, email, firstname, avatar, is_admin')
-                                .eq('uuid', session.user.id)
-                                .single()
+                        if (!isMounted) return
 
-                            const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any
-
-                            const endTime = Date.now()
-                            console.log(`User profile query took ${endTime - startTime}ms`)
-
-                            if (!isMounted) return
-
-                            if (error) {
-                                console.error('Error fetching user profile:', error)
-                                setUserProfile(null)
-                            } else {
-                                console.log('User profile loaded:', profile?.firstname || 'No firstname')
-                                setUserProfile(profile)
-                            }
-                        } catch (err) {
-                            const endTime = Date.now()
-                            console.error(`User profile query failed after ${endTime - startTime}ms:`, err)
-                            if (isMounted) {
-                                setUserProfile(null)
-                            }
+                        if (error) {
+                            console.error('Error fetching user profile:', error)
+                            setUserProfile(null)
+                        } else {
+                            setUserProfile(profile)
                         }
                     } else {
                         setUserProfile(null)
@@ -134,21 +74,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         return () => {
             isMounted = false
-            clearTimeout(timeoutId)
             subscription.unsubscribe()
         }
     }, [supabase, router])
 
     const signOut = async () => {
-        console.log('signOut function called')
         try {
             await supabase.auth.signOut()
-            // Use Next.js router for navigation
             router.push('/login')
-            router.refresh() // Force refresh to clear cached state
+            router.refresh()
         } catch (error) {
             console.error('Error signing out:', error)
-            // Even if signOut fails, redirect to login
             router.push('/login')
         }
     }
