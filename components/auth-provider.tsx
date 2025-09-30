@@ -33,58 +33,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         let isMounted = true
 
-        console.log('🚀 AuthProvider useEffect triggered - component mounted')
-        console.log('🚀 useEffect dependencies:', { supabase: !!supabase, router: !!router })
-
-        // Ne pas appeler getInitialSession car getSession() reste bloqué
-        // On se contente d'onAuthStateChange qui fonctionne
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
+        const checkAuth = async () => {
+            try {
+                // Timeout de 3 secondes pour éviter que getSession reste bloqué
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('getSession timeout')), 3000)
+                )
+                
+                const sessionPromise = supabase.auth.getSession()
+                
+                const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]) as any
+                
                 if (!isMounted) return
 
-                try {
-                    setUser(session?.user ?? null)
-
-                    if (session?.user) {
-                        // Fetch user profile
-                        const { data: profile, error } = await supabase
-                            .from('user_profiles')
-                            .select('id, email, firstname, avatar, is_admin')
-                            .eq('uuid', session.user.id)
-                            .single()
-
-                        if (!isMounted) return
-
-                        if (error) {
-                            console.error('Error fetching user profile:', error)
-                            setUserProfile(null)
-                        } else {
-                            setUserProfile(profile)
-                        }
-                    } else {
-                        setUserProfile(null)
-                    }
-                } catch (error) {
-                    console.error('Error in auth state change:', error)
-                    if (isMounted) {
-                        setUser(null)
-                        setUserProfile(null)
-                    }
+                if (error) {
+                    console.error('Error getting session:', error)
+                    setLoading(false)
+                    return
                 }
 
-                // Set loading to false on any auth state change
+                if (session?.user) {
+                    setUser(session.user)
+                    
+                    // Fetch user profile
+                    const { data: profile, error: profileError } = await supabase
+                        .from('user_profiles')
+                        .select('id, email, firstname, avatar, is_admin')
+                        .eq('uuid', session.user.id)
+                        .single()
+
+                    if (!isMounted) return
+
+                    if (profileError) {
+                        console.error('Error fetching user profile:', profileError)
+                        setUserProfile(null)
+                    } else {
+                        setUserProfile(profile)
+                    }
+                } else {
+                    setUser(null)
+                    setUserProfile(null)
+                }
+                
+                setLoading(false)
+            } catch (error) {
+                console.error('Error in checkAuth:', error)
                 if (isMounted) {
+                    setUser(null)
+                    setUserProfile(null)
                     setLoading(false)
                 }
             }
-        )
+        }
+
+        checkAuth()
 
         return () => {
             isMounted = false
-            subscription.unsubscribe()
         }
-    }, [supabase, router])
+    }, [supabase])
 
     const signOut = async () => {
         try {
