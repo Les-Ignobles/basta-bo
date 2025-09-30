@@ -74,7 +74,34 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                         onChange={(v) => setValues((s) => ({ ...s, suffix_plural: v }))}
                     />
                 </div>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">Catégorie</div>
+                    <RadioGroup
+                        value={values.category_id?.toString() || "none"}
+                        onValueChange={(value) => {
+                            setValues((s) => ({ 
+                                ...s, 
+                                category_id: value === "none" ? null : parseInt(value) 
+                            }))
+                        }}
+                        className="grid grid-cols-2 gap-2"
+                    >
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="none" id="none" />
+                            <Label htmlFor="none" className="text-sm">Aucune catégorie</Label>
+                        </div>
+                        {sortedCategories.map((category) => (
+                            <div key={category.id} className="flex items-center space-x-2">
+                                <RadioGroupItem value={category.id.toString()} id={category.id.toString()} />
+                                <Label htmlFor={category.id.toString()} className="text-sm">
+                                    {category.label}
+                                </Label>
+                            </div>
+                        ))}
+                    </RadioGroup>
+                </div>
+                <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">Image</div>
                     {values.name?.fr && values.name.fr.trim() ? (
                         <ImageUpload
                             value={values.img_path ?? undefined}
@@ -83,42 +110,13 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                             ingredientName={values.name?.fr}
                         />
                     ) : (
-                        <div className="space-y-1">
-                            <div className="text-xs text-muted-foreground">Image</div>
-                            <div className="flex items-center justify-center p-4 border-2 border-dashed rounded-md h-32 bg-muted/50">
-                                <div className="text-center text-sm text-muted-foreground">
-                                    <div className="mb-1">📝</div>
-                                    <div>Saisissez d'abord le nom de l'ingrédient</div>
-                                </div>
+                        <div className="flex items-center justify-center p-4 border-2 border-dashed rounded-md h-32 bg-muted/50">
+                            <div className="text-center text-sm text-muted-foreground">
+                                <div className="mb-1">📝</div>
+                                <div>Saisissez d'abord le nom de l'ingrédient</div>
                             </div>
                         </div>
                     )}
-                    <div className="space-y-1">
-                        <div className="text-xs text-muted-foreground">Catégorie</div>
-                        <RadioGroup
-                            value={values.category_id?.toString() || "none"}
-                            onValueChange={(value) => {
-                                setValues((s) => ({ 
-                                    ...s, 
-                                    category_id: value === "none" ? null : parseInt(value) 
-                                }))
-                            }}
-                            className="max-h-[200px] overflow-y-auto space-y-2"
-                        >
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="none" id="none" />
-                                <Label htmlFor="none" className="text-sm">Aucune catégorie</Label>
-                            </div>
-                            {sortedCategories.map((category) => (
-                                <div key={category.id} className="flex items-center space-x-2">
-                                    <RadioGroupItem value={category.id.toString()} id={category.id.toString()} />
-                                    <Label htmlFor={category.id.toString()} className="text-sm">
-                                        {category.label}
-                                    </Label>
-                                </div>
-                            ))}
-                        </RadioGroup>
-                    </div>
                 </div>
             </div>
             <div className="flex justify-end gap-2">
