@@ -20,12 +20,13 @@ export async function POST(request: NextRequest) {
         const arrayBuffer = await file.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
 
-        // Redimensionner l'image à 100x100px sans perte de qualité
+        // Redimensionner l'image à 100x100px sans perte de qualité et enlever le fond
         const resizedBuffer = await sharp(buffer)
             .resize(100, 100, {
                 fit: 'cover',
                 position: 'center'
             })
+            .flatten({ background: { r: 255, g: 255, b: 255, alpha: 1 } }) // Fond blanc opaque
             .jpeg({ quality: 100 })
             .toBuffer()
 
