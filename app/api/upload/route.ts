@@ -20,13 +20,13 @@ export async function POST(request: NextRequest) {
         const arrayBuffer = await file.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
 
-        // Redimensionner l'image à 100x100px
+        // Redimensionner l'image à 100x100px sans perte de qualité
         const resizedBuffer = await sharp(buffer)
             .resize(100, 100, {
                 fit: 'cover',
                 position: 'center'
             })
-            .jpeg({ quality: 90 })
+            .jpeg({ quality: 100 })
             .toBuffer()
 
         // Upload file to Supabase Storage
