@@ -12,6 +12,7 @@ import { Check, ChevronsUpDown, PlusCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { RecipeFormValues, KitchenEquipment, Ingredient } from '@/features/cooking/types'
 import { DishType, DISH_TYPE_LABELS } from '@/features/cooking/types'
+import type { Diet } from '@/features/cooking/types/diet'
 import { useCookingStore } from '@/features/cooking/store'
 
 export type { RecipeFormValues }
@@ -21,6 +22,7 @@ type Props = {
     onSubmit: (values: RecipeFormValues) => Promise<void> | void
     submittingLabel?: string
     kitchenEquipments: KitchenEquipment[]
+    diets: Diet[]
 }
 
 const MONTHS = [
@@ -34,13 +36,14 @@ const DISH_TYPES = [
     { value: DishType.DESSERT, label: DISH_TYPE_LABELS[DishType.DESSERT] }
 ]
 
-export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments }: Props) {
+export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets }: Props) {
     const [values, setValues] = useState<RecipeFormValues>({
         title: '',
         ingredients_name: [],
         img_path: '',
         seasonality_mask: null,
         kitchen_equipments_mask: null,
+        diet_mask: null,
         instructions: '',
         dish_type: DishType.PLAT, // Par défaut "plat"
         ...defaultValues,
@@ -49,6 +52,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
     const [ingredientInput, setIngredientInput] = useState('')
     const [selectedMonths, setSelectedMonths] = useState<boolean[]>(new Array(12).fill(false))
     const [selectedEquipments, setSelectedEquipments] = useState<boolean[]>(new Array(kitchenEquipments.length).fill(false))
+    const [selectedDiets, setSelectedDiets] = useState<boolean[]>(new Array(diets.length).fill(false))
     const [ingredientOpen, setIngredientOpen] = useState(false)
     const [searchResults, setSearchResults] = useState<Ingredient[]>([])
     const [searching, setSearching] = useState(false)
@@ -91,7 +95,14 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
             )
             setSelectedEquipments(equipments)
         }
-    }, [defaultValues, kitchenEquipments])
+
+        if (defaultValues?.diet_mask) {
+            const dietSelections = diets.map(diet =>
+                (defaultValues.diet_mask! & (1 << diet.bit_index)) !== 0
+            )
+            setSelectedDiets(dietSelections)
+        }
+    }, [defaultValues, kitchenEquipments, diets])
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -113,10 +124,19 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                 }
             })
 
+            // Convert selected diets to bitmask
+            let dietMask = 0
+            selectedDiets.forEach((selected, index) => {
+                if (selected) {
+                    dietMask |= (1 << diets[index].bit_index)
+                }
+            })
+
             await onSubmit({
                 ...values,
                 seasonality_mask: seasonalityMask || null,
                 kitchen_equipments_mask: equipmentsMask || null,
+                diet_mask: dietMask || null,
             })
         } finally {
             setLoading(false)
@@ -148,6 +168,10 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
 
     function toggleEquipment(index: number) {
         setSelectedEquipments(prev => prev.map((selected, i) => i === index ? !selected : selected))
+    }
+
+    function toggleDiet(index: number) {
+        setSelectedDiets(prev => prev.map((selected, i) => i === index ? !selected : selected))
     }
 
     return (
@@ -319,6 +343,21 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                                             onCheckedChange={() => toggleEquipment(index)}
                                         />
                                         <span>{equipment.emoji} {equipment.name.fr}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="text-xs text-muted-foreground">Régimes alimentaires</div>
+                            <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+                                {diets.map((diet, index) => (
+                                    <label key={diet.id} className="flex items-center gap-2 text-sm">
+                                        <Checkbox
+                                            checked={selectedDiets[index]}
+                                            onCheckedChange={() => toggleDiet(index)}
+                                        />
+                                        <span>{diet.emoji} {diet.title.fr}</span>
                                     </label>
                                 ))}
                             </div>

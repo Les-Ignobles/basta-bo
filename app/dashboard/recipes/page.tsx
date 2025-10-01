@@ -21,14 +21,17 @@ export default function RecipesIndexPage() {
     const {
         fetchRecipes,
         fetchKitchenEquipments,
+        fetchDiets,
         recipes,
         kitchenEquipments,
+        diets,
         createRecipe,
         updateRecipe,
         deleteRecipe, 
         bulkDeleteRecipes,
         bulkUpdateDishType,
         bulkUpdateSeasonality,
+        bulkUpdateDietMask,
         loading,
         editingRecipe,
         selectedRecipes,
@@ -50,7 +53,8 @@ export default function RecipesIndexPage() {
 
     useEffect(() => {
         fetchKitchenEquipments()
-    }, [fetchKitchenEquipments])
+        fetchDiets()
+    }, [fetchKitchenEquipments, fetchDiets])
 
     useEffect(() => {
         fetchRecipes()
@@ -78,6 +82,7 @@ export default function RecipesIndexPage() {
                 img_path: values.img_path ?? null,
                 seasonality_mask: values.seasonality_mask ?? null,
                 kitchen_equipments_mask: values.kitchen_equipments_mask ?? null,
+                diet_mask: values.diet_mask ?? null,
                 instructions: values.instructions ?? null,
                 dish_type: values.dish_type,
             })
@@ -89,6 +94,7 @@ export default function RecipesIndexPage() {
                 img_path: values.img_path ?? null,
                 seasonality_mask: values.seasonality_mask ?? null,
                 kitchen_equipments_mask: values.kitchen_equipments_mask ?? null,
+                diet_mask: values.diet_mask ?? null,
                 instructions: values.instructions ?? null,
                 dish_type: values.dish_type,
             })
@@ -138,6 +144,10 @@ export default function RecipesIndexPage() {
         await bulkUpdateSeasonality(selectedRecipes, mask)
     }
 
+    const handleBulkUpdateDietMask = async (mask: number) => {
+        await bulkUpdateDietMask(selectedRecipes, mask)
+    }
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -156,6 +166,7 @@ export default function RecipesIndexPage() {
                             onSubmit={handleSubmit}
                             defaultValues={editingRecipe || undefined}
                             kitchenEquipments={kitchenEquipments}
+                            diets={diets}
                         />
                     </DialogContent>
                 </Dialog>
@@ -211,6 +222,8 @@ export default function RecipesIndexPage() {
                     onBulkDelete={handleBulkDelete}
                     onBulkUpdateDishType={handleBulkUpdateDishType}
                     onBulkUpdateSeasonality={handleBulkUpdateSeasonality}
+                    onBulkUpdateDietMask={handleBulkUpdateDietMask}
+                    diets={diets}
                 />
             )}
             <RecipesTable

@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Trash2, X, Calendar } from 'lucide-react'
+import { Trash2, X, Calendar, Utensils } from 'lucide-react'
 import { DISH_TYPE_LABELS, DishType } from '@/features/cooking/types'
+import type { Diet } from '@/features/cooking/types/diet'
 import { useState } from 'react'
 
 type Props = {
@@ -13,6 +14,8 @@ type Props = {
     onBulkDelete: () => void
     onBulkUpdateDishType: (dishType: DishType) => void
     onBulkUpdateSeasonality: (mask: number) => void
+    onBulkUpdateDietMask: (mask: number) => void
+    diets: Diet[]
 }
 
 const MONTHS = [
@@ -20,10 +23,12 @@ const MONTHS = [
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
 ]
 
-export function BulkActionsBar({ selectedCount, onClearSelection, onBulkDelete, onBulkUpdateDishType, onBulkUpdateSeasonality }: Props) {
+export function BulkActionsBar({ selectedCount, onClearSelection, onBulkDelete, onBulkUpdateDishType, onBulkUpdateSeasonality, onBulkUpdateDietMask, diets }: Props) {
     const [selectedDishType, setSelectedDishType] = useState<DishType | ''>('')
     const [selectedMonths, setSelectedMonths] = useState<number[]>([])
+    const [selectedDiets, setSelectedDiets] = useState<number[]>([])
     const [seasonalityOpen, setSeasonalityOpen] = useState(false)
+    const [dietOpen, setDietOpen] = useState(false)
 
     const handleDishTypeChange = (value: string) => {
         if (value === '1' || value === '2' || value === '3') {
@@ -49,6 +54,27 @@ export function BulkActionsBar({ selectedCount, onClearSelection, onBulkDelete, 
         onBulkUpdateSeasonality(mask)
         setSeasonalityOpen(false)
         setSelectedMonths([])
+    }
+
+    const handleDietToggle = (dietIndex: number) => {
+        setSelectedDiets(prev =>
+            prev.includes(dietIndex)
+                ? prev.filter(i => i !== dietIndex)
+                : [...prev, dietIndex]
+        )
+    }
+
+    const handleApplyDiets = () => {
+        let mask = 0
+        for (const dietIndex of selectedDiets) {
+            const diet = diets[dietIndex]
+            if (diet) {
+                mask |= (1 << diet.bit_index)
+            }
+        }
+        onBulkUpdateDietMask(mask)
+        setDietOpen(false)
+        setSelectedDiets([])
     }
 
     return (
@@ -132,6 +158,66 @@ export function BulkActionsBar({ selectedCount, onClearSelection, onBulkDelete, 
                                         size="sm"
                                         onClick={handleApplySeasonality}
                                         disabled={selectedMonths.length === 0}
+                                        className="flex-1"
+                                    >
+                                        Appliquer
+                                    </Button>
+                                </div>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
+                    <Popover open={dietOpen} onOpenChange={setDietOpen}>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 bg-white"
+                            >
+                                <Utensils className="h-4 w-4 mr-2" />
+                                Régimes
+                                {selectedDiets.length > 0 && (
+                                    <span className="ml-2 bg-blue-500 text-white rounded-full px-2 py-0.5 text-xs">
+                                        {selectedDiets.length}
+                                    </span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80" align="end">
+                            <div className="space-y-3">
+                                <div>
+                                    <h4 className="font-medium mb-2">Sélectionnez les régimes</h4>
+                                    <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                                        {diets.map((diet, index) => (
+                                            <label
+                                                key={diet.id}
+                                                className="flex items-center gap-2 text-sm cursor-pointer"
+                                            >
+                                                <Checkbox
+                                                    checked={selectedDiets.includes(index)}
+                                                    onCheckedChange={() => handleDietToggle(index)}
+                                                />
+                                                <span>{diet.emoji} {diet.title.fr}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 pt-2 border-t">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            setSelectedDiets([])
+                                            setDietOpen(false)
+                                        }}
+                                        className="flex-1"
+                                    >
+                                        Annuler
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={handleApplyDiets}
+                                        disabled={selectedDiets.length === 0}
                                         className="flex-1"
                                     >
                                         Appliquer

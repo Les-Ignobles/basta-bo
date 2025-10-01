@@ -37,6 +37,7 @@ export type Recipe = {
     img_path: string | null
     seasonality_mask: number | null
     kitchen_equipments_mask: number | null
+    diet_mask: number | null
     instructions: string | null
     dish_type: DishType
 }
@@ -56,6 +57,7 @@ export type RecipeFormValues = {
     img_path?: string | null
     seasonality_mask?: number | null
     kitchen_equipments_mask?: number | null
+    diet_mask?: number | null
     instructions?: string | null
     dish_type: DishType
 }

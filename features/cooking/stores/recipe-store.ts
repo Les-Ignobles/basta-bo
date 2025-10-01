@@ -1,9 +1,11 @@
 import { create } from 'zustand'
 import { Recipe, KitchenEquipment, RecipeFormValues, DishType } from '../types'
+import type { Diet } from '@/features/cooking/types/diet'
 
 type RecipeState = {
     recipes: Recipe[]
     kitchenEquipments: KitchenEquipment[]
+    diets: Diet[]
     loading: boolean
     error?: string
     // editing state
@@ -19,12 +21,14 @@ type RecipeState = {
     dishType: DishType | 'all'
     fetchRecipes: () => Promise<void>
     fetchKitchenEquipments: () => Promise<void>
+    fetchDiets: () => Promise<void>
     createRecipe: (payload: Omit<RecipeFormValues, 'id'>) => Promise<void>
     updateRecipe: (id: number, payload: Partial<RecipeFormValues>) => Promise<void>
     deleteRecipe: (id: number) => Promise<void>
     bulkDeleteRecipes: (ids: number[]) => Promise<void>
     bulkUpdateDishType: (ids: number[], dishType: DishType) => Promise<void>
     bulkUpdateSeasonality: (ids: number[], seasonalityMask: number) => Promise<void>
+    bulkUpdateDietMask: (ids: number[], dietMask: number) => Promise<void>
     setSearch: (s: string) => void
     setPage: (p: number) => void
     setNoImage: (b: boolean) => void
@@ -39,6 +43,7 @@ type RecipeState = {
 export const useRecipeStore = create<RecipeState>((set, get) => ({
     recipes: [],
     kitchenEquipments: [],
+    diets: [],
     loading: false,
     error: undefined,
     editingRecipe: null,
@@ -74,6 +79,19 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
             set({ kitchenEquipments: data })
         } catch (error) {
             console.error('Failed to fetch kitchen equipments:', error)
+        } finally {
+            set({ loading: false })
+        }
+    },
+
+    async fetchDiets() {
+        set({ loading: true })
+        try {
+            const res = await fetch('/api/diets')
+            const { data } = await res.json()
+            set({ diets: data })
+        } catch (error) {
+            console.error('Failed to fetch diets:', error)
         } finally {
             set({ loading: false })
         }
@@ -173,7 +191,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
             set({ loading: false })
         }
     },
-    
+
     async bulkUpdateSeasonality(ids, seasonalityMask) {
         set({ loading: true })
         try {
@@ -190,6 +208,27 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
             get().fetchRecipes() // Refresh list
         } catch (error) {
             console.error('Failed to bulk update seasonality:', error)
+        } finally {
+            set({ loading: false })
+        }
+    },
+    
+    async bulkUpdateDietMask(ids, dietMask) {
+        set({ loading: true })
+        try {
+            await Promise.all(
+                ids.map(id =>
+                    fetch('/api/recipes', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id, diet_mask: dietMask })
+                    })
+                )
+            )
+            set({ selectedRecipes: [] })
+            get().fetchRecipes() // Refresh list
+        } catch (error) {
+            console.error('Failed to bulk update diet mask:', error)
         } finally {
             set({ loading: false })
         }
