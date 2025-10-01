@@ -186,8 +186,8 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid gap-6">
-                {/* Titre et Type de plat sur la même ligne */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Titre, Type de plat et Image sur la même ligne */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1">
                         <div className="text-xs text-muted-foreground">Titre</div>
                         <Input
@@ -215,6 +215,16 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                                 ))}
                             </SelectContent>
                         </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Image</div>
+                        <ImageUpload
+                            value={values.img_path ?? undefined}
+                            onChange={(url) => setValues(prev => ({ ...prev, img_path: url }))}
+                            bucket="recipes"
+                            ingredientName={values.title}
+                        />
                     </div>
                 </div>
 
@@ -321,16 +331,6 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                     />
                 </div>
 
-                {/* Image Upload */}
-                <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Image</div>
-                    <ImageUpload
-                        value={values.img_path ?? undefined}
-                        onChange={(url) => setValues(prev => ({ ...prev, img_path: url }))}
-                        bucket="recipes"
-                        ingredientName={values.title}
-                    />
-                </div>
 
                 {/* Section des checkboxes sur 3 colonnes */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -379,8 +379,8 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                                     <span>{diet.emoji} {diet.title.fr}</span>
                                 </label>
                             )) || (
-                                <div className="text-sm text-muted-foreground">Chargement des régimes...</div>
-                            )}
+                                    <div className="text-sm text-muted-foreground">Chargement des régimes...</div>
+                                )}
                         </div>
                     </div>
                 </div>
