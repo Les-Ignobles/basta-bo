@@ -52,7 +52,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
     const [ingredientInput, setIngredientInput] = useState('')
     const [selectedMonths, setSelectedMonths] = useState<boolean[]>(new Array(12).fill(false))
     const [selectedEquipments, setSelectedEquipments] = useState<boolean[]>(new Array(kitchenEquipments.length).fill(false))
-    const [selectedDiets, setSelectedDiets] = useState<boolean[]>(new Array(diets.length).fill(false))
+    const [selectedDiets, setSelectedDiets] = useState<boolean[]>(new Array(diets?.length || 0).fill(false))
     const [ingredientOpen, setIngredientOpen] = useState(false)
     const [searchResults, setSearchResults] = useState<Ingredient[]>([])
     const [searching, setSearching] = useState(false)
@@ -96,13 +96,20 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
             setSelectedEquipments(equipments)
         }
 
-        if (defaultValues?.diet_mask) {
+        if (defaultValues?.diet_mask && diets) {
             const dietSelections = diets.map(diet =>
                 (defaultValues.diet_mask! & (1 << diet.bit_index)) !== 0
             )
             setSelectedDiets(dietSelections)
         }
     }, [defaultValues, kitchenEquipments, diets])
+
+    // Mettre à jour selectedDiets quand diets change
+    useEffect(() => {
+        if (diets && diets.length !== selectedDiets.length) {
+            setSelectedDiets(new Array(diets.length).fill(false))
+        }
+    }, [diets, selectedDiets.length])
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -126,11 +133,13 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
 
             // Convert selected diets to bitmask
             let dietMask = 0
-            selectedDiets.forEach((selected, index) => {
-                if (selected) {
-                    dietMask |= (1 << diets[index].bit_index)
-                }
-            })
+            if (diets) {
+                selectedDiets.forEach((selected, index) => {
+                    if (selected && diets[index]) {
+                        dietMask |= (1 << diets[index].bit_index)
+                    }
+                })
+            }
 
             await onSubmit({
                 ...values,
@@ -351,15 +360,17 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                         <div className="space-y-2">
                             <div className="text-xs text-muted-foreground">Régimes alimentaires</div>
                             <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
-                                {diets.map((diet, index) => (
+                                {diets?.map((diet, index) => (
                                     <label key={diet.id} className="flex items-center gap-2 text-sm">
                                         <Checkbox
-                                            checked={selectedDiets[index]}
+                                            checked={selectedDiets[index] || false}
                                             onCheckedChange={() => toggleDiet(index)}
                                         />
                                         <span>{diet.emoji} {diet.title.fr}</span>
                                     </label>
-                                ))}
+                                )) || (
+                                    <div className="text-sm text-muted-foreground">Chargement des régimes...</div>
+                                )}
                             </div>
                         </div>
                     </div>

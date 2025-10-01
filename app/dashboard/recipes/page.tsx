@@ -27,7 +27,7 @@ export default function RecipesIndexPage() {
         diets,
         createRecipe,
         updateRecipe,
-        deleteRecipe, 
+        deleteRecipe,
         bulkDeleteRecipes,
         bulkUpdateDishType,
         bulkUpdateSeasonality,

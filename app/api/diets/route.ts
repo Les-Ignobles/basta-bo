@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { DietRepository } from '@/features/cooking/repositories/diet-repository'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseServer } from '@/lib/supabase/server-client'
 
 export async function GET() {
     try {
-        const supabase = await createClient()
-        const dietRepo = new DietRepository(supabase)
-        
+        const dietRepo = new DietRepository(supabaseServer)
         const diets = await dietRepo.findAll()
         
         return NextResponse.json({ data: diets })
@@ -21,8 +19,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     try {
-        const supabase = await createClient()
-        const dietRepo = new DietRepository(supabase)
+        const dietRepo = new DietRepository(supabaseServer)
         
         const body = await request.json()
         const diet = await dietRepo.create(body)
