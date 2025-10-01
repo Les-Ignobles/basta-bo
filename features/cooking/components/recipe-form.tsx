@@ -217,15 +217,12 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                         </Select>
                     </div>
 
-                    <div className="space-y-1">
-                        <div className="text-xs text-muted-foreground">Image</div>
-                        <ImageUpload
-                            value={values.img_path ?? undefined}
-                            onChange={(url) => setValues(prev => ({ ...prev, img_path: url }))}
-                            bucket="recipes"
-                            ingredientName={values.title}
-                        />
-                    </div>
+                    <ImageUpload
+                        value={values.img_path ?? undefined}
+                        onChange={(url) => setValues(prev => ({ ...prev, img_path: url }))}
+                        bucket="recipes"
+                        ingredientName={values.title}
+                    />
                 </div>
 
                 <div className="space-y-1">
