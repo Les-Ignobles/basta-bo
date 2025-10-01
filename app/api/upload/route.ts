@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabase/server-client'
-import sharp from 'sharp'
+import { Jimp } from 'jimp'
 
 export async function POST(request: NextRequest) {
     try {
@@ -24,21 +24,12 @@ export async function POST(request: NextRequest) {
         const mimeType = file.type
         const isPng = mimeType === 'image/png'
 
-        // Redimensionner l'image à 100x100px sans perte de qualité
-        let sharpInstance = sharp(buffer).resize(100, 100, {
-            fit: 'cover',
-            position: 'center'
-        })
+        // Redimensionner l'image à 100x100px avec Jimp
+        const image = await Jimp.read(buffer)
+        image.cover({ w: 100, h: 100 }) // Redimensionne en mode cover
 
-        // Si PNG, garder le format PNG pour préserver la transparence
-        // Sinon, convertir en JPEG avec qualité maximale
-        if (isPng) {
-            sharpInstance = sharpInstance.png()
-        } else {
-            sharpInstance = sharpInstance.jpeg({ quality: 100 })
-        }
-
-        const resizedBuffer = await sharpInstance.toBuffer()
+        // Convertir en buffer selon le format
+        const resizedBuffer = await image.getBuffer(isPng ? 'image/png' : 'image/jpeg')
 
         // Upload file to Supabase Storage
         const { data, error } = await supabaseServer.storage
