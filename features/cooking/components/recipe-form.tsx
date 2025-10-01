@@ -369,8 +369,8 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                                         <span>{diet.emoji} {diet.title.fr}</span>
                                     </label>
                                 )) || (
-                                    <div className="text-sm text-muted-foreground">Chargement des régimes...</div>
-                                )}
+                                        <div className="text-sm text-muted-foreground">Chargement des régimes...</div>
+                                    )}
                             </div>
                         </div>
                     </div>

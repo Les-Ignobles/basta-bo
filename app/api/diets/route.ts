@@ -6,7 +6,7 @@ export async function GET() {
     try {
         const dietRepo = new DietRepository(supabaseServer)
         const diets = await dietRepo.findAll()
-        
+
         return NextResponse.json({ data: diets })
     } catch (error) {
         console.error('Error fetching diets:', error)
@@ -20,10 +20,10 @@ export async function GET() {
 export async function POST(request: NextRequest) {
     try {
         const dietRepo = new DietRepository(supabaseServer)
-        
+
         const body = await request.json()
         const diet = await dietRepo.create(body)
-        
+
         return NextResponse.json({ data: diet })
     } catch (error) {
         console.error('Error creating diet:', error)

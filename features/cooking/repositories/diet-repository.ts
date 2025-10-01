@@ -1,14 +1,13 @@
-import { SupabaseClient } from '@supabase/supabase-js'
 import { BaseRepository } from '@/lib/repositories/base-repository'
 import type { Diet, DietFormValues } from '@/features/cooking/types/diet'
 
-export class DietRepository extends BaseRepository<Diet, DietFormValues> {
-    constructor(supabase: SupabaseClient) {
-        super(supabase, 'diets')
+export class DietRepository extends BaseRepository<Diet> {
+    constructor(client: any) {
+        super(client, 'diets')
     }
 
     async findAll(): Promise<Diet[]> {
-        const { data, error } = await this.supabase
+        const { data, error } = await this.client
             .from(this.table)
             .select('*')
             .order('order', { ascending: true })
@@ -21,7 +20,7 @@ export class DietRepository extends BaseRepository<Diet, DietFormValues> {
     }
 
     async findById(id: number): Promise<Diet | null> {
-        const { data, error } = await this.supabase
+        const { data, error } = await this.client
             .from(this.table)
             .select('*')
             .eq('id', id)
@@ -38,7 +37,7 @@ export class DietRepository extends BaseRepository<Diet, DietFormValues> {
     }
 
     async findBySlug(slug: string): Promise<Diet | null> {
-        const { data, error } = await this.supabase
+        const { data, error } = await this.client
             .from(this.table)
             .select('*')
             .eq('slug', slug)
@@ -55,7 +54,7 @@ export class DietRepository extends BaseRepository<Diet, DietFormValues> {
     }
 
     async create(payload: DietFormValues): Promise<Diet> {
-        const { data, error } = await this.supabase
+        const { data, error } = await this.client
             .from(this.table)
             .insert(payload)
             .select()
@@ -69,7 +68,7 @@ export class DietRepository extends BaseRepository<Diet, DietFormValues> {
     }
 
     async update(id: number, payload: Partial<DietFormValues>): Promise<Diet> {
-        const { data, error } = await this.supabase
+        const { data, error } = await this.client
             .from(this.table)
             .update(payload)
             .eq('id', id)
@@ -84,7 +83,7 @@ export class DietRepository extends BaseRepository<Diet, DietFormValues> {
     }
 
     async delete(id: number): Promise<void> {
-        const { error } = await this.supabase
+        const { error } = await this.client
             .from(this.table)
             .delete()
             .eq('id', id)
