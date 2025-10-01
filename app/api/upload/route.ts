@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabase/server-client'
+import sharp from 'sharp'
 
 export async function POST(request: NextRequest) {
     try {
@@ -15,12 +16,26 @@ export async function POST(request: NextRequest) {
             )
         }
 
+        // Convertir le fichier en buffer
+        const arrayBuffer = await file.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+
+        // Redimensionner l'image à 100x100px
+        const resizedBuffer = await sharp(buffer)
+            .resize(100, 100, {
+                fit: 'cover',
+                position: 'center'
+            })
+            .jpeg({ quality: 90 })
+            .toBuffer()
+
         // Upload file to Supabase Storage
         const { data, error } = await supabaseServer.storage
             .from(bucket)
-            .upload(fileName, file, {
+            .upload(fileName, resizedBuffer, {
                 cacheControl: '3600',
-                upsert: true
+                upsert: true,
+                contentType: 'image/jpeg'
             })
 
         if (error) {
