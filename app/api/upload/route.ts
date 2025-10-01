@@ -20,14 +20,13 @@ export async function POST(request: NextRequest) {
         const arrayBuffer = await file.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
 
-        // Redimensionner l'image à 100x100px sans perte de qualité et enlever le fond
+        // Redimensionner l'image à 100x100px sans perte de qualité en gardant la transparence
         const resizedBuffer = await sharp(buffer)
             .resize(100, 100, {
                 fit: 'cover',
                 position: 'center'
             })
-            .flatten({ background: { r: 255, g: 255, b: 255, alpha: 1 } }) // Fond blanc opaque
-            .jpeg({ quality: 100 })
+            .png() // Garder le format PNG pour préserver la transparence
             .toBuffer()
 
         // Upload file to Supabase Storage
@@ -36,7 +35,7 @@ export async function POST(request: NextRequest) {
             .upload(fileName, resizedBuffer, {
                 cacheControl: '3600',
                 upsert: true,
-                contentType: 'image/jpeg'
+                contentType: 'image/png'
             })
 
         if (error) {
