@@ -232,14 +232,14 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                     <div className="text-xs text-muted-foreground">
                         Ingrédients
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 w-full">
                         <Popover open={ingredientOpen} onOpenChange={setIngredientOpen}>
                             <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
                                     role="combobox"
                                     aria-expanded={ingredientOpen}
-                                    className="w-full justify-between"
+                                    className="flex-1 justify-between"
                                 >
                                     {ingredientInput || "Ajouter un nouvel ingrédient..."}
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -301,7 +301,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                                 </Command>
                             </PopoverContent>
                         </Popover>
-                        <Button type="button" onClick={() => addIngredient()} size="sm">
+                        <Button type="button" onClick={() => addIngredient()} size="sm" className="shrink-0">
                             Ajouter
                         </Button>
                     </div>
