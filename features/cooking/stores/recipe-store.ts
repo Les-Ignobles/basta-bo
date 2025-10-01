@@ -234,7 +234,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
             set({ loading: false })
         }
     },
-    
+
     async bulkUpdateKitchenEquipmentsMask(ids, equipmentsMask) {
         set({ loading: true })
         try {
