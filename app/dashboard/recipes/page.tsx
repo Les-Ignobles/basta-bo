@@ -25,9 +25,10 @@ export default function RecipesIndexPage() {
         kitchenEquipments,
         createRecipe,
         updateRecipe,
-        deleteRecipe,
+        deleteRecipe, 
         bulkDeleteRecipes,
         bulkUpdateDishType,
+        bulkUpdateSeasonality,
         loading,
         editingRecipe,
         selectedRecipes,
@@ -133,6 +134,10 @@ export default function RecipesIndexPage() {
         await bulkUpdateDishType(selectedRecipes, dishType)
     }
 
+    const handleBulkUpdateSeasonality = async (mask: number) => {
+        await bulkUpdateSeasonality(selectedRecipes, mask)
+    }
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -205,6 +210,7 @@ export default function RecipesIndexPage() {
                     onClearSelection={clearSelection}
                     onBulkDelete={handleBulkDelete}
                     onBulkUpdateDishType={handleBulkUpdateDishType}
+                    onBulkUpdateSeasonality={handleBulkUpdateSeasonality}
                 />
             )}
             <RecipesTable
