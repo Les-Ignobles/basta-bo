@@ -186,33 +186,36 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid gap-6">
-                <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Titre</div>
-                    <Input
-                        value={values.title}
-                        onChange={(e) => setValues(prev => ({ ...prev, title: e.target.value }))}
-                        placeholder="Titre de la recette"
-                        required
-                    />
-                </div>
+                {/* Titre et Type de plat sur la même ligne */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Titre</div>
+                        <Input
+                            value={values.title}
+                            onChange={(e) => setValues(prev => ({ ...prev, title: e.target.value }))}
+                            placeholder="Titre de la recette"
+                            required
+                        />
+                    </div>
 
-                <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Type de plat</div>
-                    <Select
-                        value={values.dish_type.toString()}
-                        onValueChange={(value) => setValues(prev => ({ ...prev, dish_type: parseInt(value) as DishType }))}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner un type de plat" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {DISH_TYPES.map((dishType) => (
-                                <SelectItem key={dishType.value} value={dishType.value.toString()}>
-                                    {dishType.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Type de plat</div>
+                        <Select
+                            value={values.dish_type.toString()}
+                            onValueChange={(value) => setValues(prev => ({ ...prev, dish_type: parseInt(value) as DishType }))}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Sélectionner un type de plat" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {DISH_TYPES.map((dishType) => (
+                                    <SelectItem key={dishType.value} value={dishType.value.toString()}>
+                                        {dishType.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
 
                 <div className="space-y-1">
@@ -318,60 +321,66 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                     />
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                {/* Image Upload */}
+                <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">Image</div>
                     <ImageUpload
                         value={values.img_path ?? undefined}
                         onChange={(url) => setValues(prev => ({ ...prev, img_path: url }))}
                         bucket="recipes"
                         ingredientName={values.title}
                     />
+                </div>
 
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <div className="text-xs text-muted-foreground">Saisonnalité</div>
-                            <div className="grid grid-cols-3 gap-2">
-                                {MONTHS.map((month, index) => (
-                                    <label key={index} className="flex items-center gap-2 text-sm">
-                                        <Checkbox
-                                            checked={selectedMonths[index]}
-                                            onCheckedChange={() => toggleMonth(index)}
-                                        />
-                                        <span>{month}</span>
-                                    </label>
-                                ))}
-                            </div>
+                {/* Section des checkboxes sur 3 colonnes */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Saisonnalité */}
+                    <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground">Saisonnalité</div>
+                        <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                            {MONTHS.map((month, index) => (
+                                <label key={index} className="flex items-center gap-2 text-sm">
+                                    <Checkbox
+                                        checked={selectedMonths[index]}
+                                        onCheckedChange={() => toggleMonth(index)}
+                                    />
+                                    <span>{month}</span>
+                                </label>
+                            ))}
                         </div>
+                    </div>
 
-                        <div className="space-y-2">
-                            <div className="text-xs text-muted-foreground">Équipements de cuisine</div>
-                            <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
-                                {kitchenEquipments.map((equipment, index) => (
-                                    <label key={equipment.id} className="flex items-center gap-2 text-sm">
-                                        <Checkbox
-                                            checked={selectedEquipments[index]}
-                                            onCheckedChange={() => toggleEquipment(index)}
-                                        />
-                                        <span>{equipment.emoji} {equipment.name.fr}</span>
-                                    </label>
-                                ))}
-                            </div>
+                    {/* Équipements de cuisine */}
+                    <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground">Équipements de cuisine</div>
+                        <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                            {kitchenEquipments.map((equipment, index) => (
+                                <label key={equipment.id} className="flex items-center gap-2 text-sm">
+                                    <Checkbox
+                                        checked={selectedEquipments[index]}
+                                        onCheckedChange={() => toggleEquipment(index)}
+                                    />
+                                    <span>{equipment.emoji} {equipment.name.fr}</span>
+                                </label>
+                            ))}
                         </div>
+                    </div>
 
-                        <div className="space-y-2">
-                            <div className="text-xs text-muted-foreground">Régimes alimentaires</div>
-                            <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
-                                {diets?.map((diet, index) => (
-                                    <label key={diet.id} className="flex items-center gap-2 text-sm">
-                                        <Checkbox
-                                            checked={selectedDiets[index] || false}
-                                            onCheckedChange={() => toggleDiet(index)}
-                                        />
-                                        <span>{diet.emoji} {diet.title.fr}</span>
-                                    </label>
-                                )) || (
-                                        <div className="text-sm text-muted-foreground">Chargement des régimes...</div>
-                                    )}
-                            </div>
+                    {/* Régimes alimentaires */}
+                    <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground">Régimes alimentaires</div>
+                        <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                            {diets?.map((diet, index) => (
+                                <label key={diet.id} className="flex items-center gap-2 text-sm">
+                                    <Checkbox
+                                        checked={selectedDiets[index] || false}
+                                        onCheckedChange={() => toggleDiet(index)}
+                                    />
+                                    <span>{diet.emoji} {diet.title.fr}</span>
+                                </label>
+                            )) || (
+                                <div className="text-sm text-muted-foreground">Chargement des régimes...</div>
+                            )}
                         </div>
                     </div>
                 </div>

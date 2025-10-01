@@ -158,7 +158,7 @@ export default function RecipesIndexPage() {
                             setEditingRecipe(null) // Clear edit state
                         }}>Nouvelle recette</Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[800px] max-w-[95vw] w-full">
+                    <DialogContent className="sm:max-w-[1200px] max-w-[95vw] w-full">
                         <DialogHeader>
                             <DialogTitle className="font-christmas">{editingRecipe ? 'Modifier la recette' : 'Nouvelle recette'}</DialogTitle>
                         </DialogHeader>
