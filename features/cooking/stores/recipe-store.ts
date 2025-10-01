@@ -8,6 +8,8 @@ type RecipeState = {
     error?: string
     // editing state
     editingRecipe: Recipe | null
+    // selection state
+    selectedRecipes: number[]
     // filters
     page: number
     pageSize: number
@@ -20,11 +22,17 @@ type RecipeState = {
     createRecipe: (payload: Omit<RecipeFormValues, 'id'>) => Promise<void>
     updateRecipe: (id: number, payload: Partial<RecipeFormValues>) => Promise<void>
     deleteRecipe: (id: number) => Promise<void>
+    bulkDeleteRecipes: (ids: number[]) => Promise<void>
+    bulkUpdateDishType: (ids: number[], dishType: DishType) => Promise<void>
     setSearch: (s: string) => void
     setPage: (p: number) => void
     setNoImage: (b: boolean) => void
     setDishType: (d: DishType | 'all') => void
     setEditingRecipe: (recipe: Recipe | null) => void
+    setSelectedRecipes: (ids: number[]) => void
+    toggleRecipeSelection: (id: number) => void
+    selectAllRecipes: () => void
+    clearSelection: () => void
 }
 
 export const useRecipeStore = create<RecipeState>((set, get) => ({
@@ -33,6 +41,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     loading: false,
     error: undefined,
     editingRecipe: null,
+    selectedRecipes: [],
     page: 1,
     pageSize: 50,
     total: 0,
@@ -122,6 +131,68 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     },
     setDishType(d) {
         set({ dishType: d, page: 1 })
+    },
+
+    async bulkDeleteRecipes(ids) {
+        set({ loading: true })
+        try {
+            await Promise.all(
+                ids.map(id =>
+                    fetch(`/api/recipes?id=${id}`, {
+                        method: 'DELETE',
+                    })
+                )
+            )
+            set({ selectedRecipes: [] })
+            get().fetchRecipes() // Refresh list
+        } catch (error) {
+            console.error('Failed to bulk delete recipes:', error)
+        } finally {
+            set({ loading: false })
+        }
+    },
+
+    async bulkUpdateDishType(ids, dishType) {
+        set({ loading: true })
+        try {
+            await Promise.all(
+                ids.map(id =>
+                    fetch('/api/recipes', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id, dish_type: dishType })
+                    })
+                )
+            )
+            set({ selectedRecipes: [] })
+            get().fetchRecipes() // Refresh list
+        } catch (error) {
+            console.error('Failed to bulk update dish type:', error)
+        } finally {
+            set({ loading: false })
+        }
+    },
+
+    setSelectedRecipes(ids) {
+        set({ selectedRecipes: ids })
+    },
+
+    toggleRecipeSelection(id) {
+        set(state => ({
+            selectedRecipes: state.selectedRecipes.includes(id)
+                ? state.selectedRecipes.filter(i => i !== id)
+                : [...state.selectedRecipes, id]
+        }))
+    },
+
+    selectAllRecipes() {
+        set(state => ({
+            selectedRecipes: state.recipes.map(r => Number(r.id))
+        }))
+    },
+
+    clearSelection() {
+        set({ selectedRecipes: [] })
     },
     setEditingRecipe(recipe) {
         set({ editingRecipe: recipe })

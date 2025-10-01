@@ -2,18 +2,49 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { RecipeForm } from '@/features/cooking/components/recipe-form'
-import type { RecipeFormValues } from '@/features/cooking/types'
+import type { RecipeFormValues, Recipe } from '@/features/cooking/types'
 import { DishType, DISH_TYPE_LABELS } from '@/features/cooking/types'
 import { useRecipeStore } from '@/features/cooking/stores/recipe-store'
 import { RecipesTable } from '@/features/cooking/components/recipes-table'
+import { BulkActionsBar } from '@/features/cooking/components/bulk-actions-bar'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 export default function RecipesIndexPage() {
     const [open, setOpen] = useState(false)
-    const { fetchRecipes, fetchKitchenEquipments, recipes, kitchenEquipments, createRecipe, updateRecipe, deleteRecipe, loading, editingRecipe, setSearch, setPage, page, pageSize, total, setNoImage, noImage, setDishType, dishType, setEditingRecipe } = useRecipeStore()
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
+    const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null)
+    const {
+        fetchRecipes,
+        fetchKitchenEquipments,
+        recipes,
+        kitchenEquipments,
+        createRecipe,
+        updateRecipe,
+        deleteRecipe,
+        bulkDeleteRecipes,
+        bulkUpdateDishType,
+        loading,
+        editingRecipe,
+        selectedRecipes,
+        toggleRecipeSelection,
+        selectAllRecipes,
+        clearSelection,
+        setSearch,
+        setPage,
+        page,
+        pageSize,
+        total,
+        setNoImage,
+        noImage,
+        setDishType,
+        dishType,
+        setEditingRecipe
+    } = useRecipeStore()
     // Plus besoin de charger tous les ingrédients, la recherche se fait côté serveur
 
     useEffect(() => {
@@ -62,6 +93,44 @@ export default function RecipesIndexPage() {
             })
         }
         setOpen(false)
+    }
+
+    const handleSelectRecipe = (recipeId: number, selected: boolean) => {
+        toggleRecipeSelection(recipeId)
+    }
+
+    const handleSelectAll = (selected: boolean) => {
+        if (selected) {
+            selectAllRecipes()
+        } else {
+            clearSelection()
+        }
+    }
+
+    const handleBulkDelete = async () => {
+        setBulkDeleteDialogOpen(true)
+    }
+
+    const confirmBulkDelete = async () => {
+        await bulkDeleteRecipes(selectedRecipes)
+        setBulkDeleteDialogOpen(false)
+    }
+
+    const handleDeleteRecipe = (recipe: Recipe) => {
+        setRecipeToDelete(recipe)
+        setDeleteDialogOpen(true)
+    }
+
+    const confirmDeleteRecipe = async () => {
+        if (recipeToDelete) {
+            await deleteRecipe(Number(recipeToDelete.id))
+            setDeleteDialogOpen(false)
+            setRecipeToDelete(null)
+        }
+    }
+
+    const handleBulkUpdateDishType = async (dishType: DishType) => {
+        await bulkUpdateDishType(selectedRecipes, dishType)
     }
 
     return (
@@ -130,17 +199,72 @@ export default function RecipesIndexPage() {
                     </Button>
                 </div>
             </div>
+            {selectedRecipes.length > 0 && (
+                <BulkActionsBar
+                    selectedCount={selectedRecipes.length}
+                    onClearSelection={clearSelection}
+                    onBulkDelete={handleBulkDelete}
+                    onBulkUpdateDishType={handleBulkUpdateDishType}
+                />
+            )}
             <RecipesTable
                 recipes={recipes}
                 loading={loading}
+                selectedRecipes={selectedRecipes}
+                onSelectRecipe={handleSelectRecipe}
+                onSelectAll={handleSelectAll}
                 onEdit={(recipe) => {
                     setEditingRecipe(recipe)
                     setOpen(true)
                 }}
-                onDelete={async (recipe) => {
-                    await deleteRecipe(Number(recipe.id))
-                }}
+                onDelete={handleDeleteRecipe}
             />
+
+            {/* Modal de confirmation pour suppression individuelle */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Êtes-vous sûr de vouloir supprimer la recette <strong>&quot;{recipeToDelete?.title}&quot;</strong> ?
+                            <br />
+                            Cette action est irréversible.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmDeleteRecipe}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Supprimer
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Modal de confirmation pour suppression en masse */}
+            <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirmer la suppression en masse</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Êtes-vous sûr de vouloir supprimer <strong>{selectedRecipes.length} recette(s)</strong> ?
+                            <br />
+                            Cette action est irréversible et supprimera toutes les recettes sélectionnées.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmBulkDelete}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Supprimer {selectedRecipes.length} recette(s)
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
