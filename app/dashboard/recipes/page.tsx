@@ -32,6 +32,7 @@ export default function RecipesIndexPage() {
         bulkUpdateDishType,
         bulkUpdateSeasonality,
         bulkUpdateDietMask,
+        bulkUpdateKitchenEquipmentsMask,
         loading,
         editingRecipe,
         selectedRecipes,
@@ -148,6 +149,10 @@ export default function RecipesIndexPage() {
         await bulkUpdateDietMask(selectedRecipes, mask)
     }
 
+    const handleBulkUpdateKitchenEquipmentsMask = async (mask: number) => {
+        await bulkUpdateKitchenEquipmentsMask(selectedRecipes, mask)
+    }
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -223,7 +228,9 @@ export default function RecipesIndexPage() {
                     onBulkUpdateDishType={handleBulkUpdateDishType}
                     onBulkUpdateSeasonality={handleBulkUpdateSeasonality}
                     onBulkUpdateDietMask={handleBulkUpdateDietMask}
+                    onBulkUpdateKitchenEquipmentsMask={handleBulkUpdateKitchenEquipmentsMask}
                     diets={diets}
+                    kitchenEquipments={kitchenEquipments}
                 />
             )}
             <RecipesTable

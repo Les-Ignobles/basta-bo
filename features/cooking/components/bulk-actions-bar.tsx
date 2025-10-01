@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Trash2, X, Calendar, Utensils } from 'lucide-react'
-import { DISH_TYPE_LABELS, DishType } from '@/features/cooking/types'
+import { Trash2, X, Calendar, Utensils, ChefHat } from 'lucide-react'
+import { DISH_TYPE_LABELS, DishType, KitchenEquipment } from '@/features/cooking/types'
 import type { Diet } from '@/features/cooking/types/diet'
 import { useState } from 'react'
 
@@ -15,7 +15,9 @@ type Props = {
     onBulkUpdateDishType: (dishType: DishType) => void
     onBulkUpdateSeasonality: (mask: number) => void
     onBulkUpdateDietMask: (mask: number) => void
+    onBulkUpdateKitchenEquipmentsMask: (mask: number) => void
     diets: Diet[]
+    kitchenEquipments: KitchenEquipment[]
 }
 
 const MONTHS = [
@@ -23,12 +25,14 @@ const MONTHS = [
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
 ]
 
-export function BulkActionsBar({ selectedCount, onClearSelection, onBulkDelete, onBulkUpdateDishType, onBulkUpdateSeasonality, onBulkUpdateDietMask, diets }: Props) {
+export function BulkActionsBar({ selectedCount, onClearSelection, onBulkDelete, onBulkUpdateDishType, onBulkUpdateSeasonality, onBulkUpdateDietMask, onBulkUpdateKitchenEquipmentsMask, diets, kitchenEquipments }: Props) {
     const [selectedDishType, setSelectedDishType] = useState<DishType | ''>('')
     const [selectedMonths, setSelectedMonths] = useState<number[]>([])
     const [selectedDiets, setSelectedDiets] = useState<number[]>([])
+    const [selectedEquipments, setSelectedEquipments] = useState<number[]>([])
     const [seasonalityOpen, setSeasonalityOpen] = useState(false)
     const [dietOpen, setDietOpen] = useState(false)
+    const [equipmentOpen, setEquipmentOpen] = useState(false)
 
     const handleDishTypeChange = (value: string) => {
         if (value === '1' || value === '2' || value === '3') {
@@ -75,6 +79,27 @@ export function BulkActionsBar({ selectedCount, onClearSelection, onBulkDelete, 
         onBulkUpdateDietMask(mask)
         setDietOpen(false)
         setSelectedDiets([])
+    }
+
+    const handleEquipmentToggle = (equipmentIndex: number) => {
+        setSelectedEquipments(prev =>
+            prev.includes(equipmentIndex)
+                ? prev.filter(i => i !== equipmentIndex)
+                : [...prev, equipmentIndex]
+        )
+    }
+
+    const handleApplyEquipments = () => {
+        let mask = 0
+        for (const equipmentIndex of selectedEquipments) {
+            const equipment = kitchenEquipments[equipmentIndex]
+            if (equipment && equipment.bit_index !== null) {
+                mask |= (1 << equipment.bit_index)
+            }
+        }
+        onBulkUpdateKitchenEquipmentsMask(mask)
+        setEquipmentOpen(false)
+        setSelectedEquipments([])
     }
 
     return (
@@ -158,6 +183,66 @@ export function BulkActionsBar({ selectedCount, onClearSelection, onBulkDelete, 
                                         size="sm"
                                         onClick={handleApplySeasonality}
                                         disabled={selectedMonths.length === 0}
+                                        className="flex-1"
+                                    >
+                                        Appliquer
+                                    </Button>
+                                </div>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
+                    <Popover open={equipmentOpen} onOpenChange={setEquipmentOpen}>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 bg-white"
+                            >
+                                <ChefHat className="h-4 w-4 mr-2" />
+                                Équipements
+                                {selectedEquipments.length > 0 && (
+                                    <span className="ml-2 bg-blue-500 text-white rounded-full px-2 py-0.5 text-xs">
+                                        {selectedEquipments.length}
+                                    </span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80" align="end">
+                            <div className="space-y-3">
+                                <div>
+                                    <h4 className="font-medium mb-2">Sélectionnez les équipements</h4>
+                                    <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                                        {kitchenEquipments.map((equipment, index) => (
+                                            <label
+                                                key={equipment.id}
+                                                className="flex items-center gap-2 text-sm cursor-pointer"
+                                            >
+                                                <Checkbox
+                                                    checked={selectedEquipments.includes(index)}
+                                                    onCheckedChange={() => handleEquipmentToggle(index)}
+                                                />
+                                                <span>{equipment.emoji} {equipment.name.fr}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 pt-2 border-t">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            setSelectedEquipments([])
+                                            setEquipmentOpen(false)
+                                        }}
+                                        className="flex-1"
+                                    >
+                                        Annuler
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={handleApplyEquipments}
+                                        disabled={selectedEquipments.length === 0}
                                         className="flex-1"
                                     >
                                         Appliquer
