@@ -20,14 +20,25 @@ export async function POST(request: NextRequest) {
         const arrayBuffer = await file.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
 
-        // Redimensionner l'image à 100x100px sans perte de qualité en gardant la transparence
-        const resizedBuffer = await sharp(buffer)
-            .resize(100, 100, {
-                fit: 'cover',
-                position: 'center'
-            })
-            .png() // Garder le format PNG pour préserver la transparence
-            .toBuffer()
+        // Détecter le type MIME de l'image
+        const mimeType = file.type
+        const isPng = mimeType === 'image/png'
+
+        // Redimensionner l'image à 100x100px sans perte de qualité
+        let sharpInstance = sharp(buffer).resize(100, 100, {
+            fit: 'cover',
+            position: 'center'
+        })
+
+        // Si PNG, garder le format PNG pour préserver la transparence
+        // Sinon, convertir en JPEG avec qualité maximale
+        if (isPng) {
+            sharpInstance = sharpInstance.png()
+        } else {
+            sharpInstance = sharpInstance.jpeg({ quality: 100 })
+        }
+
+        const resizedBuffer = await sharpInstance.toBuffer()
 
         // Upload file to Supabase Storage
         const { data, error } = await supabaseServer.storage
@@ -35,7 +46,7 @@ export async function POST(request: NextRequest) {
             .upload(fileName, resizedBuffer, {
                 cacheControl: '3600',
                 upsert: true,
-                contentType: 'image/png'
+                contentType: isPng ? 'image/png' : 'image/jpeg'
             })
 
         if (error) {
