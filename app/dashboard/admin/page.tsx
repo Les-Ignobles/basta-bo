@@ -11,7 +11,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { useRecipeGenerationResultStore } from '@/features/cooking/stores/recipe-generation-result-store'
-import { useDietStore } from '@/features/cooking/stores/diet-store'
 import { useAllergyStore } from '@/features/cooking/stores/allergy-store'
 import { useKitchenEquipmentStore } from '@/features/cooking/stores/kitchen-equipment-store'
 import { MaskDisplay } from '@/features/cooking/components/mask-display'
@@ -43,6 +42,7 @@ import {
     ArrowUp,
     ArrowDown
 } from 'lucide-react'
+import { useDietStore } from '@/features/cooking/stores/diet-store'
 
 export default function AdminPage() {
     const [searchTerm, setSearchTerm] = useState('')
