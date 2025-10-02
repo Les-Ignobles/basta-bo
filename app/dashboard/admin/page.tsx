@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { useRecipeGenerationResultStore } from '@/features/cooking/stores/recipe-generation-result-store'
 import { useDietStore } from '@/features/cooking/stores/diet-store'
 import { useAllergyStore } from '@/features/cooking/stores/allergy-store'
@@ -28,7 +29,8 @@ import {
     Search,
     Trash2,
     Eye,
-    Filter
+    Filter,
+    X
 } from 'lucide-react'
 
 export default function AdminPage() {
@@ -60,6 +62,7 @@ export default function AdminPage() {
         setKitchenEquipmentMask,
         setPage,
         clearOldEntries,
+        deleteBatch,
         clearError
     } = useRecipeGenerationResultStore()
 
@@ -204,6 +207,15 @@ export default function AdminPage() {
         clearDietFilters()
         clearAllergyFilters()
         clearKitchenEquipmentFilters()
+    }
+
+    const handleDeleteBatch = async (id: number) => {
+        try {
+            await deleteBatch(id)
+            // Le store se charge déjà de rafraîchir les données
+        } catch (error) {
+            alert('Erreur lors de la suppression du batch')
+        }
     }
 
     const handleClearOldEntries = async () => {
@@ -671,13 +683,44 @@ export default function AdminPage() {
                                                     <span className="text-sm">{result.picked_count}</span>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setShowDetails(showDetails === result.id ? null : result.id)}
-                                                    >
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => setShowDetails(showDetails === result.id ? null : result.id)}
+                                                        >
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                                >
+                                                                    <X className="h-4 w-4" />
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>Supprimer le batch #{result.id}</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        Êtes-vous sûr de vouloir supprimer ce batch de génération de recettes ? 
+                                                                        Cette action est irréversible et supprimera définitivement toutes les données associées.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                                    <AlertDialogAction
+                                                                        onClick={() => handleDeleteBatch(result.id)}
+                                                                        className="bg-red-600 hover:bg-red-700"
+                                                                    >
+                                                                        Supprimer
+                                                                    </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                             {showDetails === result.id && (

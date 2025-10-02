@@ -8,8 +8,8 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
 
     async findPage({ page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask }: { page: number; pageSize: number; search?: string; dietMask?: number; allergyMask?: number; kitchenEquipmentMask?: number }): Promise<{ data: RecipeGenerationResult[]; total: number }> {
         // Si on a un filtre par masque, on doit faire une approche différente car PostgREST ne supporte pas les opérations bit à bit
-        if ((dietMask !== undefined && dietMask > 0) || 
-            (allergyMask !== undefined && allergyMask > 0) || 
+        if ((dietMask !== undefined && dietMask > 0) ||
+            (allergyMask !== undefined && allergyMask > 0) ||
             (kitchenEquipmentMask !== undefined && kitchenEquipmentMask > 0)) {
             return this.findPageWithMaskFilter({ page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask })
         }
@@ -52,21 +52,21 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
                     return false
                 }
             }
-            
+
             // Filtre par allergy_mask
             if (allergyMask !== undefined && allergyMask > 0) {
                 if (!result.allergies_mask || (result.allergies_mask & allergyMask) === 0) {
                     return false
                 }
             }
-            
+
             // Filtre par kitchen_equipment_mask
             if (kitchenEquipmentMask !== undefined && kitchenEquipmentMask > 0) {
                 if (!result.kitchen_equipment_mask || (result.kitchen_equipment_mask & kitchenEquipmentMask) === 0) {
                     return false
                 }
             }
-            
+
             return true
         })
 
@@ -160,9 +160,18 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
         return (data ?? []) as RecipeGenerationResult[]
     }
 
+    async deleteById(id: number): Promise<void> {
+        const { error } = await (this.client as any)
+            .from(this.table)
+            .delete()
+            .eq('id', id)
+
+        if (error) throw error
+    }
+
     async clearOldEntries(daysOld: number = 30): Promise<number> {
         const cutoffDate = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000).toISOString()
-
+        
         const { data, error } = await (this.client as any)
             .from(this.table)
             .delete()

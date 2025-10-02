@@ -26,6 +26,7 @@ type RecipeGenerationResultActions = {
     setKitchenEquipmentMask: (kitchenEquipmentMask: number | null) => void
     setPage: (page: number) => void
     clearOldEntries: (daysOld?: number) => Promise<void>
+    deleteBatch: (id: number) => Promise<void>
     clearError: () => void
 }
 
@@ -119,7 +120,7 @@ export const useRecipeGenerationResultStore = create<RecipeGenerationResultState
             }
 
             const data = await response.json()
-
+            
             // Rafraîchir les données après suppression
             await Promise.all([
                 get().fetchResults(),
@@ -129,6 +130,37 @@ export const useRecipeGenerationResultStore = create<RecipeGenerationResultState
 
             set({ loading: false })
             return data.deletedCount
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : 'Unknown error',
+                loading: false
+            })
+            throw error
+        }
+    },
+
+    deleteBatch: async (id: number) => {
+        set({ loading: true, error: null })
+        try {
+            const response = await fetch(`/api/recipe-generation-results?action=delete&id=${id}`, {
+                method: 'DELETE'
+            })
+
+            if (!response.ok) {
+                throw new Error('Failed to delete batch')
+            }
+
+            const data = await response.json()
+            
+            // Rafraîchir les données après suppression
+            await Promise.all([
+                get().fetchResults(),
+                get().fetchStats(),
+                get().fetchRecentActivity()
+            ])
+
+            set({ loading: false })
+            return data.message
         } catch (error) {
             set({
                 error: error instanceof Error ? error.message : 'Unknown error',

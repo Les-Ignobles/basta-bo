@@ -49,25 +49,42 @@ export async function DELETE(req: NextRequest) {
     try {
         const repo = new RecipeGenerationResultRepository(supabaseServer)
         const { searchParams } = new URL(req.url)
-
+        
         const action = searchParams.get('action')
-
+        
         if (action === 'clear-old') {
             // Nettoyer les anciennes entrées
             const daysOld = Number(searchParams.get('days') || '30')
             const deletedCount = await repo.clearOldEntries(daysOld)
-            return Response.json({
-                success: true,
+            return Response.json({ 
+                success: true, 
                 deletedCount,
                 message: `${deletedCount} entrées supprimées`
             })
         }
-
+        
+        if (action === 'delete') {
+            // Supprimer un batch spécifique
+            const id = Number(searchParams.get('id'))
+            if (!id) {
+                return Response.json(
+                    { error: 'ID is required' },
+                    { status: 400 }
+                )
+            }
+            
+            await repo.deleteById(id)
+            return Response.json({ 
+                success: true,
+                message: `Batch #${id} supprimé`
+            })
+        }
+        
         return Response.json(
             { error: 'Invalid action' },
             { status: 400 }
         )
-
+        
     } catch (error) {
         console.error('Error in recipe-generation-results DELETE:', error)
         return Response.json(
