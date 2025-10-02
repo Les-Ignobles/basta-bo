@@ -11,12 +11,14 @@ type PendingIngredientState = {
     total: number
     search: string
     editingPendingIngredient: PendingIngredient | null
+    selectedPendingIngredients: number[]
 }
 
 type PendingIngredientActions = {
     fetchPendingIngredients: () => Promise<void>
     fetchPendingCount: () => Promise<void>
     deletePendingIngredient: (id: number) => Promise<void>
+    bulkDeletePendingIngredients: (ids: number[]) => Promise<void>
     convertToIngredient: (pendingId: number, ingredientData: IngredientFormValues) => Promise<void>
     bulkProcessWithAI: (ingredientsToCreate: Record<string, unknown>[], onProgress?: (completed: number, total: number, success: boolean, ingredientName: string) => void) => Promise<{ success: boolean; message: string; processed: number; created: Record<string, unknown>[]; errors?: string[] }>
     previewBulkProcess: (onProgress?: (completed: number, total: number, result?: Record<string, unknown>) => void) => Promise<{ success: boolean; message: string; processed: number; ingredients: Record<string, unknown>[]; errors?: string[] }>
@@ -24,6 +26,10 @@ type PendingIngredientActions = {
     setSearch: (search: string) => void
     setPage: (page: number) => void
     setEditingPendingIngredient: (pendingIngredient: PendingIngredient | null) => void
+    setSelectedPendingIngredients: (ids: number[]) => void
+    togglePendingIngredientSelection: (id: number) => void
+    selectAllPendingIngredients: () => void
+    clearPendingIngredientSelection: () => void
     clearError: () => void
 }
 
@@ -37,6 +43,7 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
     total: 0,
     search: '',
     editingPendingIngredient: null,
+    selectedPendingIngredients: [],
 
     // Actions
     fetchPendingIngredients: async () => {
@@ -343,5 +350,58 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
 
     clearError: () => {
         set({ error: null })
+    },
+
+    bulkDeletePendingIngredients: async (ids: number[]) => {
+        set({ loading: true, error: null })
+        try {
+            // Supprimer chaque pending ingredient individuellement
+            const deletePromises = ids.map(id => 
+                fetch(`/api/pending-ingredients?id=${id}`, {
+                    method: 'DELETE'
+                })
+            )
+
+            await Promise.all(deletePromises)
+
+            // Refresh the list and count
+            await get().fetchPendingIngredients()
+            await get().fetchPendingCount()
+            
+            // Clear selection
+            set({ selectedPendingIngredients: [] })
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : 'Unknown error',
+                loading: false
+            })
+        }
+    },
+
+    setSelectedPendingIngredients: (ids: number[]) => {
+        set({ selectedPendingIngredients: ids })
+    },
+
+    togglePendingIngredientSelection: (id: number) => {
+        set((state) => {
+            const selected = state.selectedPendingIngredients
+            const isSelected = selected.includes(id)
+            
+            if (isSelected) {
+                return { selectedPendingIngredients: selected.filter(selectedId => selectedId !== id) }
+            } else {
+                return { selectedPendingIngredients: [...selected, id] }
+            }
+        })
+    },
+
+    selectAllPendingIngredients: () => {
+        set((state) => ({
+            selectedPendingIngredients: state.pendingIngredients.map(p => p.id)
+        }))
+    },
+
+    clearPendingIngredientSelection: () => {
+        set({ selectedPendingIngredients: [] })
     }
 }))

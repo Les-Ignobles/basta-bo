@@ -6,12 +6,15 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { Checkbox } from '@/components/ui/checkbox'
 import { usePendingIngredientStore } from '@/features/cooking/stores/pending-ingredient-store'
 import { useCookingStore } from '@/features/cooking/store'
 import type { PendingIngredient } from '@/features/cooking/types'
 import type { IngredientFormValues } from '@/features/cooking/components/ingredient-form'
 import type { TranslationText } from '@/lib/i18n'
 import { IngredientForm } from '@/features/cooking/components/ingredient-form'
+import { PendingIngredientsBulkActionsBar } from '@/features/cooking/components/pending-ingredients-bulk-actions-bar'
 import { Clock, Search, Trash2, Plus, Sparkles, Eye, Check, X } from 'lucide-react'
 import { useDebounce } from '@/hooks/use-debounce'
 
@@ -26,6 +29,7 @@ export default function PendingIngredientsPage() {
     const [generatingStates, setGeneratingStates] = useState<Map<number, boolean>>(new Map())
     const [bulkProgress, setBulkProgress] = useState<{ completed: number; total: number } | null>(null)
     const [bulkResults, setBulkResults] = useState<{ success: boolean; ingredientName: string }[]>([])
+    const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
     const debouncedSearch = useDebounce(searchTerm, 400)
 
     const {
@@ -37,14 +41,19 @@ export default function PendingIngredientsPage() {
         total,
         search,
         editingPendingIngredient,
+        selectedPendingIngredients,
         fetchPendingIngredients,
         fetchPendingCount,
         deletePendingIngredient,
+        bulkDeletePendingIngredients,
         bulkProcessWithAI,
         generateIngredientData,
         setSearch,
         setPage,
-        setEditingPendingIngredient
+        setEditingPendingIngredient,
+        togglePendingIngredientSelection,
+        selectAllPendingIngredients,
+        clearPendingIngredientSelection
     } = usePendingIngredientStore()
 
     const { categories, fetchCategories } = useCookingStore()
@@ -84,6 +93,20 @@ export default function PendingIngredientsPage() {
             fetchPendingCount()
         }
     }
+
+    const handleBulkDelete = () => {
+        setBulkDeleteDialogOpen(true)
+    }
+
+    const confirmBulkDelete = async () => {
+        await bulkDeletePendingIngredients(selectedPendingIngredients)
+        setBulkDeleteDialogOpen(false)
+        // Rafraîchir le compteur dans la sidebar
+        fetchPendingCount()
+    }
+
+    const allSelected = selectedPendingIngredients.length === pendingIngredients.length && pendingIngredients.length > 0
+    const someSelected = selectedPendingIngredients.length > 0 && selectedPendingIngredients.length < pendingIngredients.length
 
     const handlePreviewBulkProcess = async () => {
         if (pendingIngredients.length === 0) {
@@ -213,14 +236,30 @@ export default function PendingIngredientsPage() {
 
             {/* Barre de recherche et bouton magique */}
             <div className="flex items-center justify-between gap-4">
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                        placeholder="Rechercher un ingrédient..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                    />
+                <div className="flex items-center gap-4">
+                    <div className="relative flex-1 max-w-sm">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                        <Input
+                            placeholder="Rechercher un ingrédient..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10"
+                        />
+                    </div>
+                    
+                    {pendingIngredients.length > 0 && (
+                        <Checkbox
+                            checked={allSelected}
+                            onCheckedChange={(checked) => {
+                                if (checked) {
+                                    selectAllPendingIngredients()
+                                } else {
+                                    clearPendingIngredientSelection()
+                                }
+                            }}
+                            className="shrink-0"
+                        />
+                    )}
                 </div>
 
                 {pendingIngredients.length > 0 && (
@@ -367,11 +406,18 @@ export default function PendingIngredientsPage() {
                             >
                                 <CardHeader className="pb-3">
                                     <div className="flex items-center justify-between">
-                                        <div>
-                                            <CardTitle className="text-lg">{pendingIngredient.name}</CardTitle>
-                                            <CardDescription>
-                                                Ajouté le {new Date(pendingIngredient.created_at).toLocaleDateString('fr-FR')}
-                                            </CardDescription>
+                                        <div className="flex items-center gap-3">
+                                            <Checkbox
+                                                checked={selectedPendingIngredients.includes(pendingIngredient.id)}
+                                                onCheckedChange={() => togglePendingIngredientSelection(pendingIngredient.id)}
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                            <div>
+                                                <CardTitle className="text-lg">{pendingIngredient.name}</CardTitle>
+                                                <CardDescription>
+                                                    Ajouté le {new Date(pendingIngredient.created_at).toLocaleDateString('fr-FR')}
+                                                </CardDescription>
+                                            </div>
                                         </div>
                                         <div className="flex items-center space-x-2">
                                             <Button
@@ -690,6 +736,35 @@ export default function PendingIngredientsPage() {
                     )}
                 </DialogContent>
             </Dialog>
+
+            {/* Barre d'actions en masse */}
+            <PendingIngredientsBulkActionsBar
+                selectedCount={selectedPendingIngredients.length}
+                onClearSelection={clearPendingIngredientSelection}
+                onBulkDelete={handleBulkDelete}
+            />
+
+            {/* Modal de confirmation de suppression en masse */}
+            <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Supprimer les ingrédients en attente</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Êtes-vous sûr de vouloir supprimer {selectedPendingIngredients.length} ingrédient{selectedPendingIngredients.length > 1 ? 's' : ''} en attente ?
+                            Cette action est irréversible.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmBulkDelete}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            Supprimer
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
