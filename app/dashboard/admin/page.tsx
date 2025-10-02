@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { useRecipeGenerationResultStore } from '@/features/cooking/stores/recipe-generation-result-store'
 import { useDietStore } from '@/features/cooking/stores/diet-store'
@@ -401,7 +402,7 @@ export default function AdminPage() {
                             className="pl-10"
                         />
                     </div>
-                    
+
                     {/* Contrôles de tri */}
                     <div className="flex gap-2 items-center">
                         <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
@@ -415,7 +416,7 @@ export default function AdminPage() {
                                 <SelectItem value="picked_count">Sélections</SelectItem>
                             </SelectContent>
                         </Select>
-                        
+
                         <Button
                             variant="outline"
                             size="sm"
