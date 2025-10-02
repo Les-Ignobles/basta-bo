@@ -830,13 +830,41 @@ export default function AdminPage() {
                                                             </div>
 
                                                             <div>
-                                                                <h5 className="font-medium text-sm mb-2">Ingrédients ({result.ingredients.length})</h5>
-                                                                <div className="flex flex-wrap gap-1">
-                                                                    {result.ingredients.map((ingredient, index) => (
-                                                                        <Badge key={index} variant="outline" className="text-xs">
-                                                                            {ingredient}
-                                                                        </Badge>
-                                                                    ))}
+                                                                <h5 className="font-medium text-sm mb-2">Recettes générées</h5>
+                                                                <div className="space-y-2">
+                                                                    {result.result && Array.isArray(result.result) ? (
+                                                                        result.result.map((recipe: any, index: number) => (
+                                                                            <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                                                                                <div className="font-medium text-sm mb-1">
+                                                                                    {recipe.title || `Recette ${index + 1}`}
+                                                                                </div>
+                                                                                <div className="text-xs text-gray-600">
+                                                                                    {recipe.description || recipe.instructions || 'Aucune description'}
+                                                                                </div>
+                                                                                {recipe.ingredients && (
+                                                                                    <div className="mt-2">
+                                                                                        <div className="text-xs font-medium text-gray-500 mb-1">Ingrédients:</div>
+                                                                                        <div className="flex flex-wrap gap-1">
+                                                                                            {recipe.ingredients.slice(0, 5).map((ingredient: string, ingIndex: number) => (
+                                                                                                <Badge key={ingIndex} variant="outline" className="text-xs">
+                                                                                                    {ingredient}
+                                                                                                </Badge>
+                                                                                            ))}
+                                                                                            {recipe.ingredients.length > 5 && (
+                                                                                                <Badge variant="secondary" className="text-xs">
+                                                                                                    +{recipe.ingredients.length - 5} autres
+                                                                                                </Badge>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        ))
+                                                                    ) : (
+                                                                        <div className="text-sm text-gray-500 italic">
+                                                                            {result.result ? 'Données de recettes non disponibles' : 'Aucune recette générée'}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             </div>
 
