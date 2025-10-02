@@ -14,6 +14,8 @@ type RecipeGenerationResultState = {
     dietMask: number | null
     allergyMask: number | null
     kitchenEquipmentMask: number | null
+    sortBy: 'created_at' | 'last_used_at' | 'shown_count' | 'picked_count'
+    sortOrder: 'asc' | 'desc'
 }
 
 type RecipeGenerationResultActions = {
@@ -24,6 +26,8 @@ type RecipeGenerationResultActions = {
     setDietMask: (dietMask: number | null) => void
     setAllergyMask: (allergyMask: number | null) => void
     setKitchenEquipmentMask: (kitchenEquipmentMask: number | null) => void
+    setSortBy: (sortBy: 'created_at' | 'last_used_at' | 'shown_count' | 'picked_count') => void
+    setSortOrder: (sortOrder: 'asc' | 'desc') => void
     setPage: (page: number) => void
     clearOldEntries: (daysOld?: number) => Promise<void>
     deleteBatch: (id: number) => Promise<void>
@@ -44,19 +48,23 @@ export const useRecipeGenerationResultStore = create<RecipeGenerationResultState
     dietMask: null,
     allergyMask: null,
     kitchenEquipmentMask: null,
+    sortBy: 'last_used_at',
+    sortOrder: 'desc',
 
     // Actions
     fetchResults: async () => {
         set({ loading: true, error: null })
         try {
-            const { page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask } = get()
+            const { page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask, sortBy, sortOrder } = get()
             const params = new URLSearchParams({
                 page: page.toString(),
                 pageSize: pageSize.toString(),
                 ...(search && { search }),
                 ...(dietMask !== null && { dietMask: dietMask.toString() }),
                 ...(allergyMask !== null && { allergyMask: allergyMask.toString() }),
-                ...(kitchenEquipmentMask !== null && { kitchenEquipmentMask: kitchenEquipmentMask.toString() })
+                ...(kitchenEquipmentMask !== null && { kitchenEquipmentMask: kitchenEquipmentMask.toString() }),
+                sortBy,
+                sortOrder
             })
 
             const response = await fetch(`/api/recipe-generation-results?${params}`)
@@ -184,6 +192,14 @@ export const useRecipeGenerationResultStore = create<RecipeGenerationResultState
 
     setKitchenEquipmentMask: (kitchenEquipmentMask: number | null) => {
         set({ kitchenEquipmentMask, page: 1 })
+    },
+
+    setSortBy: (sortBy: 'created_at' | 'last_used_at' | 'shown_count' | 'picked_count') => {
+        set({ sortBy, page: 1 })
+    },
+
+    setSortOrder: (sortOrder: 'asc' | 'desc') => {
+        set({ sortOrder, page: 1 })
     },
 
     setPage: (page: number) => {

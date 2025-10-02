@@ -6,12 +6,12 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
         super(client, 'recipe_generation_results')
     }
 
-    async findPage({ page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask }: { page: number; pageSize: number; search?: string; dietMask?: number; allergyMask?: number; kitchenEquipmentMask?: number }): Promise<{ data: RecipeGenerationResult[]; total: number }> {
+    async findPage({ page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask, sortBy = 'last_used_at', sortOrder = 'desc' }: { page: number; pageSize: number; search?: string; dietMask?: number; allergyMask?: number; kitchenEquipmentMask?: number; sortBy?: 'created_at' | 'last_used_at' | 'shown_count' | 'picked_count'; sortOrder?: 'asc' | 'desc' }): Promise<{ data: RecipeGenerationResult[]; total: number }> {
         // Si on a un filtre par masque, on doit faire une approche différente car PostgREST ne supporte pas les opérations bit à bit
         if ((dietMask !== undefined && dietMask > 0) ||
             (allergyMask !== undefined && allergyMask > 0) ||
             (kitchenEquipmentMask !== undefined && kitchenEquipmentMask > 0)) {
-            return this.findPageWithMaskFilter({ page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask })
+            return this.findPageWithMaskFilter({ page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask, sortBy, sortOrder })
         }
 
         // Approche normale sans filtre de régime
@@ -24,13 +24,13 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
             query = query.or(`ingredients.cs.{${search}},pool_signature.ilike.%${search}%`)
         }
 
-        query = query.order('last_used_at', { ascending: false, nullsLast: true })
+        query = query.order(sortBy, { ascending: sortOrder === 'asc', nullsLast: true })
         const { data, error, count } = await query.range(from, to)
         if (error) throw error
         return { data: (data ?? []) as RecipeGenerationResult[], total: count ?? 0 }
     }
 
-    private async findPageWithMaskFilter({ page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask }: { page: number; pageSize: number; search?: string; dietMask?: number; allergyMask?: number; kitchenEquipmentMask?: number }): Promise<{ data: RecipeGenerationResult[]; total: number }> {
+    private async findPageWithMaskFilter({ page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask, sortBy = 'last_used_at', sortOrder = 'desc' }: { page: number; pageSize: number; search?: string; dietMask?: number; allergyMask?: number; kitchenEquipmentMask?: number; sortBy?: 'created_at' | 'last_used_at' | 'shown_count' | 'picked_count'; sortOrder?: 'asc' | 'desc' }): Promise<{ data: RecipeGenerationResult[]; total: number }> {
         // Récupérer toutes les données pour appliquer le filtre côté client
         let query = (this.client as any).from(this.table).select('*')
 
@@ -39,7 +39,7 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
             query = query.or(`ingredients.cs.{${search}},pool_signature.ilike.%${search}%`)
         }
 
-        query = query.order('last_used_at', { ascending: false, nullsLast: true })
+        query = query.order(sortBy, { ascending: sortOrder === 'asc', nullsLast: true })
         const { data, error } = await query
         if (error) throw error
 

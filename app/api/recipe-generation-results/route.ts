@@ -32,8 +32,10 @@ export async function GET(req: NextRequest) {
         const allergyMask = allergyMaskParam ? Number(allergyMaskParam) : undefined
         const kitchenEquipmentMaskParam = searchParams.get('kitchenEquipmentMask')
         const kitchenEquipmentMask = kitchenEquipmentMaskParam ? Number(kitchenEquipmentMaskParam) : undefined
+        const sortBy = (searchParams.get('sortBy') ?? 'last_used_at') as 'created_at' | 'last_used_at' | 'shown_count' | 'picked_count'
+        const sortOrder = (searchParams.get('sortOrder') ?? 'desc') as 'asc' | 'desc'
         
-        const { data, total } = await repo.findPage({ page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask })
+        const { data, total } = await repo.findPage({ page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask, sortBy, sortOrder })
         return Response.json({ data, total, page, pageSize })
 
     } catch (error) {

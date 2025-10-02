@@ -61,6 +61,10 @@ export default function AdminPage() {
         setDietMask,
         setAllergyMask,
         setKitchenEquipmentMask,
+        setSortBy,
+        setSortOrder,
+        sortBy,
+        sortOrder,
         setPage,
         clearOldEntries,
         deleteBatch,
@@ -112,6 +116,10 @@ export default function AdminPage() {
         }, 400)
         return () => clearTimeout(timeout)
     }, [searchTerm, setSearch, setPage, fetchResults])
+
+    useEffect(() => {
+        fetchResults()
+    }, [sortBy, sortOrder, fetchResults])
 
     useEffect(() => {
         fetchResults()
@@ -392,6 +400,30 @@ export default function AdminPage() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10"
                         />
+                    </div>
+                    
+                    {/* Contrôles de tri */}
+                    <div className="flex gap-2 items-center">
+                        <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Trier par..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="last_used_at">Dernière utilisation</SelectItem>
+                                <SelectItem value="created_at">Date de création</SelectItem>
+                                <SelectItem value="shown_count">Affichages</SelectItem>
+                                <SelectItem value="picked_count">Sélections</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                            className="px-3"
+                        >
+                            {sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                        </Button>
                     </div>
 
                     {/* Filtre par régime */}
@@ -738,13 +770,13 @@ export default function AdminPage() {
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <MaskDisplay 
-                                                        mask={result.kitchen_equipment_mask} 
+                                                    <MaskDisplay
+                                                        mask={result.kitchen_equipment_mask}
                                                         items={kitchenEquipment.map(equipment => ({
                                                             id: equipment.id,
                                                             name: equipment.emoji,
                                                             emoji: equipment.emoji
-                                                        }))} 
+                                                        }))}
                                                         maxItems={2}
                                                         className="text-xs"
                                                     />
