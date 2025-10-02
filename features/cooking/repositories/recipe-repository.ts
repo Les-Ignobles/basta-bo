@@ -33,21 +33,21 @@ export class RecipeRepository extends BaseRepository<Recipe> {
         // Pour l'instant, utiliser la méthode normale et filtrer côté client
         // TODO: Implémenter une solution SQL plus robuste si nécessaire
         const result = await this.findPage({ search, page, pageSize, noImage, dishType })
-        
+
         if (diets && diets.length > 0) {
             const filteredRecipes = result.data.filter((recipe: Recipe) => {
                 if (!recipe.diet_mask || recipe.diet_mask === null) return false
-                
+
                 // Vérifier si la recette a au moins un des régimes sélectionnés
                 return diets.some(dietId => {
                     const bitPosition = 1 << (dietId - 1)
                     return (recipe.diet_mask! & bitPosition) > 0
                 })
             })
-            
+
             return { data: filteredRecipes, total: filteredRecipes.length }
         }
-        
+
         return result
     }
 }

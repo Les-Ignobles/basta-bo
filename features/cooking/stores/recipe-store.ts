@@ -69,29 +69,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
             if (selectedDiets.length > 0) params.set('diets', selectedDiets.join(','))
             const res = await fetch(`/api/recipes?${params.toString()}`)
             const json = await res.json()
-            
-            let filteredRecipes = json.data ?? []
-            let filteredTotal = json.total ?? 0
-            
-            // Appliquer le filtre par régimes alimentaires côté client
-            if (selectedDiets.length > 0) {
-                filteredRecipes = filteredRecipes.filter((recipe: Recipe) => {
-                    if (!recipe.diet_mask) return false
-                    
-                    // Vérifier si la recette a au moins un des régimes sélectionnés
-                    return selectedDiets.some(dietId => {
-                        const bitPosition = 1 << (dietId - 1)
-                        return (recipe.diet_mask & bitPosition) > 0
-                    })
-                })
-                
-                // Recalculer le total pour les recettes filtrées
-                // Note: Ce n'est pas parfait car on ne connaît pas le vrai total filtré
-                // mais c'est une approximation acceptable
-                filteredTotal = filteredRecipes.length
-            }
-            
-            set({ recipes: filteredRecipes, total: filteredTotal })
+            set({ recipes: json.data ?? [], total: json.total ?? 0 })
         } catch (e: any) {
             set({ error: e?.message ?? 'Erreur de chargement' })
         } finally {

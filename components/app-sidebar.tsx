@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Salad, UtensilsCrossed, LogOut, User, Clock } from "lucide-react"
+import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/components/auth-provider"
@@ -63,6 +63,22 @@ export function AppSidebar() {
                                                 {total > 99 ? '99+' : total}
                                             </Badge>
                                         )}
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
+                
+                <SidebarGroup>
+                    <SidebarGroupLabel className="font-christmas">Admin</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton asChild isActive={pathname === '/dashboard/admin'}>
+                                    <Link href="/dashboard/admin" className="flex items-center gap-2">
+                                        <Settings className="size-4" />
+                                        <span>Recipe Batch</span>
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
