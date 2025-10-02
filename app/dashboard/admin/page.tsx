@@ -813,25 +813,20 @@ export default function AdminPage() {
                                                                 </div>
 
                                                                 <div>
-                                                                    <h5 className="font-medium text-sm mb-2">Métriques</h5>
-                                                                    <div className="space-y-1 text-sm">
-                                                                        <div><span className="font-medium">Score compatibilité:</span>
-                                                                            <span className={`ml-1 ${getScoreColor(result.compatibility_score)}`}>
-                                                                                {result.compatibility_score ?
-                                                                                    (result.compatibility_score * 100).toFixed(1) + '%' :
-                                                                                    'N/A'
-                                                                                }
-                                                                            </span>
-                                                                        </div>
-                                                                        <div><span className="font-medium">Compatibilité positive:</span> {result.compat_pos || 'N/A'}</div>
-                                                                        <div><span className="font-medium">Compatibilité négative:</span> {result.compat_neg || 'N/A'}</div>
+                                                                    <h5 className="font-medium text-sm mb-2">Ingrédients générés ({result.ingredients.length})</h5>
+                                                                    <div className="flex flex-wrap gap-1">
+                                                                        {result.ingredients.map((ingredient: string, index: number) => (
+                                                                            <Badge key={index} variant="outline" className="text-xs">
+                                                                                {ingredient}
+                                                                            </Badge>
+                                                                        ))}
                                                                     </div>
                                                                 </div>
                                                             </div>
 
                                                             <div>
                                                                 <h5 className="font-medium text-sm mb-2">Recettes générées</h5>
-                                                                <div className="space-y-2">
+                                                                <div className="grid grid-cols-2 gap-3">
                                                                     {result.result && Array.isArray(result.result) ? (
                                                                         result.result.map((recipe: any, index: number) => (
                                                                             <div key={index} className="border rounded-lg p-3 bg-gray-50">
@@ -845,14 +840,14 @@ export default function AdminPage() {
                                                                                     <div className="mt-2">
                                                                                         <div className="text-xs font-medium text-gray-500 mb-1">Ingrédients:</div>
                                                                                         <div className="flex flex-wrap gap-1">
-                                                                                            {recipe.ingredients.slice(0, 5).map((ingredient: string, ingIndex: number) => (
+                                                                                            {recipe.ingredients.slice(0, 4).map((ingredient: string, ingIndex: number) => (
                                                                                                 <Badge key={ingIndex} variant="outline" className="text-xs">
                                                                                                     {ingredient}
                                                                                                 </Badge>
                                                                                             ))}
-                                                                                            {recipe.ingredients.length > 5 && (
+                                                                                            {recipe.ingredients.length > 4 && (
                                                                                                 <Badge variant="secondary" className="text-xs">
-                                                                                                    +{recipe.ingredients.length - 5} autres
+                                                                                                    +{recipe.ingredients.length - 4} autres
                                                                                                 </Badge>
                                                                                             )}
                                                                                         </div>
@@ -861,7 +856,7 @@ export default function AdminPage() {
                                                                             </div>
                                                                         ))
                                                                     ) : (
-                                                                        <div className="text-sm text-gray-500 italic">
+                                                                        <div className="col-span-2 text-sm text-gray-500 italic">
                                                                             {result.result ? 'Données de recettes non disponibles' : 'Aucune recette générée'}
                                                                         </div>
                                                                     )}
