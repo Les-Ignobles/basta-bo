@@ -127,8 +127,8 @@ export default function AdminPage() {
         // Calculer le diet_mask : somme des bit_index des régimes sélectionnés
         const newDietMask = newSelectedDiets.reduce((mask, dietId) => {
             const diet = diets.find(d => d.id === dietId)
-            if (diet && diet.bit_index) {
-                const bitPosition = Math.pow(2, diet.bit_index)
+            if (diet && diet.bit_index !== null) {
+                const bitPosition = 1 << diet.bit_index
                 return mask | bitPosition
             }
             return mask
@@ -149,8 +149,8 @@ export default function AdminPage() {
         // Calculer le allergy_mask
         const newAllergyMask = newSelectedAllergies.reduce((mask, allergyId) => {
             const allergy = allergies.find(a => a.id === allergyId)
-            if (allergy && allergy.bit_index) {
-                const bitPosition = Math.pow(2, allergy.bit_index)
+            if (allergy && allergy.bit_index !== null) {
+                const bitPosition = 1 << allergy.bit_index
                 return mask | bitPosition
             }
             return mask
@@ -171,8 +171,8 @@ export default function AdminPage() {
         // Calculer le kitchen_equipment_mask
         const newKitchenEquipmentMask = newSelectedKitchenEquipment.reduce((mask, equipmentId) => {
             const equipment = kitchenEquipment.find(e => e.id === equipmentId)
-            if (equipment && equipment.bit_index) {
-                const bitPosition = Math.pow(2, equipment.bit_index)
+            if (equipment && equipment.bit_index !== null) {
+                const bitPosition = 1 << equipment.bit_index
                 return mask | bitPosition
             }
             return mask
@@ -714,12 +714,12 @@ export default function AdminPage() {
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <MaskDisplay 
-                                                        mask={result.diets_mask} 
+                                                    <MaskDisplay
+                                                        mask={result.diets_mask}
                                                         items={diets.map(diet => ({
                                                             id: diet.id,
                                                             displayText: diet.title?.fr || diet.slug
-                                                        }))} 
+                                                        }))}
                                                         maxItems={2}
                                                         className="text-xs"
                                                     />
