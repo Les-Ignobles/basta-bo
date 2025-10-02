@@ -143,9 +143,9 @@ export default function AdminPage() {
         const newSelectedAllergies = selectedAllergies.includes(allergyId)
             ? selectedAllergies.filter(id => id !== allergyId)
             : [...selectedAllergies, allergyId]
-        
+
         setSelectedAllergies(newSelectedAllergies)
-        
+
         // Calculer le allergy_mask
         const newAllergyMask = newSelectedAllergies.reduce((mask, allergyId) => {
             const allergy = allergies.find(a => a.id === allergyId)
@@ -155,7 +155,7 @@ export default function AdminPage() {
             }
             return mask
         }, 0)
-        
+
         setAllergyMask(newSelectedAllergies.length > 0 ? newAllergyMask : null)
         setPage(1)
         fetchResults()
@@ -165,9 +165,9 @@ export default function AdminPage() {
         const newSelectedKitchenEquipment = selectedKitchenEquipment.includes(equipmentId)
             ? selectedKitchenEquipment.filter(id => id !== equipmentId)
             : [...selectedKitchenEquipment, equipmentId]
-        
+
         setSelectedKitchenEquipment(newSelectedKitchenEquipment)
-        
+
         // Calculer le kitchen_equipment_mask
         const newKitchenEquipmentMask = newSelectedKitchenEquipment.reduce((mask, equipmentId) => {
             const equipment = kitchenEquipment.find(e => e.id === equipmentId)
@@ -177,7 +177,7 @@ export default function AdminPage() {
             }
             return mask
         }, 0)
-        
+
         setKitchenEquipmentMask(newSelectedKitchenEquipment.length > 0 ? newKitchenEquipmentMask : null)
         setPage(1)
         fetchResults()
@@ -577,8 +577,8 @@ export default function AdminPage() {
 
                 <AlertDialog open={clearCacheDialogOpen} onOpenChange={setClearCacheDialogOpen}>
                     <AlertDialogTrigger asChild>
-                        <Button 
-                            variant="outline" 
+                        <Button
+                            variant="outline"
                             disabled={loading}
                         >
                             <Trash2 className="h-4 w-4 mr-2" />
@@ -589,7 +589,7 @@ export default function AdminPage() {
                         <AlertDialogHeader>
                             <AlertDialogTitle>Nettoyer le cache ancien</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Sélectionnez la période de rétention pour nettoyer le cache. 
+                                Sélectionnez la période de rétention pour nettoyer le cache.
                                 Les entrées plus anciennes que la période sélectionnée seront définitivement supprimées.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
@@ -714,25 +714,25 @@ export default function AdminPage() {
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <MaskDisplay 
-                                                        mask={result.diets_mask} 
-                                                        items={diets} 
+                                                    <MaskDisplay
+                                                        mask={result.diets_mask}
+                                                        items={diets}
                                                         maxItems={2}
                                                         className="text-xs"
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <MaskDisplay 
-                                                        mask={result.allergies_mask} 
-                                                        items={allergies} 
+                                                    <MaskDisplay
+                                                        mask={result.allergies_mask}
+                                                        items={allergies}
                                                         maxItems={2}
                                                         className="text-xs"
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <MaskDisplay 
-                                                        mask={result.kitchen_equipment_mask} 
-                                                        items={kitchenEquipment} 
+                                                    <MaskDisplay
+                                                        mask={result.kitchen_equipment_mask}
+                                                        items={kitchenEquipment}
                                                         maxItems={2}
                                                         className="text-xs"
                                                     />
@@ -766,7 +766,7 @@ export default function AdminPage() {
                                                                 <AlertDialogHeader>
                                                                     <AlertDialogTitle>Supprimer le batch #{result.id}</AlertDialogTitle>
                                                                     <AlertDialogDescription>
-                                                                        Êtes-vous sûr de vouloir supprimer ce batch de génération de recettes ? 
+                                                                        Êtes-vous sûr de vouloir supprimer ce batch de génération de recettes ?
                                                                         Cette action est irréversible et supprimera définitivement toutes les données associées.
                                                                     </AlertDialogDescription>
                                                                 </AlertDialogHeader>

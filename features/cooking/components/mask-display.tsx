@@ -10,8 +10,8 @@ interface MaskDisplayProps {
 
 export function MaskDisplay({ mask, items, maxItems = 3, className = '' }: MaskDisplayProps) {
     const decodedItems = decodeMask(mask, items)
-    
-    
+
+
     if (decodedItems.length === 0) {
         return <span className="text-muted-foreground text-sm">Aucun</span>
     }
@@ -23,8 +23,7 @@ export function MaskDisplay({ mask, items, maxItems = 3, className = '' }: MaskD
         <div className={`flex flex-wrap gap-1 ${className}`}>
             {displayItems.map((item) => (
                 <Badge key={item.id} variant="outline" className="text-xs">
-                    <span className="mr-1">{item.emoji}</span>
-                    {item.title?.fr || item.title?.en || item.name?.fr || item.name?.en || 'N/A'}
+                    {item.emoji}
                 </Badge>
             ))}
             {remainingCount > 0 && (
