@@ -15,6 +15,18 @@ import { useDietStore } from '@/features/cooking/stores/diet-store'
 import { useAllergyStore } from '@/features/cooking/stores/allergy-store'
 import { useKitchenEquipmentStore } from '@/features/cooking/stores/kitchen-equipment-store'
 import { MaskDisplay } from '@/features/cooking/components/mask-display'
+
+interface SessionRecipe {
+    title?: string
+    description?: string
+    instructions?: string
+    ingredients?: string[]
+    is_adapted?: boolean
+    original_recipe_id?: number | null
+    meal_count?: number
+    remaining_meal_count?: number
+    expiration_days?: number
+}
 import {
     Database,
     Cpu,
@@ -852,7 +864,7 @@ export default function AdminPage() {
                                                                 <h5 className="font-medium text-sm mb-2">Recettes générées</h5>
                                                                 <div className="grid grid-cols-2 gap-3">
                                                                     {result.result && Array.isArray(result.result) ? (
-                                                                        result.result.map((recipe: Record<string, unknown>, index: number) => (
+                                                                        result.result.map((recipe: SessionRecipe, index: number) => (
                                                                             <div key={index} className="border rounded-lg p-3 bg-gray-50">
                                                                                 <div className="font-medium text-sm mb-1">
                                                                                     {recipe.title || `Recette ${index + 1}`}
