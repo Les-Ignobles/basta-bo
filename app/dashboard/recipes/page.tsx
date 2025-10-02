@@ -247,7 +247,7 @@ export default function RecipesIndexPage() {
                                             />
                                             <span className="flex items-center gap-2">
                                                 <span>{diet.emoji}</span>
-                                                <span>{(diet.title as { fr?: string })?.fr || diet.title}</span>
+                                                <span>{(diet.title as { fr?: string })?.fr || String(diet.title)}</span>
                                             </span>
                                         </label>
                                     ))}

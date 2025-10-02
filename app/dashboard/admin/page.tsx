@@ -879,12 +879,12 @@ export default function AdminPage() {
                                                                                     )}
                                                                                 </div>
                                                                                 <div className="flex gap-2 mb-2">
-                                                                                    {recipe.meal_count > 0 && (
+                                                                                    {recipe.meal_count && recipe.meal_count > 0 && (
                                                                                         <Badge variant={recipe.is_adapted ? "secondary" : "default"} className="text-xs">
                                                                                             {recipe.meal_count} repas
                                                                                         </Badge>
                                                                                     )}
-                                                                                    {recipe.remaining_meal_count < recipe.meal_count && recipe.remaining_meal_count > 0 && (
+                                                                                    {recipe.remaining_meal_count && recipe.meal_count && recipe.remaining_meal_count < recipe.meal_count && recipe.remaining_meal_count > 0 && (
                                                                                         <Badge variant="outline" className="text-xs">
                                                                                             {recipe.remaining_meal_count} restants
                                                                                         </Badge>
