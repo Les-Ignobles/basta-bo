@@ -3,6 +3,6 @@ import type { KitchenEquipment } from '../types/kitchen-equipment'
 
 export class KitchenEquipmentRepository extends BaseRepository<KitchenEquipment> {
     constructor(client: any) {
-        super(client, 'kitchen_equipment')
+        super(client, 'kitchen_equipments')
     }
 }
