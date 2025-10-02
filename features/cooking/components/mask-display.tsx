@@ -3,7 +3,7 @@ import { decodeMask } from '@/lib/utils/mask-utils'
 
 interface MaskDisplayProps {
     mask: number | null
-    items: Array<{ id: number; emoji: string; displayText?: string }>
+    items: Array<{ id: number; displayText: string }>
     maxItems?: number
     className?: string
 }
@@ -22,7 +22,7 @@ export function MaskDisplay({ mask, items, maxItems = 3, className = '' }: MaskD
         <div className={`flex flex-wrap gap-1 ${className}`}>
             {displayItems.map((item) => (
                 <Badge key={item.id} variant="outline" className="text-xs">
-                    {item.emoji}
+                    {item.displayText}
                 </Badge>
             ))}
             {remainingCount > 0 && (

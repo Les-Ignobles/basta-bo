@@ -718,8 +718,7 @@ export default function AdminPage() {
                                                         mask={result.diets_mask} 
                                                         items={diets.map(diet => ({
                                                             id: diet.id,
-                                                            emoji: diet.emoji,
-                                                            displayText: diet.title?.fr || diet.slug
+                                                            displayText: diet.emoji
                                                         }))} 
                                                         maxItems={2}
                                                         className="text-xs"
@@ -730,8 +729,7 @@ export default function AdminPage() {
                                                         mask={result.allergies_mask} 
                                                         items={allergies.map(allergy => ({
                                                             id: allergy.id,
-                                                            emoji: allergy.emoji || '🚫',
-                                                            displayText: allergy.name?.fr || allergy.slug
+                                                            displayText: allergy.slug
                                                         }))} 
                                                         maxItems={2}
                                                         className="text-xs"
@@ -742,8 +740,7 @@ export default function AdminPage() {
                                                         mask={result.kitchen_equipment_mask} 
                                                         items={kitchenEquipment.map(equipment => ({
                                                             id: equipment.id,
-                                                            emoji: equipment.emoji,
-                                                            displayText: equipment.name?.fr || equipment.slug
+                                                            displayText: equipment.emoji
                                                         }))} 
                                                         maxItems={2}
                                                         className="text-xs"
