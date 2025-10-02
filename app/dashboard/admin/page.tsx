@@ -738,13 +738,13 @@ export default function AdminPage() {
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <MaskDisplay
-                                                        mask={result.kitchen_equipment_mask}
+                                                    <MaskDisplay 
+                                                        mask={result.kitchen_equipment_mask} 
                                                         items={kitchenEquipment.map(equipment => ({
                                                             id: equipment.id,
-                                                            name: equipment.emoji,
+                                                            name: equipment.name?.fr || equipment.slug,
                                                             emoji: equipment.emoji
-                                                        }))}
+                                                        }))} 
                                                         maxItems={2}
                                                         className="text-xs"
                                                     />
