@@ -840,21 +840,23 @@ export default function AdminPage() {
                                                                                         <span className="text-green-600">Nouvelle recette</span>
                                                                                     )}
                                                                                 </div>
-                                                                                <div className="flex gap-2 mb-2">
-                                                                                    <Badge variant={recipe.is_adapted ? "secondary" : "default"} className="text-xs">
-                                                                                        {recipe.meal_count} repas
-                                                                                    </Badge>
-                                                                                    {recipe.remaining_meal_count < recipe.meal_count && (
-                                                                                        <Badge variant="outline" className="text-xs">
-                                                                                            {recipe.remaining_meal_count} restants
-                                                                                        </Badge>
-                                                                                    )}
-                                                                                    {recipe.expiration_days && (
-                                                                                        <Badge variant="outline" className="text-xs">
-                                                                                            {recipe.expiration_days}j
-                                                                                        </Badge>
-                                                                                    )}
-                                                                                </div>
+                                                <div className="flex gap-2 mb-2">
+                                                    {recipe.meal_count > 0 && (
+                                                        <Badge variant={recipe.is_adapted ? "secondary" : "default"} className="text-xs">
+                                                            {recipe.meal_count} repas
+                                                        </Badge>
+                                                    )}
+                                                    {recipe.remaining_meal_count < recipe.meal_count && recipe.remaining_meal_count > 0 && (
+                                                        <Badge variant="outline" className="text-xs">
+                                                            {recipe.remaining_meal_count} restants
+                                                        </Badge>
+                                                    )}
+                                                    {recipe.expiration_days && recipe.expiration_days > 0 && (
+                                                        <Badge variant="outline" className="text-xs">
+                                                            {recipe.expiration_days}j
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                                                                 {recipe.ingredients && recipe.ingredients.length > 0 && (
                                                                                     <div className="mt-2">
                                                                                         <div className="text-xs font-medium text-gray-500 mb-1">Ingrédients:</div>
@@ -882,18 +884,6 @@ export default function AdminPage() {
                                                                 </div>
                                                             </div>
 
-                                                            {result.original_recipes.length > 0 && (
-                                                                <div>
-                                                                    <h5 className="font-medium text-sm mb-2">Recettes originales ({result.original_recipes.length})</h5>
-                                                                    <div className="flex flex-wrap gap-1">
-                                                                        {result.original_recipes.map((recipeId, index) => (
-                                                                            <Badge key={index} variant="secondary" className="text-xs">
-                                                                                #{recipeId}
-                                                                            </Badge>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            )}
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
