@@ -714,34 +714,37 @@ export default function AdminPage() {
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <MaskDisplay
-                                                        mask={result.diets_mask}
+                                                    <MaskDisplay 
+                                                        mask={result.diets_mask} 
                                                         items={diets.map(diet => ({
                                                             id: diet.id,
-                                                            displayText: diet.title?.fr || diet.slug
-                                                        }))}
+                                                            name: diet.title?.fr || diet.slug,
+                                                            emoji: diet.emoji
+                                                        }))} 
                                                         maxItems={2}
                                                         className="text-xs"
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <MaskDisplay
-                                                        mask={result.allergies_mask}
+                                                    <MaskDisplay 
+                                                        mask={result.allergies_mask} 
                                                         items={allergies.map(allergy => ({
                                                             id: allergy.id,
-                                                            displayText: allergy.slug
-                                                        }))}
+                                                            name: allergy.slug,
+                                                            emoji: allergy.emoji
+                                                        }))} 
                                                         maxItems={2}
                                                         className="text-xs"
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <MaskDisplay
-                                                        mask={result.kitchen_equipment_mask}
+                                                    <MaskDisplay 
+                                                        mask={result.kitchen_equipment_mask} 
                                                         items={kitchenEquipment.map(equipment => ({
                                                             id: equipment.id,
-                                                            displayText: equipment.emoji
-                                                        }))}
+                                                            name: equipment.emoji,
+                                                            emoji: equipment.emoji
+                                                        }))} 
                                                         maxItems={2}
                                                         className="text-xs"
                                                     />
@@ -833,15 +836,15 @@ export default function AdminPage() {
                                                                                 <div className="font-medium text-sm mb-1">
                                                                                     {recipe.title || `Recette ${index + 1}`}
                                                                                 </div>
-                                                <div className="text-xs text-gray-600 mb-2">
-                                                    {recipe.is_adapted && recipe.original_recipe_id ? (
-                                                        <span className="text-blue-600">Adaptée de la recette #{recipe.original_recipe_id}</span>
-                                                    ) : recipe.original_recipe_id && !recipe.is_adapted ? (
-                                                        <span className="text-purple-600">Recette originale #{recipe.original_recipe_id}</span>
-                                                    ) : (
-                                                        <span className="text-green-600">Nouvelle recette</span>
-                                                    )}
-                                                </div>
+                                                                                <div className="text-xs text-gray-600 mb-2">
+                                                                                    {recipe.is_adapted && recipe.original_recipe_id ? (
+                                                                                        <span className="text-blue-600">Adaptée de la recette #{recipe.original_recipe_id}</span>
+                                                                                    ) : recipe.original_recipe_id && !recipe.is_adapted ? (
+                                                                                        <span className="text-purple-600">Recette originale #{recipe.original_recipe_id}</span>
+                                                                                    ) : (
+                                                                                        <span className="text-green-600">Nouvelle recette</span>
+                                                                                    )}
+                                                                                </div>
                                                                                 <div className="flex gap-2 mb-2">
                                                                                     {recipe.meal_count > 0 && (
                                                                                         <Badge variant={recipe.is_adapted ? "secondary" : "default"} className="text-xs">

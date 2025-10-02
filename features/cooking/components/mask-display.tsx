@@ -1,9 +1,10 @@
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { decodeMask } from '@/lib/utils/mask-utils'
 
 interface MaskDisplayProps {
     mask: number | null
-    items: Array<{ id: number; displayText: string }>
+    items: Array<{ id: number; name: string; emoji?: string }>
     maxItems?: number
     className?: string
 }
@@ -22,13 +23,31 @@ export function MaskDisplay({ mask, items, maxItems = 3, className = '' }: MaskD
         <div className={`flex flex-wrap gap-1 ${className}`}>
             {displayItems.map((item) => (
                 <Badge key={item.id} variant="outline" className="text-xs">
-                    {item.displayText}
+                    {item.name}
                 </Badge>
             ))}
             {remainingCount > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                    +{remainingCount}
-                </Badge>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Badge variant="secondary" className="text-xs cursor-help">
+                                +{remainingCount}
+                            </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <div className="space-y-1">
+                                <div className="font-medium text-xs">Équipements restants :</div>
+                                <div className="flex flex-wrap gap-1">
+                                    {decodedItems.slice(maxItems).map((item) => (
+                                        <Badge key={item.id} variant="outline" className="text-xs">
+                                            {item.name}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
             )}
         </div>
     )
