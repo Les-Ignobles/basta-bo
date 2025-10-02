@@ -13,7 +13,10 @@ export async function GET(req: NextRequest) {
     const dishType = dishTypeParam ? Number(dishTypeParam) : undefined
     const dietsParam = searchParams.get('diets')
     const diets = dietsParam ? dietsParam.split(',').map(Number) : undefined
-    const { data, total } = await repo.findPage({ search, page, pageSize, noImage, dishType, diets })
+    
+    const { data, total } = diets && diets.length > 0 
+        ? await repo.findPageWithDiets({ search, page, pageSize, noImage, dishType, diets })
+        : await repo.findPage({ search, page, pageSize, noImage, dishType })
     return Response.json({ data, total, page, pageSize })
 }
 
