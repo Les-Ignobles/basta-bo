@@ -136,8 +136,8 @@ export default function AdminPage() {
         setSelectedDiets(newSelectedDiets)
 
         // Calculer le diet_mask : somme des bit_index des régimes sélectionnés
-        const newDietMask = newSelectedDiets.reduce((mask, dietId) => {
-            const diet = diets.find(d => d.id === dietId)
+        const newDietMask = newSelectedDiets.reduce((mask: number, dietId: number) => {
+            const diet = diets.find((d: any) => d.id === dietId)
             if (diet && diet.bit_index !== null) {
                 const bitPosition = 1 << diet.bit_index
                 return mask | bitPosition
@@ -463,7 +463,7 @@ export default function AdminPage() {
                                             Chargement des régimes...
                                         </div>
                                     ) : (
-                                        diets?.map((diet) => (
+                                        diets?.map((diet: any) => (
                                             <div key={diet.id} className="flex items-center space-x-2">
                                                 <Checkbox
                                                     id={`diet-${diet.id}`}
@@ -751,7 +751,7 @@ export default function AdminPage() {
                                                 <TableCell>
                                                     <MaskDisplay
                                                         mask={result.diets_mask}
-                                                        items={diets.map(diet => ({
+                                                        items={diets.map((diet: any) => ({
                                                             id: diet.id,
                                                             name: diet.title?.fr || diet.slug,
                                                             emoji: diet.emoji

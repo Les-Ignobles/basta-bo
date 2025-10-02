@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Diet } from '../types'
+import type { Diet } from '../types/diet'
 
 type DietState = {
     diets: Diet[]
