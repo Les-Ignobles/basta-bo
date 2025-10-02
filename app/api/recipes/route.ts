@@ -11,7 +11,9 @@ export async function GET(req: NextRequest) {
     const noImage = (searchParams.get('noImage') ?? 'false') === 'true'
     const dishTypeParam = searchParams.get('dishType')
     const dishType = dishTypeParam ? Number(dishTypeParam) : undefined
-    const { data, total } = await repo.findPage({ search, page, pageSize, noImage, dishType })
+    const dietsParam = searchParams.get('diets')
+    const diets = dietsParam ? dietsParam.split(',').map(Number) : undefined
+    const { data, total } = await repo.findPage({ search, page, pageSize, noImage, dishType, diets })
     return Response.json({ data, total, page, pageSize })
 }
 

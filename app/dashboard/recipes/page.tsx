@@ -13,7 +13,8 @@ import { BulkActionsBar } from '@/features/cooking/components/bulk-actions-bar'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { BookOpen } from 'lucide-react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { BookOpen, Utensils } from 'lucide-react'
 
 export default function RecipesIndexPage() {
     const [open, setOpen] = useState(false)
@@ -50,6 +51,8 @@ export default function RecipesIndexPage() {
         noImage,
         setDishType,
         dishType,
+        selectedDiets,
+        setSelectedDiets,
         setEditingRecipe
     } = useRecipeStore()
     // Plus besoin de charger tous les ingrédients, la recherche se fait côté serveur
@@ -155,6 +158,15 @@ export default function RecipesIndexPage() {
         await bulkUpdateKitchenEquipmentsMask(selectedRecipes, mask)
     }
 
+    const handleDietToggle = (dietId: number) => {
+        const newSelectedDiets = selectedDiets.includes(dietId)
+            ? selectedDiets.filter(id => id !== dietId)
+            : [...selectedDiets, dietId]
+        setSelectedDiets(newSelectedDiets)
+        setPage(1)
+        fetchRecipes()
+    }
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -211,6 +223,52 @@ export default function RecipesIndexPage() {
                             ))}
                         </SelectContent>
                     </Select>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="flex items-center gap-2">
+                                <Utensils className="h-4 w-4" />
+                                Régimes
+                                {selectedDiets.length > 0 && (
+                                    <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+                                        {selectedDiets.length}
+                                    </span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80">
+                            <div className="space-y-2">
+                                <h4 className="font-medium text-sm">Filtrer par régimes alimentaires</h4>
+                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    {diets.map((diet) => (
+                                        <label key={diet.id} className="flex items-center gap-2 text-sm">
+                                            <Checkbox
+                                                checked={selectedDiets.includes(diet.id)}
+                                                onCheckedChange={() => handleDietToggle(diet.id)}
+                                            />
+                                            <span className="flex items-center gap-2">
+                                                <span>{diet.emoji}</span>
+                                                <span>{(diet.title as any)?.fr || diet.title}</span>
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
+                                {selectedDiets.length > 0 && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            setSelectedDiets([])
+                                            setPage(1)
+                                            fetchRecipes()
+                                        }}
+                                        className="w-full"
+                                    >
+                                        Effacer les filtres
+                                    </Button>
+                                )}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
                     <label className="flex items-center gap-2 text-sm whitespace-nowrap">
                         <Checkbox checked={noImage} onCheckedChange={(v) => { setNoImage(Boolean(v)); setPage(1); fetchRecipes(); }} />
                         Sans image

@@ -19,6 +19,7 @@ type RecipeState = {
     search: string
     noImage: boolean
     dishType: DishType | 'all'
+    selectedDiets: number[]
     fetchRecipes: () => Promise<void>
     fetchKitchenEquipments: () => Promise<void>
     fetchDiets: () => Promise<void>
@@ -34,6 +35,7 @@ type RecipeState = {
     setPage: (p: number) => void
     setNoImage: (b: boolean) => void
     setDishType: (d: DishType | 'all') => void
+    setSelectedDiets: (diets: number[]) => void
     setEditingRecipe: (recipe: Recipe | null) => void
     setSelectedRecipes: (ids: number[]) => void
     toggleRecipeSelection: (id: number) => void
@@ -55,14 +57,16 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     search: '',
     noImage: false,
     dishType: 'all',
+    selectedDiets: [],
     async fetchRecipes() {
         set({ loading: true, error: undefined })
         try {
-            const { page, pageSize, search, noImage, dishType } = get()
+            const { page, pageSize, search, noImage, dishType, selectedDiets } = get()
             const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
             if (search) params.set('search', search)
             if (noImage) params.set('noImage', 'true')
             if (dishType !== 'all') params.set('dishType', String(dishType))
+            if (selectedDiets.length > 0) params.set('diets', selectedDiets.join(','))
             const res = await fetch(`/api/recipes?${params.toString()}`)
             const json = await res.json()
             set({ recipes: json.data ?? [], total: json.total ?? 0 })
@@ -279,5 +283,8 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     },
     setEditingRecipe(recipe) {
         set({ editingRecipe: recipe })
+    },
+    setSelectedDiets(diets) {
+        set({ selectedDiets: diets })
     },
 }))

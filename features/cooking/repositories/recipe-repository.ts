@@ -6,7 +6,7 @@ export class RecipeRepository extends BaseRepository<Recipe> {
         super(client, 'recipes')
     }
 
-    async findPage({ search, page, pageSize, noImage, dishType }: { search?: string; page: number; pageSize: number; noImage?: boolean; dishType?: number }): Promise<{ data: Recipe[]; total: number }> {
+    async findPage({ search, page, pageSize, noImage, dishType, diets }: { search?: string; page: number; pageSize: number; noImage?: boolean; dishType?: number; diets?: number[] }): Promise<{ data: Recipe[]; total: number }> {
         const from = (page - 1) * pageSize
         const to = from + pageSize - 1
         let query = (this.client as any).from(this.table).select('*', { count: 'exact' })
@@ -21,6 +21,18 @@ export class RecipeRepository extends BaseRepository<Recipe> {
 
         if (dishType !== undefined) {
             query = query.eq('dish_type', dishType)
+        }
+
+        if (diets && diets.length > 0) {
+            // Filtre par régimes alimentaires : la recette doit avoir au moins un des régimes sélectionnés
+            // Utilisation d'un OR pour chaque régime sélectionné
+            const dietConditions = diets.map(dietId => 
+                `diet_mask & ${1 << (dietId - 1)} > 0`
+            ).join(' OR ')
+            
+            if (dietConditions) {
+                query = query.or(dietConditions)
+            }
         }
 
         query = query.order('title', { ascending: true })
