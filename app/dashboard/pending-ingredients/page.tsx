@@ -246,7 +246,7 @@ export default function PendingIngredientsPage() {
                             className="pl-10"
                         />
                     </div>
-                    
+
                     {pendingIngredients.length > 0 && (
                         <Checkbox
                             checked={allSelected}

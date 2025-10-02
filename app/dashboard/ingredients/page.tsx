@@ -2,13 +2,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
 import { IngredientForm, type IngredientFormValues } from '@/features/cooking/components/ingredient-form'
 import { useCookingStore } from '@/features/cooking/store'
 import { IngredientsTable } from '@/features/cooking/components/ingredients-table'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ChevronDown, Filter } from 'lucide-react'
+import { ChevronDown, Filter, ChefHat } from 'lucide-react'
 
 export default function IngredientsIndexPage() {
     const [open, setOpen] = useState(false)
@@ -66,7 +67,13 @@ export default function IngredientsIndexPage() {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h1 className="text-xl font-semibold font-christmas">Ingrédients</h1>
+                <div className="flex items-center gap-4">
+                    <h1 className="text-xl font-semibold font-christmas">Ingrédients</h1>
+                    <Badge variant="secondary" className="flex items-center gap-2">
+                        <ChefHat className="h-4 w-4" />
+                        {total} ingrédient{total > 1 ? 's' : ''}
+                    </Badge>
+                </div>
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
                         <Button disabled={loading} onClick={() => {

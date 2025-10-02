@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
 import { RecipeForm } from '@/features/cooking/components/recipe-form'
 import type { RecipeFormValues, Recipe } from '@/features/cooking/types'
 import { DishType, DISH_TYPE_LABELS } from '@/features/cooking/types'
@@ -12,6 +13,7 @@ import { BulkActionsBar } from '@/features/cooking/components/bulk-actions-bar'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { BookOpen } from 'lucide-react'
 
 export default function RecipesIndexPage() {
     const [open, setOpen] = useState(false)
@@ -156,7 +158,13 @@ export default function RecipesIndexPage() {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h1 className="text-xl font-semibold font-christmas">Recettes</h1>
+                <div className="flex items-center gap-4">
+                    <h1 className="text-xl font-semibold font-christmas">Recettes</h1>
+                    <Badge variant="secondary" className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4" />
+                        {total} recette{total > 1 ? 's' : ''}
+                    </Badge>
+                </div>
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
                         <Button disabled={loading} onClick={() => {

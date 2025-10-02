@@ -356,7 +356,7 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
         set({ loading: true, error: null })
         try {
             // Supprimer chaque pending ingredient individuellement
-            const deletePromises = ids.map(id => 
+            const deletePromises = ids.map(id =>
                 fetch(`/api/pending-ingredients?id=${id}`, {
                     method: 'DELETE'
                 })
@@ -367,7 +367,7 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
             // Refresh the list and count
             await get().fetchPendingIngredients()
             await get().fetchPendingCount()
-            
+
             // Clear selection
             set({ selectedPendingIngredients: [] })
         } catch (error) {
@@ -386,7 +386,7 @@ export const usePendingIngredientStore = create<PendingIngredientState & Pending
         set((state) => {
             const selected = state.selectedPendingIngredients
             const isSelected = selected.includes(id)
-            
+
             if (isSelected) {
                 return { selectedPendingIngredients: selected.filter(selectedId => selectedId !== id) }
             } else {
