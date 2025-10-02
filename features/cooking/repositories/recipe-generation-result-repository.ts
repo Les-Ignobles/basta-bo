@@ -171,7 +171,7 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
 
     async clearOldEntries(daysOld: number = 30): Promise<number> {
         const cutoffDate = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000).toISOString()
-        
+
         const { data, error } = await (this.client as any)
             .from(this.table)
             .delete()

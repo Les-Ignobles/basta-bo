@@ -40,6 +40,7 @@ export default function AdminPage() {
     const [selectedDiets, setSelectedDiets] = useState<number[]>([])
     const [selectedAllergies, setSelectedAllergies] = useState<number[]>([])
     const [selectedKitchenEquipment, setSelectedKitchenEquipment] = useState<number[]>([])
+    const [clearCacheDialogOpen, setClearCacheDialogOpen] = useState(false)
 
     const {
         results,
@@ -218,14 +219,13 @@ export default function AdminPage() {
         }
     }
 
-    const handleClearOldEntries = async () => {
-        if (confirm('Êtes-vous sûr de vouloir supprimer les entrées de plus de 30 jours ?')) {
-            try {
-                const deletedCount = await clearOldEntries(30)
-                alert(`${deletedCount} entrées supprimées`)
-            } catch (error) {
-                alert('Erreur lors de la suppression')
-            }
+    const handleClearOldEntries = async (daysOld: number) => {
+        try {
+            const deletedCount = await clearOldEntries(daysOld)
+            alert(`${deletedCount} entrées supprimées`)
+            setClearCacheDialogOpen(false)
+        } catch (error) {
+            alert('Erreur lors de la suppression')
         }
     }
 
@@ -575,14 +575,75 @@ export default function AdminPage() {
                     )}
                 </div>
 
-                <Button
-                    variant="outline"
-                    onClick={handleClearOldEntries}
-                    disabled={loading}
-                >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Nettoyer ancien cache
-                </Button>
+                <AlertDialog open={clearCacheDialogOpen} onOpenChange={setClearCacheDialogOpen}>
+                    <AlertDialogTrigger asChild>
+                        <Button 
+                            variant="outline" 
+                            disabled={loading}
+                        >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Nettoyer ancien cache
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Nettoyer le cache ancien</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Sélectionnez la période de rétention pour nettoyer le cache. 
+                                Les entrées plus anciennes que la période sélectionnée seront définitivement supprimées.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handleClearOldEntries(7)}
+                                    className="flex flex-col items-center p-4 h-auto"
+                                >
+                                    <div className="font-semibold">7 jours</div>
+                                    <div className="text-xs text-muted-foreground">Cache récent</div>
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handleClearOldEntries(14)}
+                                    className="flex flex-col items-center p-4 h-auto"
+                                >
+                                    <div className="font-semibold">14 jours</div>
+                                    <div className="text-xs text-muted-foreground">2 semaines</div>
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handleClearOldEntries(30)}
+                                    className="flex flex-col items-center p-4 h-auto"
+                                >
+                                    <div className="font-semibold">30 jours</div>
+                                    <div className="text-xs text-muted-foreground">1 mois (par défaut)</div>
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handleClearOldEntries(90)}
+                                    className="flex flex-col items-center p-4 h-auto"
+                                >
+                                    <div className="font-semibold">90 jours</div>
+                                    <div className="text-xs text-muted-foreground">3 mois</div>
+                                </Button>
+                            </div>
+                            <div className="border-t pt-4">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handleClearOldEntries(1)}
+                                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Purger TOUT le cache (1 jour)
+                                </Button>
+                            </div>
+                        </div>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
 
             {/* Results Table */}
