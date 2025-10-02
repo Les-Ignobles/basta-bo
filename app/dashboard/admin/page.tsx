@@ -631,11 +631,11 @@ export default function AdminPage() {
                             <div className="border-t pt-4">
                                 <Button
                                     variant="outline"
-                                    onClick={() => handleClearOldEntries(1)}
+                                    onClick={() => handleClearOldEntries(0)}
                                     className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
                                 >
                                     <Trash2 className="h-4 w-4 mr-2" />
-                                    Purger TOUT le cache (1 jour)
+                                    Purger TOUT le cache
                                 </Button>
                             </div>
                         </div>
