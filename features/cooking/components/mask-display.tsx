@@ -36,9 +36,9 @@ export function MaskDisplay({ mask, items, maxItems = 3, className = '' }: MaskD
                         </TooltipTrigger>
                         <TooltipContent>
                             <div className="space-y-1">
-                                <div className="font-medium text-xs">Équipements restants :</div>
+                                <div className="font-medium text-xs">Tous les équipements :</div>
                                 <div className="flex flex-wrap gap-1">
-                                    {decodedItems.slice(maxItems).map((item) => (
+                                    {decodedItems.map((item) => (
                                         <Badge key={item.id} variant="outline" className="text-xs">
                                             {item.name}
                                         </Badge>
