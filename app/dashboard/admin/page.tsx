@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { useRecipeGenerationResultStore } from '@/features/cooking/stores/recipe-generation-result-store'
 import { 
     Settings, 
     Database, 
@@ -15,109 +18,77 @@ import {
     XCircle,
     RefreshCw,
     Activity,
-    Zap
+    Zap,
+    Search,
+    Trash2,
+    Eye
 } from 'lucide-react'
 
-interface AdminStats {
-    cache: {
-        recipeGeneration: {
-            hits: number
-            misses: number
-            total: number
-            hitRate: number
-        }
-        ingredientGeneration: {
-            hits: number
-            misses: number
-            total: number
-            hitRate: number
-        }
-    }
-    algorithms: {
-        recipeGeneration: {
-            totalRequests: number
-            successRate: number
-            averageResponseTime: number
-            lastUsed: string
-        }
-        ingredientGeneration: {
-            totalRequests: number
-            successRate: number
-            averageResponseTime: number
-            lastUsed: string
-        }
-    }
-    system: {
-        uptime: string
-        memoryUsage: number
-        activeConnections: number
-        lastBackup: string
-    }
-}
-
 export default function AdminPage() {
-    const [stats, setStats] = useState<AdminStats | null>(null)
-    const [loading, setLoading] = useState(true)
+    const [searchTerm, setSearchTerm] = useState('')
     const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+    const [showDetails, setShowDetails] = useState<number | null>(null)
 
-    const fetchStats = async () => {
-        setLoading(true)
-        try {
-            // Simulation de données - à remplacer par un vrai appel API
-            const mockStats: AdminStats = {
-                cache: {
-                    recipeGeneration: {
-                        hits: 1247,
-                        misses: 156,
-                        total: 1403,
-                        hitRate: 88.7
-                    },
-                    ingredientGeneration: {
-                        hits: 892,
-                        misses: 98,
-                        total: 990,
-                        hitRate: 90.1
-                    }
-                },
-                algorithms: {
-                    recipeGeneration: {
-                        totalRequests: 1403,
-                        successRate: 96.2,
-                        averageResponseTime: 1.8,
-                        lastUsed: new Date(Date.now() - 5 * 60 * 1000).toISOString()
-                    },
-                    ingredientGeneration: {
-                        totalRequests: 990,
-                        successRate: 98.5,
-                        averageResponseTime: 1.2,
-                        lastUsed: new Date(Date.now() - 2 * 60 * 1000).toISOString()
-                    }
-                },
-                system: {
-                    uptime: "7j 12h 34m",
-                    memoryUsage: 68.5,
-                    activeConnections: 23,
-                    lastBackup: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
-                }
-            }
-            
-            setStats(mockStats)
-            setLastRefresh(new Date())
-        } catch (error) {
-            console.error('Erreur lors du chargement des statistiques:', error)
-        } finally {
-            setLoading(false)
-        }
+    const {
+        results,
+        stats,
+        recentActivity,
+        loading,
+        error,
+        page,
+        pageSize,
+        total,
+        fetchResults,
+        fetchStats,
+        fetchRecentActivity,
+        setSearch,
+        setPage,
+        clearOldEntries,
+        clearError
+    } = useRecipeGenerationResultStore()
+
+    const fetchAllData = async () => {
+        await Promise.all([
+            fetchResults(),
+            fetchStats(),
+            fetchRecentActivity()
+        ])
+        setLastRefresh(new Date())
     }
 
     useEffect(() => {
-        fetchStats()
+        fetchAllData()
         // Rafraîchir automatiquement toutes les 30 secondes
-        const interval = setInterval(fetchStats, 30000)
+        const interval = setInterval(fetchAllData, 30000)
         return () => clearInterval(interval)
     }, [])
 
-    const formatTime = (timestamp: string) => {
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            setSearch(searchTerm)
+            setPage(1)
+            fetchResults()
+        }, 400)
+        return () => clearTimeout(timeout)
+    }, [searchTerm, setSearch, setPage, fetchResults])
+
+    useEffect(() => {
+        fetchResults()
+    }, [page, fetchResults])
+
+    const handleClearOldEntries = async () => {
+        if (confirm('Êtes-vous sûr de vouloir supprimer les entrées de plus de 30 jours ?')) {
+            try {
+                const deletedCount = await clearOldEntries(30)
+                alert(`${deletedCount} entrées supprimées`)
+            } catch (error) {
+                alert('Erreur lors de la suppression')
+            }
+        }
+    }
+
+    const formatTime = (timestamp: string | null) => {
+        if (!timestamp) return 'Jamais'
         const date = new Date(timestamp)
         const now = new Date()
         const diffMs = now.getTime() - date.getTime()
@@ -133,17 +104,24 @@ export default function AdminPage() {
         return `Il y a ${diffDays}j`
     }
 
-    const getHitRateColor = (rate: number) => {
-        if (rate >= 90) return 'bg-green-100 text-green-800'
-        if (rate >= 80) return 'bg-yellow-100 text-yellow-800'
-        return 'bg-red-100 text-red-800'
+    const formatDate = (timestamp: string) => {
+        return new Date(timestamp).toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })
     }
 
-    const getSuccessRateColor = (rate: number) => {
-        if (rate >= 95) return 'bg-green-100 text-green-800'
-        if (rate >= 90) return 'bg-yellow-100 text-yellow-800'
-        return 'bg-red-100 text-red-800'
+    const getScoreColor = (score: number | null) => {
+        if (score === null) return 'text-gray-500'
+        if (score >= 0.8) return 'text-green-600'
+        if (score >= 0.6) return 'text-yellow-600'
+        return 'text-red-600'
     }
+
+    const totalPages = Math.ceil(total / pageSize)
 
     if (loading && !stats) {
         return (
@@ -152,13 +130,13 @@ export default function AdminPage() {
                     <div>
                         <h1 className="text-2xl font-bold font-christmas">Recipe Batch</h1>
                         <p className="text-muted-foreground">
-                            Surveillance des algorithmes et du cache système
+                            Surveillance du cache des résultats de génération de recettes
                         </p>
                     </div>
                 </div>
                 <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                    <p className="text-muted-foreground mt-2">Chargement des statistiques...</p>
+                    <p className="text-muted-foreground mt-2">Chargement des données...</p>
                 </div>
             </div>
         )
@@ -170,7 +148,7 @@ export default function AdminPage() {
                 <div>
                     <h1 className="text-2xl font-bold font-christmas">Recipe Batch</h1>
                     <p className="text-muted-foreground">
-                        Surveillance des algorithmes et du cache système
+                        Surveillance du cache des résultats de génération de recettes
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -181,7 +159,7 @@ export default function AdminPage() {
                     <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={fetchStats}
+                        onClick={fetchAllData}
                         disabled={loading}
                     >
                         <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -190,210 +168,232 @@ export default function AdminPage() {
                 </div>
             </div>
 
+            {error && (
+                <Card className="border-red-200 bg-red-50">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-red-600" />
+                            <span className="text-red-800">Erreur: {error}</span>
+                            <Button variant="outline" size="sm" onClick={clearError} className="ml-auto">
+                                Fermer
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Statistics Overview */}
             {stats && (
-                <>
-                    {/* Cache Statistics */}
-                    <div className="grid gap-6 md:grid-cols-2">
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="flex items-center gap-2">
-                                    <Database className="h-5 w-5 text-blue-500" />
-                                    Cache - Génération Recettes
-                                </CardTitle>
-                                <CardDescription>
-                                    Performance du cache pour la génération de recettes
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <div className="text-2xl font-bold text-green-600">
-                                            {stats.cache.recipeGeneration.hits.toLocaleString()}
-                                        </div>
-                                        <div className="text-sm text-muted-foreground">Hits</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-2xl font-bold text-red-600">
-                                            {stats.cache.recipeGeneration.misses.toLocaleString()}
-                                        </div>
-                                        <div className="text-sm text-muted-foreground">Misses</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium">Taux de réussite</span>
-                                    <Badge className={getHitRateColor(stats.cache.recipeGeneration.hitRate)}>
-                                        {stats.cache.recipeGeneration.hitRate}%
-                                    </Badge>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div 
-                                        className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                                        style={{ width: `${stats.cache.recipeGeneration.hitRate}%` }}
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="flex items-center gap-2">
-                                    <Database className="h-5 w-5 text-purple-500" />
-                                    Cache - Génération Ingrédients
-                                </CardTitle>
-                                <CardDescription>
-                                    Performance du cache pour la génération d'ingrédients
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <div className="text-2xl font-bold text-green-600">
-                                            {stats.cache.ingredientGeneration.hits.toLocaleString()}
-                                        </div>
-                                        <div className="text-sm text-muted-foreground">Hits</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-2xl font-bold text-red-600">
-                                            {stats.cache.ingredientGeneration.misses.toLocaleString()}
-                                        </div>
-                                        <div className="text-sm text-muted-foreground">Misses</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium">Taux de réussite</span>
-                                    <Badge className={getHitRateColor(stats.cache.ingredientGeneration.hitRate)}>
-                                        {stats.cache.ingredientGeneration.hitRate}%
-                                    </Badge>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div 
-                                        className="bg-purple-500 h-2 rounded-full transition-all duration-300"
-                                        style={{ width: `${stats.cache.ingredientGeneration.hitRate}%` }}
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Algorithm Performance */}
-                    <div className="grid gap-6 md:grid-cols-2">
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="flex items-center gap-2">
-                                    <Cpu className="h-5 w-5 text-orange-500" />
-                                    Algorithme - Génération Recettes
-                                </CardTitle>
-                                <CardDescription>
-                                    Performance de l'algorithme de génération de recettes
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <div className="text-2xl font-bold">
-                                            {stats.algorithms.recipeGeneration.totalRequests.toLocaleString()}
-                                        </div>
-                                        <div className="text-sm text-muted-foreground">Requêtes</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-2xl font-bold text-blue-600">
-                                            {stats.algorithms.recipeGeneration.averageResponseTime}s
-                                        </div>
-                                        <div className="text-sm text-muted-foreground">Temps moyen</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium">Taux de succès</span>
-                                    <Badge className={getSuccessRateColor(stats.algorithms.recipeGeneration.successRate)}>
-                                        {stats.algorithms.recipeGeneration.successRate}%
-                                    </Badge>
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                    Dernière utilisation: {formatTime(stats.algorithms.recipeGeneration.lastUsed)}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="flex items-center gap-2">
-                                    <Zap className="h-5 w-5 text-green-500" />
-                                    Algorithme - Génération Ingrédients
-                                </CardTitle>
-                                <CardDescription>
-                                    Performance de l'algorithme de génération d'ingrédients
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <div className="text-2xl font-bold">
-                                            {stats.algorithms.ingredientGeneration.totalRequests.toLocaleString()}
-                                        </div>
-                                        <div className="text-sm text-muted-foreground">Requêtes</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-2xl font-bold text-blue-600">
-                                            {stats.algorithms.ingredientGeneration.averageResponseTime}s
-                                        </div>
-                                        <div className="text-sm text-muted-foreground">Temps moyen</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium">Taux de succès</span>
-                                    <Badge className={getSuccessRateColor(stats.algorithms.ingredientGeneration.successRate)}>
-                                        {stats.algorithms.ingredientGeneration.successRate}%
-                                    </Badge>
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                    Dernière utilisation: {formatTime(stats.algorithms.ingredientGeneration.lastUsed)}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* System Status */}
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                     <Card>
                         <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2">
-                                <Settings className="h-5 w-5 text-gray-500" />
-                                État du Système
+                            <CardTitle className="flex items-center gap-2 text-lg">
+                                <Database className="h-5 w-5 text-blue-500" />
+                                Total Entrées
                             </CardTitle>
-                            <CardDescription>
-                                Informations sur l'état général du système
-                            </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid gap-6 md:grid-cols-4">
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold text-green-600">
-                                        {stats.system.uptime}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground">Temps de fonctionnement</div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold">
-                                        {stats.system.memoryUsage}%
-                                    </div>
-                                    <div className="text-sm text-muted-foreground">Utilisation mémoire</div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold text-blue-600">
-                                        {stats.system.activeConnections}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground">Connexions actives</div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-sm text-muted-foreground">
-                                        {formatTime(stats.system.lastBackup)}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground">Dernière sauvegarde</div>
-                                </div>
-                            </div>
+                            <div className="text-3xl font-bold">{stats.total.toLocaleString()}</div>
+                            <div className="text-sm text-muted-foreground">Résultats en cache</div>
                         </CardContent>
                     </Card>
-                </>
+
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="flex items-center gap-2 text-lg">
+                                <Eye className="h-5 w-5 text-green-500" />
+                                Affichages
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-bold">{stats.totalShown.toLocaleString()}</div>
+                            <div className="text-sm text-muted-foreground">Total montrés</div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="flex items-center gap-2 text-lg">
+                                <CheckCircle className="h-5 w-5 text-purple-500" />
+                                Sélections
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-bold">{stats.totalPicked.toLocaleString()}</div>
+                            <div className="text-sm text-muted-foreground">Total sélectionnés</div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="flex items-center gap-2 text-lg">
+                                <TrendingUp className="h-5 w-5 text-orange-500" />
+                                Activité 24h
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-bold">{stats.recentActivity}</div>
+                            <div className="text-sm text-muted-foreground">Utilisations récentes</div>
+                        </CardContent>
+                    </Card>
+                </div>
             )}
+
+            {/* Search and Controls */}
+            <div className="flex items-center justify-between gap-4">
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                        placeholder="Rechercher par ingrédients..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                    />
+                </div>
+                <Button 
+                    variant="outline" 
+                    onClick={handleClearOldEntries}
+                    disabled={loading}
+                >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Nettoyer ancien cache
+                </Button>
+            </div>
+
+            {/* Results Table */}
+            <Card>
+                <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2">
+                        <Cpu className="h-5 w-5" />
+                        Résultats de génération ({total.toLocaleString()})
+                    </CardTitle>
+                    <CardDescription>
+                        Liste des résultats mis en cache avec leurs métriques
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {loading ? (
+                        <div className="text-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                            <p className="text-muted-foreground mt-2">Chargement...</p>
+                        </div>
+                    ) : results.length === 0 ? (
+                        <div className="text-center py-8">
+                            <Database className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold mb-2">Aucun résultat trouvé</h3>
+                            <p className="text-muted-foreground">
+                                {searchTerm ? 'Aucun résultat ne correspond à votre recherche.' : 'Aucun résultat de génération en cache.'}
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>ID</TableHead>
+                                        <TableHead>Créé</TableHead>
+                                        <TableHead>Dernière utilisation</TableHead>
+                                        <TableHead>Ingrédients</TableHead>
+                                        <TableHead>Recettes</TableHead>
+                                        <TableHead>Score compatibilité</TableHead>
+                                        <TableHead>Affichages</TableHead>
+                                        <TableHead>Sélections</TableHead>
+                                        <TableHead>Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {results.map((result) => (
+                                        <TableRow key={result.id}>
+                                            <TableCell className="font-mono text-sm">
+                                                #{result.id}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="text-sm">
+                                                    {formatDate(result.created_at)}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {formatTime(result.created_at)}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="text-sm">
+                                                    {formatTime(result.last_used_at)}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="max-w-xs">
+                                                    <div className="text-sm">
+                                                        {result.ingredients.slice(0, 2).join(', ')}
+                                                        {result.ingredients.length > 2 && ` +${result.ingredients.length - 2}`}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {result.ingredients.length} ingrédients
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary">
+                                                    {result.recipe_count}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className={`font-medium ${getScoreColor(result.compatibility_score)}`}>
+                                                    {result.compatibility_score ? 
+                                                        (result.compatibility_score * 100).toFixed(1) + '%' : 
+                                                        'N/A'
+                                                    }
+                                                </span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className="text-sm">{result.shown_count}</span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className="text-sm">{result.picked_count}</span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setShowDetails(showDetails === result.id ? null : result.id)}
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+
+                            {/* Pagination */}
+                            {totalPages > 1 && (
+                                <div className="flex items-center justify-between mt-4">
+                                    <p className="text-sm text-muted-foreground">
+                                        Page {page} sur {totalPages} ({total} résultats)
+                                    </p>
+                                    <div className="flex items-center space-x-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setPage(page - 1)}
+                                            disabled={page === 1}
+                                        >
+                                            Précédent
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setPage(page + 1)}
+                                            disabled={page >= totalPages}
+                                        >
+                                            Suivant
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     )
 }

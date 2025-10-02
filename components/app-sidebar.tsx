@@ -69,7 +69,7 @@ export function AppSidebar() {
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
-                
+
                 <SidebarGroup>
                     <SidebarGroupLabel className="font-christmas">Admin</SidebarGroupLabel>
                     <SidebarGroupContent>
