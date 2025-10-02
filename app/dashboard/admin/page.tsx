@@ -10,6 +10,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox'
 import { useRecipeGenerationResultStore } from '@/features/cooking/stores/recipe-generation-result-store'
 import { useDietStore } from '@/features/cooking/stores/diet-store'
+import { useAllergyStore } from '@/features/cooking/stores/allergy-store'
+import { useKitchenEquipmentStore } from '@/features/cooking/stores/kitchen-equipment-store'
+import { MaskDisplay } from '@/features/cooking/components/mask-display'
 import {
     Settings,
     Database,
@@ -33,6 +36,8 @@ export default function AdminPage() {
     const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
     const [showDetails, setShowDetails] = useState<number | null>(null)
     const [selectedDiets, setSelectedDiets] = useState<number[]>([])
+    const [selectedAllergies, setSelectedAllergies] = useState<number[]>([])
+    const [selectedKitchenEquipment, setSelectedKitchenEquipment] = useState<number[]>([])
 
     const {
         results,
@@ -44,11 +49,15 @@ export default function AdminPage() {
         pageSize,
         total,
         dietMask,
+        allergyMask,
+        kitchenEquipmentMask,
         fetchResults,
         fetchStats,
         fetchRecentActivity,
         setSearch,
         setDietMask,
+        setAllergyMask,
+        setKitchenEquipmentMask,
         setPage,
         clearOldEntries,
         clearError
@@ -60,12 +69,26 @@ export default function AdminPage() {
         fetchDiets
     } = useDietStore()
 
+    const {
+        allergies,
+        loading: allergiesLoading,
+        fetchAllergies
+    } = useAllergyStore()
+
+    const {
+        kitchenEquipment,
+        loading: kitchenEquipmentLoading,
+        fetchKitchenEquipment
+    } = useKitchenEquipmentStore()
+
     const fetchAllData = async () => {
         await Promise.all([
             fetchResults(),
             fetchStats(),
             fetchRecentActivity(),
-            fetchDiets()
+            fetchDiets(),
+            fetchAllergies(),
+            fetchKitchenEquipment()
         ])
         setLastRefresh(new Date())
     }
@@ -94,16 +117,64 @@ export default function AdminPage() {
         const newSelectedDiets = selectedDiets.includes(dietId)
             ? selectedDiets.filter(id => id !== dietId)
             : [...selectedDiets, dietId]
-        
+
         setSelectedDiets(newSelectedDiets)
-        
+
         // Calculer le diet_mask : somme des bit_index des régimes sélectionnés
         const newDietMask = newSelectedDiets.reduce((mask, dietId) => {
             const diet = diets.find(d => d.id === dietId)
-            return diet && diet.bit_index ? mask | diet.bit_index : mask
+            if (diet && diet.bit_index) {
+                const bitPosition = Math.pow(2, diet.bit_index)
+                return mask | bitPosition
+            }
+            return mask
+        }, 0)
+
+        setDietMask(newSelectedDiets.length > 0 ? newDietMask : null)
+        setPage(1)
+        fetchResults()
+    }
+
+    const handleAllergyToggle = (allergyId: number) => {
+        const newSelectedAllergies = selectedAllergies.includes(allergyId)
+            ? selectedAllergies.filter(id => id !== allergyId)
+            : [...selectedAllergies, allergyId]
+        
+        setSelectedAllergies(newSelectedAllergies)
+        
+        // Calculer le allergy_mask
+        const newAllergyMask = newSelectedAllergies.reduce((mask, allergyId) => {
+            const allergy = allergies.find(a => a.id === allergyId)
+            if (allergy && allergy.bit_index) {
+                const bitPosition = Math.pow(2, allergy.bit_index)
+                return mask | bitPosition
+            }
+            return mask
         }, 0)
         
-        setDietMask(newSelectedDiets.length > 0 ? newDietMask : null)
+        setAllergyMask(newSelectedAllergies.length > 0 ? newAllergyMask : null)
+        setPage(1)
+        fetchResults()
+    }
+
+    const handleKitchenEquipmentToggle = (equipmentId: number) => {
+        const newSelectedKitchenEquipment = selectedKitchenEquipment.includes(equipmentId)
+            ? selectedKitchenEquipment.filter(id => id !== equipmentId)
+            : [...selectedKitchenEquipment, equipmentId]
+        
+        setSelectedKitchenEquipment(newSelectedKitchenEquipment)
+        
+        // Calculer le kitchen_equipment_mask
+        const newKitchenEquipmentMask = newSelectedKitchenEquipment.reduce((mask, equipmentId) => {
+            const equipment = kitchenEquipment.find(e => e.id === equipmentId)
+            if (equipment && equipment.bit_index) {
+                const bitPosition = Math.pow(2, equipment.bit_index)
+                return mask | bitPosition
+            }
+            return mask
+        }, 0)
+        
+        setKitchenEquipmentMask(newSelectedKitchenEquipment.length > 0 ? newKitchenEquipmentMask : null)
         setPage(1)
         fetchResults()
     }
@@ -113,6 +184,26 @@ export default function AdminPage() {
         setDietMask(null)
         setPage(1)
         fetchResults()
+    }
+
+    const clearAllergyFilters = () => {
+        setSelectedAllergies([])
+        setAllergyMask(null)
+        setPage(1)
+        fetchResults()
+    }
+
+    const clearKitchenEquipmentFilters = () => {
+        setSelectedKitchenEquipment([])
+        setKitchenEquipmentMask(null)
+        setPage(1)
+        fetchResults()
+    }
+
+    const clearAllFilters = () => {
+        clearDietFilters()
+        clearAllergyFilters()
+        clearKitchenEquipmentFilters()
     }
 
     const handleClearOldEntries = async () => {
@@ -290,7 +381,7 @@ export default function AdminPage() {
                             className="pl-10"
                         />
                     </div>
-                    
+
                     {/* Filtre par régime */}
                     <Popover>
                         <PopoverTrigger asChild>
@@ -346,10 +437,134 @@ export default function AdminPage() {
                             </div>
                         </PopoverContent>
                     </Popover>
+
+                    {/* Filtre par allergies */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="flex items-center gap-2">
+                                <Filter className="h-4 w-4" />
+                                Allergies
+                                {selectedAllergies.length > 0 && (
+                                    <Badge variant="secondary" className="ml-1">
+                                        {selectedAllergies.length}
+                                    </Badge>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80" align="start">
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-medium">Filtrer par allergies</h4>
+                                    {selectedAllergies.length > 0 && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={clearAllergyFilters}
+                                            className="h-8 px-2 text-xs"
+                                        >
+                                            Effacer
+                                        </Button>
+                                    )}
+                                </div>
+                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    {allergiesLoading ? (
+                                        <div className="text-sm text-muted-foreground">
+                                            Chargement des allergies...
+                                        </div>
+                                    ) : (
+                                        allergies?.map((allergy) => (
+                                            <div key={allergy.id} className="flex items-center space-x-2">
+                                                <Checkbox
+                                                    id={`allergy-${allergy.id}`}
+                                                    checked={selectedAllergies.includes(allergy.id)}
+                                                    onCheckedChange={() => handleAllergyToggle(allergy.id)}
+                                                />
+                                                <label
+                                                    htmlFor={`allergy-${allergy.id}`}
+                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 cursor-pointer"
+                                                >
+                                                    <span>{allergy.emoji}</span>
+                                                    {allergy.title?.fr || allergy.slug}
+                                                </label>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
+                    {/* Filtre par équipements de cuisine */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="flex items-center gap-2">
+                                <Filter className="h-4 w-4" />
+                                Équipements
+                                {selectedKitchenEquipment.length > 0 && (
+                                    <Badge variant="secondary" className="ml-1">
+                                        {selectedKitchenEquipment.length}
+                                    </Badge>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80" align="start">
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-medium">Filtrer par équipements de cuisine</h4>
+                                    {selectedKitchenEquipment.length > 0 && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={clearKitchenEquipmentFilters}
+                                            className="h-8 px-2 text-xs"
+                                        >
+                                            Effacer
+                                        </Button>
+                                    )}
+                                </div>
+                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    {kitchenEquipmentLoading ? (
+                                        <div className="text-sm text-muted-foreground">
+                                            Chargement des équipements...
+                                        </div>
+                                    ) : (
+                                        kitchenEquipment?.map((equipment) => (
+                                            <div key={equipment.id} className="flex items-center space-x-2">
+                                                <Checkbox
+                                                    id={`equipment-${equipment.id}`}
+                                                    checked={selectedKitchenEquipment.includes(equipment.id)}
+                                                    onCheckedChange={() => handleKitchenEquipmentToggle(equipment.id)}
+                                                />
+                                                <label
+                                                    htmlFor={`equipment-${equipment.id}`}
+                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 cursor-pointer"
+                                                >
+                                                    <span>{equipment.emoji}</span>
+                                                    {equipment.title?.fr || equipment.slug}
+                                                </label>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
+                    {/* Bouton pour effacer tous les filtres */}
+                    {(selectedDiets.length > 0 || selectedAllergies.length > 0 || selectedKitchenEquipment.length > 0) && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={clearAllFilters}
+                            className="text-xs"
+                        >
+                            Effacer tous les filtres
+                        </Button>
+                    )}
                 </div>
-                
-                <Button 
-                    variant="outline" 
+
+                <Button
+                    variant="outline"
                     onClick={handleClearOldEntries}
                     disabled={loading}
                 >
@@ -392,6 +607,9 @@ export default function AdminPage() {
                                         <TableHead>Créé</TableHead>
                                         <TableHead>Dernière utilisation</TableHead>
                                         <TableHead>Recettes</TableHead>
+                                        <TableHead>Régimes</TableHead>
+                                        <TableHead>Allergies</TableHead>
+                                        <TableHead>Équipements</TableHead>
                                         <TableHead>Affichages</TableHead>
                                         <TableHead>Sélections</TableHead>
                                         <TableHead>Actions</TableHead>
@@ -423,6 +641,30 @@ export default function AdminPage() {
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
+                                                    <MaskDisplay 
+                                                        mask={result.diets_mask} 
+                                                        items={diets} 
+                                                        maxItems={2}
+                                                        className="text-xs"
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <MaskDisplay 
+                                                        mask={result.allergies_mask} 
+                                                        items={allergies} 
+                                                        maxItems={2}
+                                                        className="text-xs"
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <MaskDisplay 
+                                                        mask={result.kitchen_equipment_mask} 
+                                                        items={kitchenEquipment} 
+                                                        maxItems={2}
+                                                        className="text-xs"
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
                                                     <span className="text-sm">{result.shown_count}</span>
                                                 </TableCell>
                                                 <TableCell>
@@ -440,10 +682,10 @@ export default function AdminPage() {
                                             </TableRow>
                                             {showDetails === result.id && (
                                                 <TableRow>
-                                                    <TableCell colSpan={7} className="bg-muted/50">
+                                                    <TableCell colSpan={10} className="bg-muted/50">
                                                         <div className="p-4 space-y-4">
                                                             <h4 className="font-semibold">Détails du résultat #{result.id}</h4>
-                                                            
+
                                                             <div className="grid gap-4 md:grid-cols-2">
                                                                 <div>
                                                                     <h5 className="font-medium text-sm mb-2">Informations générales</h5>
@@ -456,14 +698,14 @@ export default function AdminPage() {
                                                                         )}
                                                                     </div>
                                                                 </div>
-                                                                
+
                                                                 <div>
                                                                     <h5 className="font-medium text-sm mb-2">Métriques</h5>
                                                                     <div className="space-y-1 text-sm">
-                                                                        <div><span className="font-medium">Score compatibilité:</span> 
+                                                                        <div><span className="font-medium">Score compatibilité:</span>
                                                                             <span className={`ml-1 ${getScoreColor(result.compatibility_score)}`}>
-                                                                                {result.compatibility_score ? 
-                                                                                    (result.compatibility_score * 100).toFixed(1) + '%' : 
+                                                                                {result.compatibility_score ?
+                                                                                    (result.compatibility_score * 100).toFixed(1) + '%' :
                                                                                     'N/A'
                                                                                 }
                                                                             </span>
@@ -473,7 +715,7 @@ export default function AdminPage() {
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            
+
                                                             <div>
                                                                 <h5 className="font-medium text-sm mb-2">Ingrédients ({result.ingredients.length})</h5>
                                                                 <div className="flex flex-wrap gap-1">
@@ -484,7 +726,7 @@ export default function AdminPage() {
                                                                     ))}
                                                                 </div>
                                                             </div>
-                                                            
+
                                                             {result.original_recipes.length > 0 && (
                                                                 <div>
                                                                     <h5 className="font-medium text-sm mb-2">Recettes originales ({result.original_recipes.length})</h5>

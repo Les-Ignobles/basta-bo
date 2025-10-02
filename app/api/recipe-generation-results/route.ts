@@ -28,8 +28,12 @@ export async function GET(req: NextRequest) {
         const search = searchParams.get('search') ?? undefined
         const dietMaskParam = searchParams.get('dietMask')
         const dietMask = dietMaskParam ? Number(dietMaskParam) : undefined
+        const allergyMaskParam = searchParams.get('allergyMask')
+        const allergyMask = allergyMaskParam ? Number(allergyMaskParam) : undefined
+        const kitchenEquipmentMaskParam = searchParams.get('kitchenEquipmentMask')
+        const kitchenEquipmentMask = kitchenEquipmentMaskParam ? Number(kitchenEquipmentMaskParam) : undefined
         
-        const { data, total } = await repo.findPage({ page, pageSize, search, dietMask })
+        const { data, total } = await repo.findPage({ page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask })
         return Response.json({ data, total, page, pageSize })
 
     } catch (error) {

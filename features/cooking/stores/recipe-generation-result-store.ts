@@ -12,6 +12,8 @@ type RecipeGenerationResultState = {
     total: number
     search: string
     dietMask: number | null
+    allergyMask: number | null
+    kitchenEquipmentMask: number | null
 }
 
 type RecipeGenerationResultActions = {
@@ -20,6 +22,8 @@ type RecipeGenerationResultActions = {
     fetchRecentActivity: () => Promise<void>
     setSearch: (search: string) => void
     setDietMask: (dietMask: number | null) => void
+    setAllergyMask: (allergyMask: number | null) => void
+    setKitchenEquipmentMask: (kitchenEquipmentMask: number | null) => void
     setPage: (page: number) => void
     clearOldEntries: (daysOld?: number) => Promise<void>
     clearError: () => void
@@ -37,17 +41,21 @@ export const useRecipeGenerationResultStore = create<RecipeGenerationResultState
     total: 0,
     search: '',
     dietMask: null,
+    allergyMask: null,
+    kitchenEquipmentMask: null,
 
     // Actions
     fetchResults: async () => {
         set({ loading: true, error: null })
         try {
-            const { page, pageSize, search, dietMask } = get()
+            const { page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask } = get()
             const params = new URLSearchParams({
                 page: page.toString(),
                 pageSize: pageSize.toString(),
                 ...(search && { search }),
-                ...(dietMask !== null && { dietMask: dietMask.toString() })
+                ...(dietMask !== null && { dietMask: dietMask.toString() }),
+                ...(allergyMask !== null && { allergyMask: allergyMask.toString() }),
+                ...(kitchenEquipmentMask !== null && { kitchenEquipmentMask: kitchenEquipmentMask.toString() })
             })
 
             const response = await fetch(`/api/recipe-generation-results?${params}`)
@@ -136,6 +144,14 @@ export const useRecipeGenerationResultStore = create<RecipeGenerationResultState
 
     setDietMask: (dietMask: number | null) => {
         set({ dietMask, page: 1 })
+    },
+
+    setAllergyMask: (allergyMask: number | null) => {
+        set({ allergyMask, page: 1 })
+    },
+
+    setKitchenEquipmentMask: (kitchenEquipmentMask: number | null) => {
+        set({ kitchenEquipmentMask, page: 1 })
     },
 
     setPage: (page: number) => {

@@ -6,10 +6,12 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
         super(client, 'recipe_generation_results')
     }
 
-    async findPage({ page, pageSize, search, dietMask }: { page: number; pageSize: number; search?: string; dietMask?: number }): Promise<{ data: RecipeGenerationResult[]; total: number }> {
-        // Si on a un filtre par diet_mask, on doit faire une approche différente car PostgREST ne supporte pas les opérations bit à bit
-        if (dietMask !== undefined && dietMask > 0) {
-            return this.findPageWithDietFilter({ page, pageSize, search, dietMask })
+    async findPage({ page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask }: { page: number; pageSize: number; search?: string; dietMask?: number; allergyMask?: number; kitchenEquipmentMask?: number }): Promise<{ data: RecipeGenerationResult[]; total: number }> {
+        // Si on a un filtre par masque, on doit faire une approche différente car PostgREST ne supporte pas les opérations bit à bit
+        if ((dietMask !== undefined && dietMask > 0) || 
+            (allergyMask !== undefined && allergyMask > 0) || 
+            (kitchenEquipmentMask !== undefined && kitchenEquipmentMask > 0)) {
+            return this.findPageWithMaskFilter({ page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask })
         }
 
         // Approche normale sans filtre de régime
@@ -28,7 +30,7 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
         return { data: (data ?? []) as RecipeGenerationResult[], total: count ?? 0 }
     }
 
-    private async findPageWithDietFilter({ page, pageSize, search, dietMask }: { page: number; pageSize: number; search?: string; dietMask: number }): Promise<{ data: RecipeGenerationResult[]; total: number }> {
+    private async findPageWithMaskFilter({ page, pageSize, search, dietMask, allergyMask, kitchenEquipmentMask }: { page: number; pageSize: number; search?: string; dietMask?: number; allergyMask?: number; kitchenEquipmentMask?: number }): Promise<{ data: RecipeGenerationResult[]; total: number }> {
         // Récupérer toutes les données pour appliquer le filtre côté client
         let query = (this.client as any).from(this.table).select('*')
 
@@ -41,12 +43,31 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
         const { data, error } = await query
         if (error) throw error
 
-        // Appliquer le filtre par diet_mask côté client
+        // Appliquer les filtres par masque côté client
         const allResults = (data ?? []) as RecipeGenerationResult[]
         const filteredResults = allResults.filter(result => {
-            if (!result.diets_mask) return false
-            // Vérifier si le diet_mask contient au moins un des régimes sélectionnés
-            return (result.diets_mask & dietMask) > 0
+            // Filtre par diet_mask
+            if (dietMask !== undefined && dietMask > 0) {
+                if (!result.diets_mask || (result.diets_mask & dietMask) === 0) {
+                    return false
+                }
+            }
+            
+            // Filtre par allergy_mask
+            if (allergyMask !== undefined && allergyMask > 0) {
+                if (!result.allergies_mask || (result.allergies_mask & allergyMask) === 0) {
+                    return false
+                }
+            }
+            
+            // Filtre par kitchen_equipment_mask
+            if (kitchenEquipmentMask !== undefined && kitchenEquipmentMask > 0) {
+                if (!result.kitchen_equipment_mask || (result.kitchen_equipment_mask & kitchenEquipmentMask) === 0) {
+                    return false
+                }
+            }
+            
+            return true
         })
 
         // Appliquer la pagination côté client
