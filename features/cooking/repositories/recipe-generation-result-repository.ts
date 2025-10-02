@@ -6,7 +6,13 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
         super(client, 'recipe_generation_results')
     }
 
-    async findPage({ page, pageSize, search }: { page: number; pageSize: number; search?: string }): Promise<{ data: RecipeGenerationResult[]; total: number }> {
+    async findPage({ page, pageSize, search, dietMask }: { page: number; pageSize: number; search?: string; dietMask?: number }): Promise<{ data: RecipeGenerationResult[]; total: number }> {
+        // Si on a un filtre par diet_mask, on doit faire une approche différente car PostgREST ne supporte pas les opérations bit à bit
+        if (dietMask !== undefined && dietMask > 0) {
+            return this.findPageWithDietFilter({ page, pageSize, search, dietMask })
+        }
+
+        // Approche normale sans filtre de régime
         const from = (page - 1) * pageSize
         const to = from + pageSize - 1
         let query = (this.client as any).from(this.table).select('*', { count: 'exact' })
@@ -22,6 +28,36 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
         return { data: (data ?? []) as RecipeGenerationResult[], total: count ?? 0 }
     }
 
+    private async findPageWithDietFilter({ page, pageSize, search, dietMask }: { page: number; pageSize: number; search?: string; dietMask: number }): Promise<{ data: RecipeGenerationResult[]; total: number }> {
+        // Récupérer toutes les données pour appliquer le filtre côté client
+        let query = (this.client as any).from(this.table).select('*')
+
+        if (search && search.trim()) {
+            // Recherche dans les ingrédients ou pool_signature
+            query = query.or(`ingredients.cs.{${search}},pool_signature.ilike.%${search}%`)
+        }
+
+        query = query.order('last_used_at', { ascending: false, nullsLast: true })
+        const { data, error } = await query
+        if (error) throw error
+
+        // Appliquer le filtre par diet_mask côté client
+        const allResults = (data ?? []) as RecipeGenerationResult[]
+        const filteredResults = allResults.filter(result => {
+            if (!result.diets_mask) return false
+            // Vérifier si le diet_mask contient au moins un des régimes sélectionnés
+            return (result.diets_mask & dietMask) > 0
+        })
+
+        // Appliquer la pagination côté client
+        const total = filteredResults.length
+        const from = (page - 1) * pageSize
+        const to = from + pageSize
+        const paginatedResults = filteredResults.slice(from, to)
+
+        return { data: paginatedResults, total }
+    }
+
     async getStats(): Promise<RecipeGenerationStats> {
         try {
             // Statistiques générales
@@ -34,10 +70,10 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
             const total = totalData?.length || 0
             const totalShown = totalData?.reduce((sum: number, item: any) => sum + (item.shown_count || 0), 0) || 0
             const totalPicked = totalData?.reduce((sum: number, item: any) => sum + (item.picked_count || 0), 0) || 0
-            
+
             // Score de compatibilité moyen
             const validScores = totalData?.filter((item: any) => item.compatibility_score !== null)
-            const averageCompatibilityScore = validScores?.length > 0 
+            const averageCompatibilityScore = validScores?.length > 0
                 ? validScores.reduce((sum: number, item: any) => sum + (item.compatibility_score || 0), 0) / validScores.length
                 : 0
 
@@ -51,7 +87,7 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
                 }
             })
             const mostUsedIngredients = Object.entries(ingredientCounts)
-                .sort(([,a], [,b]) => b - a)
+                .sort(([, a], [, b]) => b - a)
                 .slice(0, 10)
                 .map(([ingredient, count]) => ({ ingredient, count }))
 
@@ -63,13 +99,13 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
                 }
             })
             const mostUsedDishTypes = Object.entries(dishTypeCounts)
-                .sort(([,a], [,b]) => b - a)
+                .sort(([, a], [, b]) => b - a)
                 .slice(0, 5)
                 .map(([dish_type, count]) => ({ dish_type: parseInt(dish_type), count }))
 
             // Activité récente (dernières 24h)
             const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-            const recentActivity = totalData?.filter((item: any) => 
+            const recentActivity = totalData?.filter((item: any) =>
                 item.last_used_at && new Date(item.last_used_at) > new Date(oneDayAgo)
             ).length || 0
 
@@ -105,7 +141,7 @@ export class RecipeGenerationResultRepository extends BaseRepository<RecipeGener
 
     async clearOldEntries(daysOld: number = 30): Promise<number> {
         const cutoffDate = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000).toISOString()
-        
+
         const { data, error } = await (this.client as any)
             .from(this.table)
             .delete()

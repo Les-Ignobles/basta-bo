@@ -6,13 +6,16 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useRecipeGenerationResultStore } from '@/features/cooking/stores/recipe-generation-result-store'
-import { 
-    Settings, 
-    Database, 
-    Cpu, 
-    Clock, 
-    TrendingUp, 
+import { useDietStore } from '@/features/cooking/stores/diet-store'
+import {
+    Settings,
+    Database,
+    Cpu,
+    Clock,
+    TrendingUp,
     AlertTriangle,
     CheckCircle,
     XCircle,
@@ -21,13 +24,15 @@ import {
     Zap,
     Search,
     Trash2,
-    Eye
+    Eye,
+    Filter
 } from 'lucide-react'
 
 export default function AdminPage() {
     const [searchTerm, setSearchTerm] = useState('')
     const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
     const [showDetails, setShowDetails] = useState<number | null>(null)
+    const [selectedDiets, setSelectedDiets] = useState<number[]>([])
 
     const {
         results,
@@ -38,20 +43,29 @@ export default function AdminPage() {
         page,
         pageSize,
         total,
+        dietMask,
         fetchResults,
         fetchStats,
         fetchRecentActivity,
         setSearch,
+        setDietMask,
         setPage,
         clearOldEntries,
         clearError
     } = useRecipeGenerationResultStore()
 
+    const {
+        diets,
+        loading: dietsLoading,
+        fetchDiets
+    } = useDietStore()
+
     const fetchAllData = async () => {
         await Promise.all([
             fetchResults(),
             fetchStats(),
-            fetchRecentActivity()
+            fetchRecentActivity(),
+            fetchDiets()
         ])
         setLastRefresh(new Date())
     }
@@ -76,6 +90,31 @@ export default function AdminPage() {
         fetchResults()
     }, [page, fetchResults])
 
+    const handleDietToggle = (dietId: number) => {
+        const newSelectedDiets = selectedDiets.includes(dietId)
+            ? selectedDiets.filter(id => id !== dietId)
+            : [...selectedDiets, dietId]
+        
+        setSelectedDiets(newSelectedDiets)
+        
+        // Calculer le diet_mask : somme des bit_index des régimes sélectionnés
+        const newDietMask = newSelectedDiets.reduce((mask, dietId) => {
+            const diet = diets.find(d => d.id === dietId)
+            return diet && diet.bit_index ? mask | diet.bit_index : mask
+        }, 0)
+        
+        setDietMask(newSelectedDiets.length > 0 ? newDietMask : null)
+        setPage(1)
+        fetchResults()
+    }
+
+    const clearDietFilters = () => {
+        setSelectedDiets([])
+        setDietMask(null)
+        setPage(1)
+        fetchResults()
+    }
+
     const handleClearOldEntries = async () => {
         if (confirm('Êtes-vous sûr de vouloir supprimer les entrées de plus de 30 jours ?')) {
             try {
@@ -93,13 +132,13 @@ export default function AdminPage() {
         const now = new Date()
         const diffMs = now.getTime() - date.getTime()
         const diffMins = Math.floor(diffMs / 60000)
-        
+
         if (diffMins < 1) return 'À l\'instant'
         if (diffMins < 60) return `Il y a ${diffMins}min`
-        
+
         const diffHours = Math.floor(diffMins / 60)
         if (diffHours < 24) return `Il y a ${diffHours}h`
-        
+
         const diffDays = Math.floor(diffHours / 24)
         return `Il y a ${diffDays}j`
     }
@@ -156,9 +195,9 @@ export default function AdminPage() {
                         <Activity className="h-4 w-4" />
                         Dernière MAJ: {formatTime(lastRefresh.toISOString())}
                     </Badge>
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
+                    <Button
+                        variant="outline"
+                        size="sm"
                         onClick={fetchAllData}
                         disabled={loading}
                     >
@@ -241,15 +280,74 @@ export default function AdminPage() {
 
             {/* Search and Controls */}
             <div className="flex items-center justify-between gap-4">
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                        placeholder="Rechercher par ingrédients..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                    />
+                <div className="flex items-center gap-4 flex-1">
+                    <div className="relative max-w-sm">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                        <Input
+                            placeholder="Rechercher par ingrédients..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10"
+                        />
+                    </div>
+                    
+                    {/* Filtre par régime */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="flex items-center gap-2">
+                                <Filter className="h-4 w-4" />
+                                Régimes
+                                {selectedDiets.length > 0 && (
+                                    <Badge variant="secondary" className="ml-1">
+                                        {selectedDiets.length}
+                                    </Badge>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80" align="start">
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-medium">Filtrer par régime alimentaire</h4>
+                                    {selectedDiets.length > 0 && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={clearDietFilters}
+                                            className="h-8 px-2 text-xs"
+                                        >
+                                            Effacer
+                                        </Button>
+                                    )}
+                                </div>
+                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    {dietsLoading ? (
+                                        <div className="text-sm text-muted-foreground">
+                                            Chargement des régimes...
+                                        </div>
+                                    ) : (
+                                        diets?.map((diet) => (
+                                            <div key={diet.id} className="flex items-center space-x-2">
+                                                <Checkbox
+                                                    id={`diet-${diet.id}`}
+                                                    checked={selectedDiets.includes(diet.id)}
+                                                    onCheckedChange={() => handleDietToggle(diet.id)}
+                                                />
+                                                <label
+                                                    htmlFor={`diet-${diet.id}`}
+                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 cursor-pointer"
+                                                >
+                                                    <span>{diet.emoji}</span>
+                                                    {diet.title?.fr || diet.slug}
+                                                </label>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
                 </div>
+                
                 <Button 
                     variant="outline" 
                     onClick={handleClearOldEntries}
@@ -338,8 +436,8 @@ export default function AdminPage() {
                                             </TableCell>
                                             <TableCell>
                                                 <span className={`font-medium ${getScoreColor(result.compatibility_score)}`}>
-                                                    {result.compatibility_score ? 
-                                                        (result.compatibility_score * 100).toFixed(1) + '%' : 
+                                                    {result.compatibility_score ?
+                                                        (result.compatibility_score * 100).toFixed(1) + '%' :
                                                         'N/A'
                                                     }
                                                 </span>

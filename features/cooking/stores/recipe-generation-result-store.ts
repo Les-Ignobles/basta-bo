@@ -11,6 +11,7 @@ type RecipeGenerationResultState = {
     pageSize: number
     total: number
     search: string
+    dietMask: number | null
 }
 
 type RecipeGenerationResultActions = {
@@ -18,6 +19,7 @@ type RecipeGenerationResultActions = {
     fetchStats: () => Promise<void>
     fetchRecentActivity: () => Promise<void>
     setSearch: (search: string) => void
+    setDietMask: (dietMask: number | null) => void
     setPage: (page: number) => void
     clearOldEntries: (daysOld?: number) => Promise<void>
     clearError: () => void
@@ -34,16 +36,18 @@ export const useRecipeGenerationResultStore = create<RecipeGenerationResultState
     pageSize: 50,
     total: 0,
     search: '',
+    dietMask: null,
 
     // Actions
     fetchResults: async () => {
         set({ loading: true, error: null })
         try {
-            const { page, pageSize, search } = get()
+            const { page, pageSize, search, dietMask } = get()
             const params = new URLSearchParams({
                 page: page.toString(),
                 pageSize: pageSize.toString(),
-                ...(search && { search })
+                ...(search && { search }),
+                ...(dietMask !== null && { dietMask: dietMask.toString() })
             })
 
             const response = await fetch(`/api/recipe-generation-results?${params}`)
@@ -107,7 +111,7 @@ export const useRecipeGenerationResultStore = create<RecipeGenerationResultState
             }
 
             const data = await response.json()
-            
+
             // Rafraîchir les données après suppression
             await Promise.all([
                 get().fetchResults(),
@@ -128,6 +132,10 @@ export const useRecipeGenerationResultStore = create<RecipeGenerationResultState
 
     setSearch: (search: string) => {
         set({ search, page: 1 })
+    },
+
+    setDietMask: (dietMask: number | null) => {
+        set({ dietMask, page: 1 })
     },
 
     setPage: (page: number) => {
