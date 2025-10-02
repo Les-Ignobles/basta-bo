@@ -1,4 +1,3 @@
-import { NextRequest } from 'next/server'
 import { supabaseServer } from '@/lib/supabase/server-client'
 import { AllergyRepository } from '@/features/cooking/repositories/allergy-repository'
 

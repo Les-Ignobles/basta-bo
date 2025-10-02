@@ -1,4 +1,3 @@
-import { NextRequest } from 'next/server'
 import { supabaseServer } from '@/lib/supabase/server-client'
 import { KitchenEquipmentRepository } from '@/features/cooking/repositories/kitchen-equipment-repository'
 

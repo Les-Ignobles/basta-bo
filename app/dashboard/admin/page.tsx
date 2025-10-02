@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, Fragment } from 'react'
+import { useEffect, useState, Fragment, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -84,7 +84,7 @@ export default function AdminPage() {
         fetchKitchenEquipment
     } = useKitchenEquipmentStore()
 
-    const fetchAllData = async () => {
+    const fetchAllData = useCallback(async () => {
         await Promise.all([
             fetchResults(),
             fetchStats(),
@@ -94,7 +94,7 @@ export default function AdminPage() {
             fetchKitchenEquipment()
         ])
         setLastRefresh(new Date())
-    }
+    }, [fetchResults, fetchStats, fetchRecentActivity, fetchDiets, fetchAllergies, fetchKitchenEquipment])
 
     useEffect(() => {
         fetchAllData()
@@ -852,7 +852,7 @@ export default function AdminPage() {
                                                                 <h5 className="font-medium text-sm mb-2">Recettes générées</h5>
                                                                 <div className="grid grid-cols-2 gap-3">
                                                                     {result.result && Array.isArray(result.result) ? (
-                                                                        result.result.map((recipe: Record<string, any>, index: number) => (
+                                                                        result.result.map((recipe: Record<string, unknown>, index: number) => (
                                                                             <div key={index} className="border rounded-lg p-3 bg-gray-50">
                                                                                 <div className="font-medium text-sm mb-1">
                                                                                     {recipe.title || `Recette ${index + 1}`}
