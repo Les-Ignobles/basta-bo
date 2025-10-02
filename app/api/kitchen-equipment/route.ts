@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { supabaseServer } from '@/lib/supabase/server-client'
 import { KitchenEquipmentRepository } from '@/features/cooking/repositories/kitchen-equipment-repository'
 
-export async function GET(req: NextRequest) {
+export async function GET() {
     try {
         const repo = new KitchenEquipmentRepository(supabaseServer)
         const kitchenEquipment = await repo.findAll()

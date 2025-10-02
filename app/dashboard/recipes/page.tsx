@@ -108,7 +108,7 @@ export default function RecipesIndexPage() {
         setOpen(false)
     }
 
-    const handleSelectRecipe = (recipeId: number, selected: boolean) => {
+    const handleSelectRecipe = (recipeId: number) => {
         toggleRecipeSelection(recipeId)
     }
 
@@ -247,7 +247,7 @@ export default function RecipesIndexPage() {
                                             />
                                             <span className="flex items-center gap-2">
                                                 <span>{diet.emoji}</span>
-                                                <span>{(diet.title as any)?.fr || diet.title}</span>
+                                                <span>{(diet.title as { fr?: string })?.fr || diet.title}</span>
                                             </span>
                                         </label>
                                     ))}

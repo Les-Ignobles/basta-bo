@@ -17,7 +17,7 @@ export function decodeMask(mask: number | null, items: MaskItem[]): MaskItem[] {
     
     return items.filter(item => {
         // Utiliser bit_index directement si disponible, sinon calculer avec id
-        const bitIndex = (item as any).bit_index || (item.id - 1)
+        const bitIndex = (item as { bit_index?: number }).bit_index || (item.id - 1)
         const bitPosition = Math.pow(2, bitIndex)
         return (mask & bitPosition) > 0
     })
@@ -31,7 +31,7 @@ export function decodeMask(mask: number | null, items: MaskItem[]): MaskItem[] {
 export function createMask(ids: number[], items: MaskItem[]): number {
     return ids.reduce((mask, id) => {
         const item = items.find(i => i.id === id)
-        const bitIndex = (item as any)?.bit_index || (id - 1)
+        const bitIndex = (item as { bit_index?: number })?.bit_index || (id - 1)
         const bitPosition = Math.pow(2, bitIndex)
         return mask | bitPosition
     }, 0)
@@ -46,7 +46,7 @@ export function createMask(ids: number[], items: MaskItem[]): number {
 export function hasMaskItem(mask: number | null, itemId: number, items: MaskItem[]): boolean {
     if (!mask || mask === 0) return false
     const item = items.find(i => i.id === itemId)
-    const bitIndex = (item as any)?.bit_index || (itemId - 1)
+    const bitIndex = (item as { bit_index?: number })?.bit_index || (itemId - 1)
     const bitPosition = Math.pow(2, bitIndex)
     return (mask & bitPosition) > 0
 }

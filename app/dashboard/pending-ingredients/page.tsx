@@ -106,7 +106,6 @@ export default function PendingIngredientsPage() {
     }
 
     const allSelected = selectedPendingIngredients.length === pendingIngredients.length && pendingIngredients.length > 0
-    const someSelected = selectedPendingIngredients.length > 0 && selectedPendingIngredients.length < pendingIngredients.length
 
     const handlePreviewBulkProcess = async () => {
         if (pendingIngredients.length === 0) {

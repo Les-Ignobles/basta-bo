@@ -16,17 +16,13 @@ import { useAllergyStore } from '@/features/cooking/stores/allergy-store'
 import { useKitchenEquipmentStore } from '@/features/cooking/stores/kitchen-equipment-store'
 import { MaskDisplay } from '@/features/cooking/components/mask-display'
 import {
-    Settings,
     Database,
     Cpu,
-    Clock,
     TrendingUp,
     AlertTriangle,
     CheckCircle,
-    XCircle,
     RefreshCw,
     Activity,
-    Zap,
     Search,
     Trash2,
     Eye,
@@ -48,15 +44,11 @@ export default function AdminPage() {
     const {
         results,
         stats,
-        recentActivity,
         loading,
         error,
         page,
         pageSize,
         total,
-        dietMask,
-        allergyMask,
-        kitchenEquipmentMask,
         fetchResults,
         fetchStats,
         fetchRecentActivity,
@@ -109,7 +101,7 @@ export default function AdminPage() {
         // Rafraîchir automatiquement toutes les 30 secondes
         const interval = setInterval(fetchAllData, 30000)
         return () => clearInterval(interval)
-    }, [])
+    }, [fetchAllData])
 
     useEffect(() => {
         const timeout = setTimeout(() => {
@@ -137,7 +129,7 @@ export default function AdminPage() {
 
         // Calculer le diet_mask : somme des bit_index des régimes sélectionnés
         const newDietMask = newSelectedDiets.reduce((mask: number, dietId: number) => {
-            const diet = diets.find((d: any) => d.id === dietId)
+            const diet = diets.find((d) => d.id === dietId)
             if (diet && diet.bit_index !== null) {
                 const bitPosition = 1 << diet.bit_index
                 return mask | bitPosition
@@ -225,7 +217,7 @@ export default function AdminPage() {
         try {
             await deleteBatch(id)
             // Le store se charge déjà de rafraîchir les données
-        } catch (error) {
+        } catch {
             alert('Erreur lors de la suppression du batch')
         }
     }
@@ -235,7 +227,7 @@ export default function AdminPage() {
             const deletedCount = await clearOldEntries(daysOld)
             alert(`${deletedCount} entrées supprimées`)
             setClearCacheDialogOpen(false)
-        } catch (error) {
+        } catch {
             alert('Erreur lors de la suppression')
         }
     }
@@ -267,12 +259,6 @@ export default function AdminPage() {
         })
     }
 
-    const getScoreColor = (score: number | null) => {
-        if (score === null) return 'text-gray-500'
-        if (score >= 0.8) return 'text-green-600'
-        if (score >= 0.6) return 'text-yellow-600'
-        return 'text-red-600'
-    }
 
     const totalPages = Math.ceil(total / pageSize)
 
@@ -407,7 +393,7 @@ export default function AdminPage() {
 
                     {/* Contrôles de tri */}
                     <div className="flex gap-2 items-center">
-                        <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                        <Select value={sortBy} onValueChange={(value: 'created_at' | 'last_used_at' | 'shown_count' | 'picked_count') => setSortBy(value)}>
                             <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="Trier par..." />
                             </SelectTrigger>
@@ -463,7 +449,7 @@ export default function AdminPage() {
                                             Chargement des régimes...
                                         </div>
                                     ) : (
-                                        diets?.map((diet: any) => (
+                                        diets?.map((diet) => (
                                             <div key={diet.id} className="flex items-center space-x-2">
                                                 <Checkbox
                                                     id={`diet-${diet.id}`}
@@ -751,7 +737,7 @@ export default function AdminPage() {
                                                 <TableCell>
                                                     <MaskDisplay
                                                         mask={result.diets_mask}
-                                                        items={diets.map((diet: any) => ({
+                                                        items={diets.map((diet) => ({
                                                             id: diet.id,
                                                             name: diet.title?.fr || diet.slug,
                                                             emoji: diet.emoji
@@ -845,7 +831,7 @@ export default function AdminPage() {
                                                                         <div><span className="font-medium">Type de plat:</span> {result.dish_type}</div>
                                                                         <div><span className="font-medium">Signature pool:</span> <code className="bg-muted px-1 rounded text-xs">{result.pool_signature}</code></div>
                                                                         {result.exclusion_key && (
-                                                                            <div><span className="font-medium">Clé d'exclusion:</span> <code className="bg-muted px-1 rounded text-xs">{result.exclusion_key}</code></div>
+                                                                            <div><span className="font-medium">Clé d&apos;exclusion:</span> <code className="bg-muted px-1 rounded text-xs">{result.exclusion_key}</code></div>
                                                                         )}
                                                                     </div>
                                                                 </div>
@@ -866,7 +852,7 @@ export default function AdminPage() {
                                                                 <h5 className="font-medium text-sm mb-2">Recettes générées</h5>
                                                                 <div className="grid grid-cols-2 gap-3">
                                                                     {result.result && Array.isArray(result.result) ? (
-                                                                        result.result.map((recipe: any, index: number) => (
+                                                                        result.result.map((recipe: Record<string, any>, index: number) => (
                                                                             <div key={index} className="border rounded-lg p-3 bg-gray-50">
                                                                                 <div className="font-medium text-sm mb-1">
                                                                                     {recipe.title || `Recette ${index + 1}`}
