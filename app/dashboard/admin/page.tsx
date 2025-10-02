@@ -833,30 +833,30 @@ export default function AdminPage() {
                                                                                 <div className="font-medium text-sm mb-1">
                                                                                     {recipe.title || `Recette ${index + 1}`}
                                                                                 </div>
-                                                                                <div className="text-xs text-gray-600 mb-2">
-                                                                                    {recipe.original_recipe_id ? (
-                                                                                        <span className="text-blue-600">Adaptée de la recette #{recipe.original_recipe_id}</span>
-                                                                                    ) : (
-                                                                                        <span className="text-green-600">Nouvelle recette</span>
-                                                                                    )}
-                                                                                </div>
-                                                <div className="flex gap-2 mb-2">
-                                                    {recipe.meal_count > 0 && (
-                                                        <Badge variant={recipe.is_adapted ? "secondary" : "default"} className="text-xs">
-                                                            {recipe.meal_count} repas
-                                                        </Badge>
-                                                    )}
-                                                    {recipe.remaining_meal_count < recipe.meal_count && recipe.remaining_meal_count > 0 && (
-                                                        <Badge variant="outline" className="text-xs">
-                                                            {recipe.remaining_meal_count} restants
-                                                        </Badge>
-                                                    )}
-                                                    {recipe.expiration_days && recipe.expiration_days > 0 && (
-                                                        <Badge variant="outline" className="text-xs">
-                                                            {recipe.expiration_days}j
-                                                        </Badge>
+                                                <div className="text-xs text-gray-600 mb-2">
+                                                    {recipe.is_adapted && recipe.original_recipe_id ? (
+                                                        <span className="text-blue-600">Adaptée de la recette #{recipe.original_recipe_id}</span>
+                                                    ) : (
+                                                        <span className="text-green-600">Nouvelle recette</span>
                                                     )}
                                                 </div>
+                                                                                <div className="flex gap-2 mb-2">
+                                                                                    {recipe.meal_count > 0 && (
+                                                                                        <Badge variant={recipe.is_adapted ? "secondary" : "default"} className="text-xs">
+                                                                                            {recipe.meal_count} repas
+                                                                                        </Badge>
+                                                                                    )}
+                                                                                    {recipe.remaining_meal_count < recipe.meal_count && recipe.remaining_meal_count > 0 && (
+                                                                                        <Badge variant="outline" className="text-xs">
+                                                                                            {recipe.remaining_meal_count} restants
+                                                                                        </Badge>
+                                                                                    )}
+                                                                                    {recipe.expiration_days && recipe.expiration_days > 0 && (
+                                                                                        <Badge variant="outline" className="text-xs">
+                                                                                            {recipe.expiration_days}j
+                                                                                        </Badge>
+                                                                                    )}
+                                                                                </div>
                                                                                 {recipe.ingredients && recipe.ingredients.length > 0 && (
                                                                                     <div className="mt-2">
                                                                                         <div className="text-xs font-medium text-gray-500 mb-1">Ingrédients:</div>
