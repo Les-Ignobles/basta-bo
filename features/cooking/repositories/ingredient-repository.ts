@@ -11,8 +11,15 @@ export class IngredientRepository extends BaseRepository<Ingredient> {
         const to = from + pageSize - 1
         let query = (this.client as any).from(this.table).select('*', { count: 'exact' })
         if (search && search.trim()) {
-            // Recherche sur le nom FR (ajuster au besoin pour d’autres langues)
-            query = query.ilike('name->>fr', `%${search}%`)
+            const searchTerm = search.trim()
+            // Vérifier si la recherche est un nombre (ID)
+            if (/^\d+$/.test(searchTerm)) {
+                // Recherche par ID
+                query = query.eq('id', parseInt(searchTerm))
+            } else {
+                // Recherche sur le nom FR (ajuster au besoin pour d'autres langues)
+                query = query.ilike('name->>fr', `%${searchTerm}%`)
+            }
         }
         if (noImage) {
             query = query.is('img_path', null)
@@ -69,7 +76,15 @@ export class IngredientRepository extends BaseRepository<Ingredient> {
             // On fait une requête séparée pour compter le total
             let countQuery = (this.client as any).from(this.table).select('*', { count: 'exact' })
             if (search && search.trim()) {
-                countQuery = countQuery.ilike('name->>fr', `%${search}%`)
+                const searchTerm = search.trim()
+                // Vérifier si la recherche est un nombre (ID)
+                if (/^\d+$/.test(searchTerm)) {
+                    // Recherche par ID
+                    countQuery = countQuery.eq('id', parseInt(searchTerm))
+                } else {
+                    // Recherche sur le nom FR (ajuster au besoin pour d'autres langues)
+                    countQuery = countQuery.ilike('name->>fr', `%${searchTerm}%`)
+                }
             }
             if (noImage) {
                 countQuery = countQuery.is('img_path', null)

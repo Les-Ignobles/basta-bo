@@ -14,7 +14,7 @@ export interface MaskItem {
  */
 export function decodeMask(mask: number | null, items: MaskItem[]): MaskItem[] {
     if (!mask || mask === 0) return []
-    
+
     return items.filter(item => {
         // Utiliser bit_index directement si disponible, sinon calculer avec id
         const bitIndex = (item as { bit_index?: number }).bit_index || (item.id - 1)

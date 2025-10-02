@@ -95,7 +95,7 @@ export default function IngredientsIndexPage() {
             <div className="flex items-center justify-between py-2 gap-4 sticky top-0 z-10 bg-background border-b">
                 <div className="flex items-center gap-3">
                     <Input
-                        placeholder="Rechercher par nom..."
+                        placeholder="Rechercher par nom ou ID..."
                         className="w-80"
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
