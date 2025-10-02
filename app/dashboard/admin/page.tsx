@@ -836,6 +836,8 @@ export default function AdminPage() {
                                                 <div className="text-xs text-gray-600 mb-2">
                                                     {recipe.is_adapted && recipe.original_recipe_id ? (
                                                         <span className="text-blue-600">Adaptée de la recette #{recipe.original_recipe_id}</span>
+                                                    ) : recipe.original_recipe_id && !recipe.is_adapted ? (
+                                                        <span className="text-purple-600">Recette originale #{recipe.original_recipe_id}</span>
                                                     ) : (
                                                         <span className="text-green-600">Nouvelle recette</span>
                                                     )}
