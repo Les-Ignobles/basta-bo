@@ -742,7 +742,7 @@ export default function AdminPage() {
                                                         mask={result.kitchen_equipment_mask} 
                                                         items={kitchenEquipment.map(equipment => ({
                                                             id: equipment.id,
-                                                            name: equipment.name?.fr || equipment.slug,
+                                                            name: equipment.emoji,
                                                             emoji: equipment.emoji
                                                         }))} 
                                                         maxItems={2}
