@@ -10,7 +10,7 @@ interface MaskDisplayProps {
 
 export function MaskDisplay({ mask, items, maxItems = 3, className = '' }: MaskDisplayProps) {
     const decodedItems = decodeMask(mask, items)
-    
+
     if (decodedItems.length === 0) {
         return <span className="text-muted-foreground text-sm">Aucun</span>
     }

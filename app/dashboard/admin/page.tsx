@@ -718,30 +718,30 @@ export default function AdminPage() {
                                                         mask={result.diets_mask} 
                                                         items={diets.map(diet => ({
                                                             id: diet.id,
-                                                            displayText: diet.emoji
+                                                            displayText: diet.title?.fr || diet.slug
                                                         }))} 
                                                         maxItems={2}
                                                         className="text-xs"
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <MaskDisplay 
-                                                        mask={result.allergies_mask} 
+                                                    <MaskDisplay
+                                                        mask={result.allergies_mask}
                                                         items={allergies.map(allergy => ({
                                                             id: allergy.id,
                                                             displayText: allergy.slug
-                                                        }))} 
+                                                        }))}
                                                         maxItems={2}
                                                         className="text-xs"
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <MaskDisplay 
-                                                        mask={result.kitchen_equipment_mask} 
+                                                    <MaskDisplay
+                                                        mask={result.kitchen_equipment_mask}
                                                         items={kitchenEquipment.map(equipment => ({
                                                             id: equipment.id,
                                                             displayText: equipment.emoji
-                                                        }))} 
+                                                        }))}
                                                         maxItems={2}
                                                         className="text-xs"
                                                     />
