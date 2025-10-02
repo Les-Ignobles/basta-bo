@@ -3,15 +3,14 @@ import { decodeMask } from '@/lib/utils/mask-utils'
 
 interface MaskDisplayProps {
     mask: number | null
-    items: Array<{ id: number; title?: { fr: string; en?: string; es?: string }; name?: { fr: string; en?: string; es?: string }; emoji: string }>
+    items: Array<{ id: number; emoji: string; displayText?: string }>
     maxItems?: number
     className?: string
 }
 
 export function MaskDisplay({ mask, items, maxItems = 3, className = '' }: MaskDisplayProps) {
     const decodedItems = decodeMask(mask, items)
-
-
+    
     if (decodedItems.length === 0) {
         return <span className="text-muted-foreground text-sm">Aucun</span>
     }
