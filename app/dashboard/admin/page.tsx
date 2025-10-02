@@ -496,7 +496,7 @@ export default function AdminPage() {
                                                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 cursor-pointer"
                                                 >
                                                     <span>{allergy.emoji}</span>
-                                                    {allergy.title?.fr || allergy.slug}
+                                                    {allergy.name?.fr || allergy.slug}
                                                 </label>
                                             </div>
                                         ))
@@ -552,7 +552,7 @@ export default function AdminPage() {
                                                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 cursor-pointer"
                                                 >
                                                     <span>{equipment.emoji}</span>
-                                                    {equipment.title?.fr || equipment.slug}
+                                                    {equipment.name?.fr || equipment.slug}
                                                 </label>
                                             </div>
                                         ))

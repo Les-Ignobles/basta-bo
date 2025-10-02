@@ -1,10 +1,10 @@
 export interface KitchenEquipment {
     id: number
     created_at: string
-    title: { fr: string; en?: string; es?: string }
+    name: { fr: string; en?: string; es?: string }
     emoji: string
-    slug: string
-    order: number
+    slug?: string
+    order?: number
     bit_index: number
 }
 

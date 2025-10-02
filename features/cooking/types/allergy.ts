@@ -1,10 +1,10 @@
 export interface Allergy {
     id: number
     created_at: string
-    title: { fr: string; en?: string; es?: string }
-    emoji: string
+    name: { fr: string; en?: string; es?: string }
+    emoji?: string
     slug: string
-    order: number
+    order?: number
     bit_index: number
 }
 
