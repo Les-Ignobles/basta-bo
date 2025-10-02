@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -391,9 +391,7 @@ export default function AdminPage() {
                                         <TableHead>ID</TableHead>
                                         <TableHead>Créé</TableHead>
                                         <TableHead>Dernière utilisation</TableHead>
-                                        <TableHead>Ingrédients</TableHead>
                                         <TableHead>Recettes</TableHead>
-                                        <TableHead>Score compatibilité</TableHead>
                                         <TableHead>Affichages</TableHead>
                                         <TableHead>Sélections</TableHead>
                                         <TableHead>Actions</TableHead>
@@ -401,63 +399,109 @@ export default function AdminPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {results.map((result) => (
-                                        <TableRow key={result.id}>
-                                            <TableCell className="font-mono text-sm">
-                                                #{result.id}
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="text-sm">
-                                                    {formatDate(result.created_at)}
-                                                </div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    {formatTime(result.created_at)}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="text-sm">
-                                                    {formatTime(result.last_used_at)}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="max-w-xs">
+                                        <Fragment key={result.id}>
+                                            <TableRow>
+                                                <TableCell className="font-mono text-sm">
+                                                    #{result.id}
+                                                </TableCell>
+                                                <TableCell>
                                                     <div className="text-sm">
-                                                        {result.ingredients.slice(0, 2).join(', ')}
-                                                        {result.ingredients.length > 2 && ` +${result.ingredients.length - 2}`}
+                                                        {formatDate(result.created_at)}
                                                     </div>
                                                     <div className="text-xs text-muted-foreground">
-                                                        {result.ingredients.length} ingrédients
+                                                        {formatTime(result.created_at)}
                                                     </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant="secondary">
-                                                    {result.recipe_count}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className={`font-medium ${getScoreColor(result.compatibility_score)}`}>
-                                                    {result.compatibility_score ?
-                                                        (result.compatibility_score * 100).toFixed(1) + '%' :
-                                                        'N/A'
-                                                    }
-                                                </span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className="text-sm">{result.shown_count}</span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className="text-sm">{result.picked_count}</span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => setShowDetails(showDetails === result.id ? null : result.id)}
-                                                >
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="text-sm">
+                                                        {formatTime(result.last_used_at)}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant="secondary">
+                                                        {result.recipe_count}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <span className="text-sm">{result.shown_count}</span>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <span className="text-sm">{result.picked_count}</span>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setShowDetails(showDetails === result.id ? null : result.id)}
+                                                    >
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                            {showDetails === result.id && (
+                                                <TableRow>
+                                                    <TableCell colSpan={7} className="bg-muted/50">
+                                                        <div className="p-4 space-y-4">
+                                                            <h4 className="font-semibold">Détails du résultat #{result.id}</h4>
+                                                            
+                                                            <div className="grid gap-4 md:grid-cols-2">
+                                                                <div>
+                                                                    <h5 className="font-medium text-sm mb-2">Informations générales</h5>
+                                                                    <div className="space-y-1 text-sm">
+                                                                        <div><span className="font-medium">Appétit:</span> {result.appetite || 'N/A'}</div>
+                                                                        <div><span className="font-medium">Type de plat:</span> {result.dish_type}</div>
+                                                                        <div><span className="font-medium">Signature pool:</span> <code className="bg-muted px-1 rounded text-xs">{result.pool_signature}</code></div>
+                                                                        {result.exclusion_key && (
+                                                                            <div><span className="font-medium">Clé d'exclusion:</span> <code className="bg-muted px-1 rounded text-xs">{result.exclusion_key}</code></div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                
+                                                                <div>
+                                                                    <h5 className="font-medium text-sm mb-2">Métriques</h5>
+                                                                    <div className="space-y-1 text-sm">
+                                                                        <div><span className="font-medium">Score compatibilité:</span> 
+                                                                            <span className={`ml-1 ${getScoreColor(result.compatibility_score)}`}>
+                                                                                {result.compatibility_score ? 
+                                                                                    (result.compatibility_score * 100).toFixed(1) + '%' : 
+                                                                                    'N/A'
+                                                                                }
+                                                                            </span>
+                                                                        </div>
+                                                                        <div><span className="font-medium">Compatibilité positive:</span> {result.compat_pos || 'N/A'}</div>
+                                                                        <div><span className="font-medium">Compatibilité négative:</span> {result.compat_neg || 'N/A'}</div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div>
+                                                                <h5 className="font-medium text-sm mb-2">Ingrédients ({result.ingredients.length})</h5>
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {result.ingredients.map((ingredient, index) => (
+                                                                        <Badge key={index} variant="outline" className="text-xs">
+                                                                            {ingredient}
+                                                                        </Badge>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            {result.original_recipes.length > 0 && (
+                                                                <div>
+                                                                    <h5 className="font-medium text-sm mb-2">Recettes originales ({result.original_recipes.length})</h5>
+                                                                    <div className="flex flex-wrap gap-1">
+                                                                        {result.original_recipes.map((recipeId, index) => (
+                                                                            <Badge key={index} variant="secondary" className="text-xs">
+                                                                                #{recipeId}
+                                                                            </Badge>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </Fragment>
                                     ))}
                                 </TableBody>
                             </Table>
