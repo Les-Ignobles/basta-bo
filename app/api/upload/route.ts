@@ -8,10 +8,20 @@ export async function POST(request: NextRequest) {
         const file = formData.get('file') as File
         const fileName = formData.get('fileName') as string
         const bucket = formData.get('bucket') as string
+        const targetSize = formData.get('targetSize') as string || '100'
 
         if (!file || !fileName || !bucket) {
             return NextResponse.json(
                 { error: 'Missing required fields: file, fileName, bucket' },
+                { status: 400 }
+            )
+        }
+
+        // Parser la taille cible
+        const size = parseInt(targetSize, 10)
+        if (isNaN(size) || size <= 0) {
+            return NextResponse.json(
+                { error: 'Invalid targetSize parameter' },
                 { status: 400 }
             )
         }
@@ -24,9 +34,9 @@ export async function POST(request: NextRequest) {
         const mimeType = file.type
         const isPng = mimeType === 'image/png'
 
-        // Redimensionner l'image à 100x100px avec Jimp
+        // Redimensionner l'image à la taille cible avec Jimp
         const image = await Jimp.read(buffer)
-        image.cover({ w: 100, h: 100 }) // Redimensionne en mode cover
+        image.cover({ w: size, h: size }) // Redimensionne en mode cover
 
         // Convertir en buffer selon le format
         const resizedBuffer = await image.getBuffer(isPng ? 'image/png' : 'image/jpeg')

@@ -224,6 +224,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                             onChange={(url) => setValues(prev => ({ ...prev, img_path: url }))}
                             bucket="recipes"
                             ingredientName={values.title}
+                            targetSize={200}
                         />
                     </div>
                 </div>

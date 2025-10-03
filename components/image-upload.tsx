@@ -10,9 +10,10 @@ type Props = {
     bucket?: 'ingredients' | 'recipes'
     disabled?: boolean
     ingredientName?: string
+    targetSize?: number
 }
 
-export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled, ingredientName }: Props) {
+export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled, ingredientName, targetSize }: Props) {
     const [uploading, setUploading] = useState(false)
     const [dragOver, setDragOver] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -45,6 +46,9 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
             formData.append('file', file)
             formData.append('bucket', bucket)
             formData.append('fileName', fileName)
+            if (targetSize) {
+                formData.append('targetSize', targetSize.toString())
+            }
 
             const res = await fetch('/api/upload', {
                 method: 'POST',
