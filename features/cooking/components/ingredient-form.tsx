@@ -8,6 +8,8 @@ import { Check, ChevronsUpDown, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TranslationTextField } from '@/components/translation-text'
 import { ImageUpload } from '@/components/image-upload'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 // Imports pour le composant Command amélioré
 import type { TranslationText } from '@/lib/i18n'
 
@@ -18,6 +20,7 @@ export type IngredientFormValues = {
     suffix_plural: TranslationText
     img_path?: string | null
     category_id?: number | null
+    is_basic: boolean
 }
 
 type Props = {
@@ -42,6 +45,7 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
         suffix_plural: { fr: '' },
         img_path: '',
         category_id: null,
+        is_basic: false,
         ...defaultValues,
     } as IngredientFormValues)
     const [loading, setLoading] = useState(false)
@@ -213,6 +217,16 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                             </Command>
                         </PopoverContent>
                     </Popover>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Switch
+                        id="is_basic"
+                        checked={values.is_basic}
+                        onCheckedChange={(checked: boolean) => setValues((s) => ({ ...s, is_basic: checked }))}
+                    />
+                    <Label htmlFor="is_basic" className="text-sm font-medium">
+                        Ingrédient de base
+                    </Label>
                 </div>
                 <div className="space-y-1">
                     {values.name?.fr && values.name.fr.trim() ? (

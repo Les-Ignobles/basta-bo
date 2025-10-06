@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
             suffix_plural: ingredientData.suffix_plural,
             category_id: ingredientData.category_id,
             img_path: ingredientData.img_path || null,
+            is_basic: false, // Par défaut, les ingrédients convertis ne sont pas de base
             created_at: new Date().toISOString()
         }
 

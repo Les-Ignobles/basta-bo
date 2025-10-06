@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings } from "lucide-react"
+import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings, BookOpen, FolderOpen, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/components/auth-provider"
@@ -63,6 +63,38 @@ export function AppSidebar() {
                                                 {total > 99 ? '99+' : total}
                                             </Badge>
                                         )}
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
+
+                <SidebarGroup>
+                    <SidebarGroupLabel className="font-christmas">Conseils</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton asChild isActive={pathname === '/dashboard/advice/articles'}>
+                                    <Link href="/dashboard/advice/articles" className="flex items-center gap-2">
+                                        <BookOpen className="size-4" />
+                                        <span>Articles</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton asChild isActive={pathname === '/dashboard/advice/categories'}>
+                                    <Link href="/dashboard/advice/categories" className="flex items-center gap-2">
+                                        <FolderOpen className="size-4" />
+                                        <span>Catégories</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton asChild isActive={pathname === '/dashboard/advice/faq'}>
+                                    <Link href="/dashboard/advice/faq" className="flex items-center gap-2">
+                                        <HelpCircle className="size-4" />
+                                        <span>FAQ</span>
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>

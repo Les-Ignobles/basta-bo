@@ -50,6 +50,7 @@ export default function IngredientsIndexPage() {
                 suffix_plural: values.suffix_plural,
                 img_path: values.img_path ?? null,
                 category_id: values.category_id ?? null,
+                is_basic: values.is_basic,
             })
         } else {
             // Create new ingredient
@@ -59,6 +60,7 @@ export default function IngredientsIndexPage() {
                 suffix_plural: values.suffix_plural,
                 img_path: values.img_path ?? null,
                 category_id: values.category_id ?? null,
+                is_basic: values.is_basic,
             })
         }
         setOpen(false)

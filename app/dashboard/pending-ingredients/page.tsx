@@ -193,7 +193,8 @@ export default function PendingIngredientsPage() {
                 suffix_singular: aiData.suffix_singular as TranslationText,
                 suffix_plural: aiData.suffix_plural as TranslationText,
                 category_id: aiData.category_id as number | null,
-                img_path: null
+                img_path: null,
+                is_basic: false // Par défaut, les ingrédients générés par IA ne sont pas de base
             }
 
             // Créer l'ingrédient

@@ -20,6 +20,7 @@ export type Ingredient = {
     suffix_singular: TranslationText
     suffix_plural: TranslationText
     category_id: number | null
+    is_basic: boolean
 }
 
 export type IngredientCategory = {
@@ -75,5 +76,6 @@ export type PendingIngredientFormValues = {
     suffix_plural: TranslationText
     category_id: number | null
     img_path?: string | null
+    is_basic: boolean
 }
 
