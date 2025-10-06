@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
+import { RoleScope } from '@/lib/types/auth'
 
 type UserProfile = {
     id: number
@@ -10,6 +11,7 @@ type UserProfile = {
     firstname: string
     avatar: string
     is_admin?: boolean
+    role_scopes?: RoleScope[]
 }
 
 type AuthContextType = {
@@ -69,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     // Fetch user profile
                     const { data: profile, error: profileError } = await supabase
                         .from('user_profiles')
-                        .select('id, email, firstname, avatar, is_admin')
+                        .select('id, email, firstname, avatar, is_admin, role_scopes')
                         .eq('uuid', session.user.id)
                         .single()
 

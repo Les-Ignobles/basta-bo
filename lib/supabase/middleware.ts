@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getRequiredScopesForRoute, hasScope, RoleScope } from '@/lib/types/auth'
 
 export async function updateSession(request: NextRequest) {
     const supabaseResponse = NextResponse.next({
@@ -41,18 +42,39 @@ export async function updateSession(request: NextRequest) {
             return NextResponse.redirect(url)
         }
 
-        // Check if user has admin rights
+        // Check user permissions based on role scopes
         const { data: userProfile } = await supabase
             .from('user_profiles')
-            .select('id, email, is_admin')
+            .select('id, email, is_admin, role_scopes')
             .eq('uuid', user.id)
             .single()
 
-        // If user doesn't have admin rights, redirect to unauthorized page
-        if (!userProfile?.is_admin) {
+        if (!userProfile) {
             const url = request.nextUrl.clone()
             url.pathname = '/unauthorized'
             return NextResponse.redirect(url)
+        }
+
+        // Get required scopes for the current route
+        const requiredScopes = getRequiredScopesForRoute(request.nextUrl.pathname)
+
+        if (requiredScopes.length > 0) {
+            // Get user scopes from role_scopes field or fallback to is_admin
+            let userScopes: string[] = []
+
+            if (userProfile.role_scopes && Array.isArray(userProfile.role_scopes)) {
+                userScopes = userProfile.role_scopes
+            } else if (userProfile.is_admin) {
+                // Fallback: admin users get all scopes
+                userScopes = ['cooking:read', 'cooking:write', 'advice:read', 'advice:write', 'admin:read', 'admin:write']
+            }
+
+            // Check if user has required scopes
+            if (!hasScope(userScopes as RoleScope[], requiredScopes)) {
+                const url = request.nextUrl.clone()
+                url.pathname = '/unauthorized'
+                return NextResponse.redirect(url)
+            }
         }
     }
 
