@@ -235,6 +235,7 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                             onChange={(url) => setValues((s) => ({ ...s, img_path: url }))}
                             bucket="ingredients"
                             ingredientName={values.name?.fr}
+                            allowSizeSelection={true}
                         />
                     ) : (
                         <div className="flex items-center justify-center p-4 border-2 border-dashed rounded-md h-32 bg-muted/50">

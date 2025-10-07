@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react'
 import { X, Image as ImageIcon } from 'lucide-react'
 import Image from 'next/image'
+import { Input } from '@/components/ui/input'
 import { slugify } from '@/lib/utils'
 
 type Props = {
@@ -11,16 +12,53 @@ type Props = {
     disabled?: boolean
     ingredientName?: string
     targetSize?: number
+    allowSizeSelection?: boolean
 }
 
-export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled, ingredientName, targetSize }: Props) {
+export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled, ingredientName, targetSize, allowSizeSelection = false }: Props) {
     const [uploading, setUploading] = useState(false)
     const [dragOver, setDragOver] = useState(false)
+    const [selectedSize, setSelectedSize] = useState<number>(() => {
+        // Valeurs par défaut selon le bucket
+        if (targetSize) return targetSize
+        return bucket === 'recipes' ? 200 : 100
+    })
+    const [sizeError, setSizeError] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
+
+    const validateSize = (size: number): boolean => {
+        if (size < 50) {
+            setSizeError('Taille minimale : 50px')
+            return false
+        }
+        if (size > 1920) {
+            setSizeError('Taille maximale : 1920px (HD)')
+            return false
+        }
+        setSizeError(null)
+        return true
+    }
+
+    const handleSizeChange = (value: string) => {
+        const numValue = parseInt(value)
+        if (isNaN(numValue)) {
+            setSizeError('Veuillez entrer un nombre valide')
+            return
+        }
+        if (validateSize(numValue)) {
+            setSelectedSize(numValue)
+        }
+    }
 
     async function handleFileUpload(file: File) {
         if (!file.type.startsWith('image/')) {
             alert('Veuillez sélectionner une image')
+            return
+        }
+        
+        // Vérifier que la taille est valide avant l'upload
+        if (sizeError || !validateSize(selectedSize)) {
+            alert('Veuillez corriger la taille avant d\'uploader')
             return
         }
 
@@ -46,9 +84,9 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
             formData.append('file', file)
             formData.append('bucket', bucket)
             formData.append('fileName', fileName)
-            if (targetSize) {
-                formData.append('targetSize', targetSize.toString())
-            }
+            // Utiliser la taille sélectionnée par l'utilisateur ou la taille par défaut
+            const sizeToUse = allowSizeSelection ? selectedSize : (targetSize || (bucket === 'recipes' ? 200 : 100))
+            formData.append('targetSize', sizeToUse.toString())
 
             const res = await fetch('/api/upload', {
                 method: 'POST',
@@ -82,7 +120,26 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
 
     return (
         <div className="space-y-2">
-            <div className="text-xs text-muted-foreground">Image</div>
+            <div className="flex items-center justify-between">
+                <div className="text-xs text-muted-foreground">Image</div>
+                {allowSizeSelection && (
+                    <div className="flex items-center gap-2">
+                        <Input
+                            type="number"
+                            value={selectedSize}
+                            onChange={(e) => handleSizeChange(e.target.value)}
+                            className="w-[100px] h-8 text-xs"
+                            min={50}
+                            max={1920}
+                            placeholder="200"
+                        />
+                        <span className="text-xs text-muted-foreground">px</span>
+                        {sizeError && (
+                            <span className="text-xs text-red-500">{sizeError}</span>
+                        )}
+                    </div>
+                )}
+            </div>
 
             {value ? (
                 <div className="relative inline-block">

@@ -250,6 +250,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                             bucket="recipes"
                             ingredientName={values.title}
                             targetSize={200}
+                            allowSizeSelection={true}
                         />
                     </div>
                 </div>
