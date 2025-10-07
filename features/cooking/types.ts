@@ -12,6 +12,16 @@ export const DISH_TYPE_LABELS = {
     [DishType.DESSERT]: 'Dessert'
 } as const
 
+export enum QuantificationType {
+    PER_PERSON = 1,
+    PER_UNIT = 2,
+}
+
+export const QUANTIFICATION_TYPE_LABELS = {
+    [QuantificationType.PER_PERSON]: 'Par personne',
+    [QuantificationType.PER_UNIT]: 'Par unité'
+} as const
+
 export type Ingredient = {
     id: number
     created_at: string
@@ -41,6 +51,7 @@ export type Recipe = {
     diet_mask: number | null
     instructions: string | null
     dish_type: DishType
+    quantification_type: QuantificationType
 }
 
 export type KitchenEquipment = {
@@ -61,6 +72,7 @@ export type RecipeFormValues = {
     diet_mask?: number | null
     instructions?: string | null
     dish_type: DishType
+    quantification_type: QuantificationType
 }
 
 export type PendingIngredient = {

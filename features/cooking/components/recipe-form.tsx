@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Check, ChevronsUpDown, PlusCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { RecipeFormValues, KitchenEquipment, Ingredient } from '@/features/cooking/types'
-import { DishType, DISH_TYPE_LABELS } from '@/features/cooking/types'
+import { DishType, DISH_TYPE_LABELS, QuantificationType, QUANTIFICATION_TYPE_LABELS } from '@/features/cooking/types'
 import type { Diet } from '@/features/cooking/types/diet'
 import { useCookingStore } from '@/features/cooking/store'
 
@@ -36,6 +36,11 @@ const DISH_TYPES = [
     { value: DishType.DESSERT, label: DISH_TYPE_LABELS[DishType.DESSERT] }
 ]
 
+const QUANTIFICATION_TYPES = [
+    { value: QuantificationType.PER_PERSON, label: QUANTIFICATION_TYPE_LABELS[QuantificationType.PER_PERSON] },
+    { value: QuantificationType.PER_UNIT, label: QUANTIFICATION_TYPE_LABELS[QuantificationType.PER_UNIT] }
+]
+
 export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets }: Props) {
     const [values, setValues] = useState<RecipeFormValues>({
         title: '',
@@ -46,6 +51,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
         diet_mask: null,
         instructions: '',
         dish_type: DishType.PLAT, // Par défaut "plat"
+        quantification_type: QuantificationType.PER_PERSON, // Par défaut "par personne"
         ...defaultValues,
     } as RecipeFormValues)
     const [loading, setLoading] = useState(false)
@@ -211,6 +217,25 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                                 {DISH_TYPES.map((dishType) => (
                                     <SelectItem key={dishType.value} value={dishType.value.toString()}>
                                         {dishType.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Type de quantification</div>
+                        <Select
+                            value={values.quantification_type.toString()}
+                            onValueChange={(value) => setValues(prev => ({ ...prev, quantification_type: parseInt(value) as QuantificationType }))}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Sélectionner un type de quantification" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {QUANTIFICATION_TYPES.map((quantificationType) => (
+                                    <SelectItem key={quantificationType.value} value={quantificationType.value.toString()}>
+                                        {quantificationType.label}
                                     </SelectItem>
                                 ))}
                             </SelectContent>

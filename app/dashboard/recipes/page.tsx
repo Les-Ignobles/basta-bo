@@ -6,7 +6,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from '@/components/ui/badge'
 import { RecipeForm } from '@/features/cooking/components/recipe-form'
 import type { RecipeFormValues, Recipe } from '@/features/cooking/types'
-import { DishType, DISH_TYPE_LABELS } from '@/features/cooking/types'
+import { DishType, DISH_TYPE_LABELS, QuantificationType, QUANTIFICATION_TYPE_LABELS } from '@/features/cooking/types'
 import { useRecipeStore } from '@/features/cooking/stores/recipe-store'
 import { RecipesTable } from '@/features/cooking/components/recipes-table'
 import { BulkActionsBar } from '@/features/cooking/components/bulk-actions-bar'
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { BookOpen, Utensils } from 'lucide-react'
+import { BookOpen, Utensils, Users, Hash, ImageOff, ChefHat, Scale } from 'lucide-react'
 
 export default function RecipesIndexPage() {
     const [open, setOpen] = useState(false)
@@ -53,6 +53,8 @@ export default function RecipesIndexPage() {
         dishType,
         selectedDiets,
         setSelectedDiets,
+        quantificationType,
+        setQuantificationType,
         setEditingRecipe
     } = useRecipeStore()
     // Plus besoin de charger tous les ingrédients, la recherche se fait côté serveur
@@ -91,6 +93,7 @@ export default function RecipesIndexPage() {
                 diet_mask: values.diet_mask ?? null,
                 instructions: values.instructions ?? null,
                 dish_type: values.dish_type,
+                quantification_type: values.quantification_type,
             })
         } else {
             // Create new recipe
@@ -103,6 +106,7 @@ export default function RecipesIndexPage() {
                 diet_mask: values.diet_mask ?? null,
                 instructions: values.instructions ?? null,
                 dish_type: values.dish_type,
+                quantification_type: values.quantification_type,
             })
         }
         setOpen(false)
@@ -211,12 +215,44 @@ export default function RecipesIndexPage() {
                             fetchRecipes()
                         }}
                     >
-                        <SelectTrigger className="w-40">
-                            <SelectValue placeholder="Type de plat" />
+                        <SelectTrigger className="w-[160px]">
+                            <div className="flex items-center gap-2">
+                                <ChefHat className="h-4 w-4" />
+                                <SelectValue placeholder="Type de plat" />
+                            </div>
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Tous</SelectItem>
                             {Object.entries(DISH_TYPE_LABELS).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                    {label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select
+                        value={quantificationType.toString()}
+                        onValueChange={(value) => {
+                            setQuantificationType(value as QuantificationType | 'all')
+                            setPage(1)
+                            fetchRecipes()
+                        }}
+                    >
+                        <SelectTrigger className="w-[180px]">
+                            <div className="flex items-center gap-2">
+                                {quantificationType === 'all' ? (
+                                    <Scale className="h-4 w-4" />
+                                ) : quantificationType === QuantificationType.PER_PERSON ? (
+                                    <Users className="h-4 w-4" />
+                                ) : (
+                                    <Hash className="h-4 w-4" />
+                                )}
+                                <SelectValue placeholder="Quantification" />
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Toutes</SelectItem>
+                            {Object.entries(QUANTIFICATION_TYPE_LABELS).map(([value, label]) => (
                                 <SelectItem key={value} value={value}>
                                     {label}
                                 </SelectItem>
@@ -271,6 +307,7 @@ export default function RecipesIndexPage() {
                     </Popover>
                     <label className="flex items-center gap-2 text-sm whitespace-nowrap">
                         <Checkbox checked={noImage} onCheckedChange={(v) => { setNoImage(Boolean(v)); setPage(1); fetchRecipes(); }} />
+                        <ImageOff className="h-4 w-4" />
                         Sans image
                     </label>
                 </div>
