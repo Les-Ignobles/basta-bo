@@ -21,11 +21,11 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
     const [selectedSize, setSelectedSize] = useState<number>(() => {
         // Valeurs par défaut selon le bucket
         if (targetSize) return targetSize
-        return bucket === 'recipes' ? 200 : 100
+        return bucket === 'recipes' ? 400 : 100
     })
     const [inputValue, setInputValue] = useState<string>(() => {
         if (targetSize) return targetSize.toString()
-        return bucket === 'recipes' ? '300' : '100'
+        return bucket === 'recipes' ? '400' : '100'
     })
     const [sizeError, setSizeError] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -135,25 +135,7 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
 
     return (
         <div className="space-y-2">
-            <div className="flex items-center justify-between">
-                <div className="text-xs text-muted-foreground">Image</div>
-                {allowSizeSelection && (
-                    <div className="flex items-center gap-2">
-                        <Input
-                            type="text"
-                            value={inputValue}
-                            onChange={(e) => handleSizeChange(e.target.value)}
-                            className="w-[100px] h-8 text-xs"
-                            placeholder="200"
-                            inputMode="numeric"
-                        />
-                        <span className="text-xs text-muted-foreground">px</span>
-                        {sizeError && (
-                            <span className="text-xs text-red-500">{sizeError}</span>
-                        )}
-                    </div>
-                )}
-            </div>
+            <div className="text-xs text-muted-foreground">Image</div>
 
             {value ? (
                 <div className="relative inline-block">
@@ -174,27 +156,54 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
                     </button>
                 </div>
             ) : (
-                <div
-                    className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${dragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
-                        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    onDrop={handleDrop}
-                    onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
-                    onDragLeave={() => setDragOver(false)}
-                    onClick={() => !disabled && fileInputRef.current?.click()}
-                >
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileInput}
-                        className="hidden"
-                        disabled={disabled}
-                    />
-                    <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                        {uploading ? 'Upload en cours...' : 'Glissez une image ou cliquez pour sélectionner'}
-                    </p>
-                </div>
+                <>
+                    {allowSizeSelection && (
+                        <div className="space-y-1 mb-3">
+                            <label className="text-xs font-medium text-foreground">
+                                Taille de l&apos;image (en pixels)
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="text"
+                                    value={inputValue}
+                                    onChange={(e) => handleSizeChange(e.target.value)}
+                                    className="w-[120px] h-9"
+                                    placeholder="200"
+                                    inputMode="numeric"
+                                />
+                                <span className="text-sm text-muted-foreground">px</span>
+                            </div>
+                            {sizeError ? (
+                                <p className="text-xs text-red-500">{sizeError}</p>
+                            ) : (
+                                <p className="text-xs text-muted-foreground">
+                                    Entre 50px et 1920px (recommandé: {bucket === 'recipes' ? '200px' : '100px'})
+                                </p>
+                            )}
+                        </div>
+                    )}
+                    <div
+                        className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${dragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
+                            } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onDrop={handleDrop}
+                        onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+                        onDragLeave={() => setDragOver(false)}
+                        onClick={() => !disabled && fileInputRef.current?.click()}
+                    >
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileInput}
+                            className="hidden"
+                            disabled={disabled}
+                        />
+                        <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">
+                            {uploading ? 'Upload en cours...' : 'Glissez une image ou cliquez pour sélectionner'}
+                        </p>
+                    </div>
+                </>
             )}
         </div>
     )
