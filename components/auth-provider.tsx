@@ -1,7 +1,7 @@
 "use client"
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
+import { User, Session, AuthError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { RoleScope } from '@/lib/types/auth'
 
@@ -37,7 +37,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const checkAuth = async () => {
             try {
-                const { data: { session }, error } = await supabase.auth.getSession()
+                // Timeout de 3 secondes pour éviter que getSession reste bloqué
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('getSession timeout')), 3000)
+                )
+
+                const sessionPromise = supabase.auth.getSession()
+
+                const result = await Promise.race([sessionPromise, timeoutPromise])
+
+                // Si c'est une erreur de timeout, on gère différemment
+                if (result instanceof Error) {
+                    console.error('getSession timeout')
+                    setLoading(false)
+                    return
+                }
+
+                // Type assertion pour le résultat de getSession
+                const sessionResult = result as { data: { session: Session | null }, error: AuthError | null }
+                const { data: { session }, error } = sessionResult
 
                 if (!isMounted) return
 
@@ -83,43 +101,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         checkAuth()
 
-        // S'abonner aux changements d'état d'authentification
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('🔄 Auth state changed:', event)
-
-            if (!isMounted) return
-
-            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                if (session?.user) {
-                    setUser(session.user)
-
-                    // Fetch user profile
-                    const { data: profile, error: profileError } = await supabase
-                        .from('user_profiles')
-                        .select('id, email, firstname, avatar, is_admin, role_scopes')
-                        .eq('uuid', session.user.id)
-                        .single()
-
-                    if (!isMounted) return
-
-                    if (profileError) {
-                        console.error('Error fetching user profile:', profileError)
-                        setUserProfile(null)
-                    } else {
-                        setUserProfile(profile)
-                    }
-                }
-                setLoading(false)
-            } else if (event === 'SIGNED_OUT') {
-                setUser(null)
-                setUserProfile(null)
-                setLoading(false)
-            }
-        })
-
         return () => {
             isMounted = false
-            subscription.unsubscribe()
         }
     }, [supabase])
 
