@@ -23,6 +23,10 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
         if (targetSize) return targetSize
         return bucket === 'recipes' ? 200 : 100
     })
+    const [inputValue, setInputValue] = useState<string>(() => {
+        if (targetSize) return targetSize.toString()
+        return bucket === 'recipes' ? '200' : '100'
+    })
     const [sizeError, setSizeError] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -40,7 +44,10 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
     }
 
     const handleSizeChange = (value: string) => {
-        // Permettre la saisie libre, même vide temporairement
+        // Toujours mettre à jour l'input pour permettre la saisie libre
+        setInputValue(value)
+        
+        // Permettre la saisie vide temporairement
         if (value === '') {
             setSizeError(null)
             return
@@ -52,6 +59,7 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
             return
         }
         
+        // Valider et mettre à jour la taille sélectionnée
         if (validateSize(numValue)) {
             setSelectedSize(numValue)
         }
@@ -133,7 +141,7 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
                     <div className="flex items-center gap-2">
                         <Input
                             type="text"
-                            value={selectedSize}
+                            value={inputValue}
                             onChange={(e) => handleSizeChange(e.target.value)}
                             className="w-[100px] h-8 text-xs"
                             placeholder="200"
