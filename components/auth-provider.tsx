@@ -101,8 +101,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         checkAuth()
 
+        // S'abonner aux changements d'état d'authentification
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('🔄 Auth state changed:', event)
+            
+            if (!isMounted) return
+
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                if (session?.user) {
+                    setUser(session.user)
+
+                    // Fetch user profile
+                    const { data: profile, error: profileError } = await supabase
+                        .from('user_profiles')
+                        .select('id, email, firstname, avatar, is_admin, role_scopes')
+                        .eq('uuid', session.user.id)
+                        .single()
+
+                    if (!isMounted) return
+
+                    if (profileError) {
+                        console.error('Error fetching user profile:', profileError)
+                        setUserProfile(null)
+                    } else {
+                        setUserProfile(profile)
+                    }
+                }
+                setLoading(false)
+            } else if (event === 'SIGNED_OUT') {
+                setUser(null)
+                setUserProfile(null)
+                setLoading(false)
+            }
+        })
+
         return () => {
             isMounted = false
+            subscription.unsubscribe()
         }
     }, [supabase])
 
