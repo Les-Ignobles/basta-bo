@@ -40,11 +40,18 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
     }
 
     const handleSizeChange = (value: string) => {
+        // Permettre la saisie libre, même vide temporairement
+        if (value === '') {
+            setSizeError(null)
+            return
+        }
+        
         const numValue = parseInt(value)
         if (isNaN(numValue)) {
             setSizeError('Veuillez entrer un nombre valide')
             return
         }
+        
         if (validateSize(numValue)) {
             setSelectedSize(numValue)
         }
@@ -125,11 +132,12 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
                 {allowSizeSelection && (
                     <div className="flex items-center gap-2">
                         <Input
-                            type="number"
+                            type="text"
                             value={selectedSize}
                             onChange={(e) => handleSizeChange(e.target.value)}
                             className="w-[100px] h-8 text-xs"
                             placeholder="200"
+                            inputMode="numeric"
                         />
                         <span className="text-xs text-muted-foreground">px</span>
                         {sizeError && (
