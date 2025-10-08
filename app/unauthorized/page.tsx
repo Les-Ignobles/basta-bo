@@ -1,4 +1,18 @@
+"use client"
+
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+
 export default function UnauthorizedPage() {
+    const router = useRouter()
+
+    const handleLogout = async () => {
+        const supabase = createClient()
+        await supabase.auth.signOut()
+        router.push('/login')
+    }
+
     return (
         <div className="min-h-screen flex items-center justify-center">
             <div className="text-center">
@@ -6,12 +20,12 @@ export default function UnauthorizedPage() {
                 <p className="text-gray-600 mb-4">
                     Vous n&apos;avez pas les droits nécessaires pour accéder à cette page.
                 </p>
-                <a
-                    href="/login"
-                    className="text-blue-600 hover:text-blue-800 underline"
+                <Button
+                    onClick={handleLogout}
+                    variant="outline"
                 >
-                    Retour à la page de connexion
-                </a>
+                    Se déconnecter et retourner à la connexion
+                </Button>
             </div>
         </div>
     )
