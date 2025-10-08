@@ -55,7 +55,7 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
             alert('Veuillez sélectionner une image')
             return
         }
-        
+
         // Vérifier que la taille est valide avant l'upload
         if (sizeError || !validateSize(selectedSize)) {
             alert('Veuillez corriger la taille avant d\'uploader')
@@ -129,8 +129,6 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
                             value={selectedSize}
                             onChange={(e) => handleSizeChange(e.target.value)}
                             className="w-[100px] h-8 text-xs"
-                            min={50}
-                            max={1920}
                             placeholder="200"
                         />
                         <span className="text-xs text-muted-foreground">px</span>
