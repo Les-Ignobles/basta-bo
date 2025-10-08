@@ -25,7 +25,7 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
     })
     const [inputValue, setInputValue] = useState<string>(() => {
         if (targetSize) return targetSize.toString()
-        return bucket === 'recipes' ? '200' : '100'
+        return bucket === 'recipes' ? '300' : '100'
     })
     const [sizeError, setSizeError] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -46,19 +46,19 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
     const handleSizeChange = (value: string) => {
         // Toujours mettre à jour l'input pour permettre la saisie libre
         setInputValue(value)
-        
+
         // Permettre la saisie vide temporairement
         if (value === '') {
             setSizeError(null)
             return
         }
-        
+
         const numValue = parseInt(value)
         if (isNaN(numValue)) {
             setSizeError('Veuillez entrer un nombre valide')
             return
         }
-        
+
         // Valider et mettre à jour la taille sélectionnée
         if (validateSize(numValue)) {
             setSelectedSize(numValue)
