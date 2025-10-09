@@ -235,6 +235,7 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                             onChange={(url) => setValues((s) => ({ ...s, img_path: url }))}
                             bucket="ingredients"
                             ingredientName={values.name?.fr}
+                            defaultSize={100}
                             allowSizeSelection={true}
                         />
                     ) : (

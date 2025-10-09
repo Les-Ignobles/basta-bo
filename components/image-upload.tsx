@@ -11,22 +11,15 @@ type Props = {
     bucket?: 'ingredients' | 'recipes'
     disabled?: boolean
     ingredientName?: string
-    targetSize?: number
+    defaultSize?: number
     allowSizeSelection?: boolean
 }
 
-export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled, ingredientName, targetSize, allowSizeSelection = false }: Props) {
+export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled, ingredientName, defaultSize = 100, allowSizeSelection = false }: Props) {
     const [uploading, setUploading] = useState(false)
     const [dragOver, setDragOver] = useState(false)
-    const [selectedSize, setSelectedSize] = useState<number>(() => {
-        // Valeurs par défaut selon le bucket
-        if (targetSize) return targetSize
-        return bucket === 'recipes' ? 400 : 100
-    })
-    const [inputValue, setInputValue] = useState<string>(() => {
-        if (targetSize) return targetSize.toString()
-        return bucket === 'recipes' ? '400' : '100'
-    })
+    const [selectedSize, setSelectedSize] = useState<number>(defaultSize)
+    const [inputValue, setInputValue] = useState<string>(defaultSize.toString())
     const [sizeError, setSizeError] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -100,7 +93,7 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
             formData.append('bucket', bucket)
             formData.append('fileName', fileName)
             // Utiliser la taille sélectionnée par l'utilisateur ou la taille par défaut
-            const sizeToUse = allowSizeSelection ? selectedSize : (targetSize || (bucket === 'recipes' ? 200 : 100))
+            const sizeToUse = allowSizeSelection ? selectedSize : defaultSize
             formData.append('targetSize', sizeToUse.toString())
 
             const res = await fetch('/api/upload', {
@@ -177,7 +170,7 @@ export function ImageUpload({ value, onChange, bucket = 'ingredients', disabled,
                                 <p className="text-xs text-red-500">{sizeError}</p>
                             ) : (
                                 <p className="text-xs text-muted-foreground">
-                                    Entre 50px et 1920px (recommandé: {bucket === 'recipes' ? '200px' : '100px'})
+                                    Entre 50px et 1920px (recommandé: {defaultSize}px)
                                 </p>
                             )}
                         </div>

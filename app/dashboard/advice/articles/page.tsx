@@ -460,7 +460,7 @@ function ArticleForm({
                             value={values.cover_url || undefined}
                             onChange={(url) => setValues((s) => ({ ...s, cover_url: url || '' }))}
                             bucket="recipes"
-                            targetSize={300}
+                            defaultSize={800}
                             allowSizeSelection={true}
                         />
                     </div>
