@@ -45,6 +45,7 @@ export type Recipe = {
     created_at: string
     title: string
     ingredients_name: string[]
+    ingredients_quantities: string | null
     img_path: string | null
     seasonality_mask: number | null
     kitchen_equipments_mask: number | null
@@ -66,6 +67,7 @@ export type RecipeFormValues = {
     id?: number
     title: string
     ingredients_name: string[]
+    ingredients_quantities?: string | null
     img_path?: string | null
     seasonality_mask?: number | null
     kitchen_equipments_mask?: number | null

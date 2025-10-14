@@ -87,6 +87,7 @@ export default function RecipesIndexPage() {
             await updateRecipe(values.id, {
                 title: values.title,
                 ingredients_name: values.ingredients_name,
+                ingredients_quantities: values.ingredients_quantities ?? null,
                 img_path: values.img_path ?? null,
                 seasonality_mask: values.seasonality_mask ?? null,
                 kitchen_equipments_mask: values.kitchen_equipments_mask ?? null,
@@ -100,6 +101,7 @@ export default function RecipesIndexPage() {
             await createRecipe({
                 title: values.title,
                 ingredients_name: values.ingredients_name,
+                ingredients_quantities: values.ingredients_quantities ?? null,
                 img_path: values.img_path ?? null,
                 seasonality_mask: values.seasonality_mask ?? null,
                 kitchen_equipments_mask: values.kitchen_equipments_mask ?? null,

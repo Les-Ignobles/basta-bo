@@ -45,6 +45,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
     const [values, setValues] = useState<RecipeFormValues>({
         title: '',
         ingredients_name: [],
+        ingredients_quantities: '',
         img_path: '',
         seasonality_mask: null,
         kitchen_equipments_mask: null,
@@ -192,8 +193,8 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid gap-6">
-                {/* Titre, Type de plat et Image sur la même ligne */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Titre, Type de plat, Type de quantification et Image sur la même ligne */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="space-y-1">
                         <div className="text-xs text-muted-foreground">Titre</div>
                         <Input
@@ -243,7 +244,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                     </div>
 
                     <div className="space-y-1">
-                        <div className="text-xs text-muted-foreground invisible">Image</div>
+                        <div className="text-xs text-muted-foreground">Image</div>
                         <ImageUpload
                             value={values.img_path ?? undefined}
                             onChange={(url) => setValues(prev => ({ ...prev, img_path: url }))}
@@ -346,6 +347,16 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                             </div>
                         ))}
                     </div>
+                </div>
+
+                <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">Quantités des ingrédients</div>
+                    <Textarea
+                        value={values.ingredients_quantities ?? ''}
+                        onChange={(e) => setValues(prev => ({ ...prev, ingredients_quantities: e.target.value }))}
+                        placeholder="Quantités des ingrédients"
+                        rows={3}
+                    />
                 </div>
 
                 <div className="space-y-1">
