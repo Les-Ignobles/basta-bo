@@ -21,6 +21,8 @@ type RecipeState = {
     dishType: DishType | 'all'
     selectedDiets: number[]
     quantificationType: QuantificationType | 'all'
+    isVisible: boolean | null
+    isFolklore: boolean | null
     fetchRecipes: () => Promise<void>
     fetchKitchenEquipments: () => Promise<void>
     fetchDiets: () => Promise<void>
@@ -38,6 +40,8 @@ type RecipeState = {
     setDishType: (d: DishType | 'all') => void
     setSelectedDiets: (diets: number[]) => void
     setQuantificationType: (q: QuantificationType | 'all') => void
+    setIsVisible: (v: boolean | null) => void
+    setIsFolklore: (f: boolean | null) => void
     setEditingRecipe: (recipe: Recipe | null) => void
     setSelectedRecipes: (ids: number[]) => void
     toggleRecipeSelection: (id: number) => void
@@ -61,16 +65,20 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     dishType: 'all',
     selectedDiets: [],
     quantificationType: 'all',
+    isVisible: null,
+    isFolklore: null,
     async fetchRecipes() {
         set({ loading: true, error: undefined })
         try {
-            const { page, pageSize, search, noImage, dishType, selectedDiets, quantificationType } = get()
+            const { page, pageSize, search, noImage, dishType, selectedDiets, quantificationType, isVisible, isFolklore } = get()
             const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
             if (search) params.set('search', search)
             if (noImage) params.set('noImage', 'true')
             if (dishType !== 'all') params.set('dishType', String(dishType))
             if (selectedDiets.length > 0) params.set('diets', selectedDiets.join(','))
             if (quantificationType !== 'all') params.set('quantificationType', String(quantificationType))
+            if (isVisible !== null) params.set('isVisible', String(isVisible))
+            if (isFolklore !== null) params.set('isFolklore', String(isFolklore))
             const res = await fetch(`/api/recipes?${params.toString()}`)
             const json = await res.json()
             set({ recipes: json.data ?? [], total: json.total ?? 0 })
@@ -293,5 +301,11 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     },
     setQuantificationType(quantificationType) {
         set({ quantificationType })
+    },
+    setIsVisible(isVisible) {
+        set({ isVisible })
+    },
+    setIsFolklore(isFolklore) {
+        set({ isFolklore })
     },
 }))

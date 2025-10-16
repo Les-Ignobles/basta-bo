@@ -1,11 +1,10 @@
 "use client"
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
-import { RecipeForm } from '@/features/cooking/components/recipe-form'
-import type { RecipeFormValues, Recipe } from '@/features/cooking/types'
+import type { Recipe } from '@/features/cooking/types'
 import { DishType, DISH_TYPE_LABELS, QuantificationType, QUANTIFICATION_TYPE_LABELS } from '@/features/cooking/types'
 import { useRecipeStore } from '@/features/cooking/stores/recipe-store'
 import { RecipesTable } from '@/features/cooking/components/recipes-table'
@@ -14,10 +13,10 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { BookOpen, Utensils, Users, Hash, ImageOff, ChefHat, Scale } from 'lucide-react'
+import { BookOpen, Utensils, Users, Hash, ImageOff, ChefHat, Scale, Eye, EyeOff, Sparkles } from 'lucide-react'
 
 export default function RecipesIndexPage() {
-    const [open, setOpen] = useState(false)
+    const router = useRouter()
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
     const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null)
@@ -28,8 +27,6 @@ export default function RecipesIndexPage() {
         recipes,
         kitchenEquipments,
         diets,
-        createRecipe,
-        updateRecipe,
         deleteRecipe,
         bulkDeleteRecipes,
         bulkUpdateDishType,
@@ -37,7 +34,6 @@ export default function RecipesIndexPage() {
         bulkUpdateDietMask,
         bulkUpdateKitchenEquipmentsMask,
         loading,
-        editingRecipe,
         selectedRecipes,
         toggleRecipeSelection,
         selectAllRecipes,
@@ -55,7 +51,10 @@ export default function RecipesIndexPage() {
         setSelectedDiets,
         quantificationType,
         setQuantificationType,
-        setEditingRecipe
+        isVisible,
+        setIsVisible,
+        isFolklore,
+        setIsFolklore
     } = useRecipeStore()
     // Plus besoin de charger tous les ingrédients, la recherche se fait côté serveur
 
@@ -81,42 +80,6 @@ export default function RecipesIndexPage() {
         return () => clearTimeout(t)
     }, [searchInput, setSearch, fetchRecipes, setPage])
 
-    async function handleSubmit(values: RecipeFormValues) {
-        if (values.id) {
-            // Update existing recipe
-            await updateRecipe(values.id, {
-                title: values.title,
-                ingredients_name: values.ingredients_name,
-                ingredients_quantities: values.ingredients_quantities ?? null,
-                img_path: values.img_path ?? null,
-                seasonality_mask: values.seasonality_mask ?? null,
-                kitchen_equipments_mask: values.kitchen_equipments_mask ?? null,
-                diet_mask: values.diet_mask ?? null,
-                instructions: values.instructions ?? null,
-                dish_type: values.dish_type,
-                quantification_type: values.quantification_type,
-                is_folklore: values.is_folklore,
-                is_visible: values.is_visible,
-            })
-        } else {
-            // Create new recipe
-            await createRecipe({
-                title: values.title,
-                ingredients_name: values.ingredients_name,
-                ingredients_quantities: values.ingredients_quantities ?? null,
-                img_path: values.img_path ?? null,
-                seasonality_mask: values.seasonality_mask ?? null,
-                kitchen_equipments_mask: values.kitchen_equipments_mask ?? null,
-                diet_mask: values.diet_mask ?? null,
-                instructions: values.instructions ?? null,
-                dish_type: values.dish_type,
-                quantification_type: values.quantification_type,
-                is_folklore: values.is_folklore,
-                is_visible: values.is_visible,
-            })
-        }
-        setOpen(false)
-    }
 
     const handleSelectRecipe = (recipeId: number) => {
         toggleRecipeSelection(recipeId)
@@ -176,8 +139,10 @@ export default function RecipesIndexPage() {
             title: `${recipe.title} (copie)`, // Ajouter "(copie)" au titre
             created_at: new Date().toISOString(), // Nouvelle date de création
         }
-        setEditingRecipe(duplicatedRecipe as Recipe)
-        setOpen(true)
+
+        // Stocker la recette dupliquée dans sessionStorage pour la page de création
+        sessionStorage.setItem('duplicatedRecipe', JSON.stringify(duplicatedRecipe))
+        router.push('/dashboard/recipes/new')
     }
 
     const handleDietToggle = (dietId: number) => {
@@ -191,35 +156,9 @@ export default function RecipesIndexPage() {
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-xl font-semibold font-christmas">Recettes</h1>
-                    <Badge variant="secondary" className="flex items-center gap-2">
-                        <BookOpen className="h-4 w-4" />
-                        {total} recette{total > 1 ? 's' : ''}
-                    </Badge>
-                </div>
-                <Dialog open={open} onOpenChange={setOpen}>
-                    <DialogTrigger asChild>
-                        <Button disabled={loading} onClick={() => {
-                            setEditingRecipe(null) // Clear edit state
-                        }}>Nouvelle recette</Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[1200px] max-w-[95vw] w-full">
-                        <DialogHeader>
-                            <DialogTitle className="font-christmas">{editingRecipe ? 'Modifier la recette' : 'Nouvelle recette'}</DialogTitle>
-                        </DialogHeader>
-                        <RecipeForm
-                            onSubmit={handleSubmit}
-                            defaultValues={editingRecipe || undefined}
-                            kitchenEquipments={kitchenEquipments}
-                            diets={diets}
-                        />
-                    </DialogContent>
-                </Dialog>
-            </div>
-            <div className="flex items-center justify-between py-2 gap-4 sticky top-0 z-10 bg-background border-b">
-                <div className="flex items-center gap-3">
+            <div className="sticky top-0 z-10 bg-background border-b py-4">
+                {/* Filtres sur une seule ligne avec flex-wrap intelligent */}
+                <div className="flex items-center gap-3 flex-wrap">
                     <Input
                         placeholder="Rechercher par titre..."
                         className="w-80"
@@ -328,16 +267,89 @@ export default function RecipesIndexPage() {
                         <ImageOff className="h-4 w-4" />
                         Sans image
                     </label>
+                    <Select
+                        value={isVisible === null ? 'all' : isVisible.toString()}
+                        onValueChange={(value) => {
+                            const newValue = value === 'all' ? null : value === 'true'
+                            setIsVisible(newValue)
+                            setPage(1)
+                            fetchRecipes()
+                        }}
+                    >
+                        <SelectTrigger className="w-[140px]">
+                            <div className="flex items-center gap-2">
+                                {isVisible === null ? (
+                                    <Eye className="h-4 w-4" />
+                                ) : isVisible ? (
+                                    <Eye className="h-4 w-4" />
+                                ) : (
+                                    <EyeOff className="h-4 w-4" />
+                                )}
+                                <SelectValue placeholder="Visibilité" />
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Toutes</SelectItem>
+                            <SelectItem value="true">Visibles</SelectItem>
+                            <SelectItem value="false">Cachées</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select
+                        value={isFolklore === null ? 'all' : isFolklore.toString()}
+                        onValueChange={(value) => {
+                            const newValue = value === 'all' ? null : value === 'true'
+                            setIsFolklore(newValue)
+                            setPage(1)
+                            fetchRecipes()
+                        }}
+                    >
+                        <SelectTrigger className="w-[140px]">
+                            <div className="flex items-center gap-2">
+                                {isFolklore === null ? (
+                                    <Sparkles className="h-4 w-4" />
+                                ) : isFolklore ? (
+                                    <Sparkles className="h-4 w-4" />
+                                ) : (
+                                    <Sparkles className="h-4 w-4 opacity-50" />
+                                )}
+                                <SelectValue placeholder="Folklore" />
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Toutes</SelectItem>
+                            <SelectItem value="true">Folklore</SelectItem>
+                            <SelectItem value="false">Normales</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                    <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                        Précédent
-                    </Button>
-                    <span className="text-muted-foreground">
-                        Page {page} / {totalPages}
-                    </span>
-                    <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-                        Suivant
+            </div>
+
+            {/* Header avec pagination alignée */}
+            <div className="flex items-center justify-between py-3 border-b bg-muted/30">
+                <div className="flex items-center gap-4">
+                    <h1 className="text-2xl font-semibold font-christmas">Recettes</h1>
+                    <Badge variant="secondary" className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4" />
+                        {total} recette{total > 1 ? 's' : ''}
+                    </Badge>
+                </div>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 text-sm">
+                        <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                            Précédent
+                        </Button>
+                        <span className="text-muted-foreground">
+                            Page {page} / {totalPages}
+                        </span>
+                        <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+                            Suivant
+                        </Button>
+                    </div>
+                    <Button
+                        disabled={loading}
+                        onClick={() => router.push('/dashboard/recipes/new')}
+                    >
+                        Nouvelle recette
                     </Button>
                 </div>
             </div>
@@ -361,8 +373,7 @@ export default function RecipesIndexPage() {
                 onSelectRecipe={handleSelectRecipe}
                 onSelectAll={handleSelectAll}
                 onEdit={(recipe) => {
-                    setEditingRecipe(recipe)
-                    setOpen(true)
+                    router.push(`/dashboard/recipes/edit/${recipe.id}`)
                 }}
                 onDuplicate={handleDuplicateRecipe}
                 onDelete={handleDeleteRecipe}

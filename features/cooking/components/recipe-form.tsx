@@ -23,6 +23,7 @@ type Props = {
     submittingLabel?: string
     kitchenEquipments: KitchenEquipment[]
     diets: Diet[]
+    formId?: string
 }
 
 const MONTHS = [
@@ -41,7 +42,7 @@ const QUANTIFICATION_TYPES = [
     { value: QuantificationType.PER_UNIT, label: QUANTIFICATION_TYPE_LABELS[QuantificationType.PER_UNIT] }
 ]
 
-export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets }: Props) {
+export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets, formId }: Props) {
     const [values, setValues] = useState<RecipeFormValues>({
         title: '',
         ingredients_name: [],
@@ -87,6 +88,26 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
 
         return () => clearTimeout(timeoutId)
     }, [ingredientInput, searchIngredients])
+
+    // Update form values when defaultValues change (for edit mode)
+    useEffect(() => {
+        if (defaultValues) {
+            setValues({
+                title: defaultValues.title || '',
+                ingredients_name: defaultValues.ingredients_name || [],
+                ingredients_quantities: defaultValues.ingredients_quantities || '',
+                img_path: defaultValues.img_path || '',
+                seasonality_mask: defaultValues.seasonality_mask || null,
+                kitchen_equipments_mask: defaultValues.kitchen_equipments_mask || null,
+                diet_mask: defaultValues.diet_mask || null,
+                instructions: defaultValues.instructions || '',
+                dish_type: defaultValues.dish_type || DishType.PLAT,
+                quantification_type: defaultValues.quantification_type || QuantificationType.PER_PERSON,
+                is_folklore: defaultValues.is_folklore || false,
+                is_visible: defaultValues.is_visible !== undefined ? defaultValues.is_visible : true,
+            } as RecipeFormValues)
+        }
+    }, [defaultValues])
 
     // Initialize masks from default values
     useEffect(() => {
@@ -193,9 +214,32 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid gap-6">
-                {/* Titre, Type de plat, Type de quantification et Image sur la même ligne */}
+        <form id={formId} onSubmit={handleSubmit} className="space-y-6">
+
+            {/* Section Informations générales */}
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-foreground border-b pb-2">Informations générales</h3>
+
+                {/* Options en haut */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                        <label className="flex items-center gap-2 text-sm">
+                            <Checkbox
+                                checked={values.is_folklore}
+                                onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_folklore: Boolean(checked) }))}
+                            />
+                            <span>Recette folklore</span>
+                        </label>
+                        <label className="flex items-center gap-2 text-sm">
+                            <Checkbox
+                                checked={values.is_visible}
+                                onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_visible: Boolean(checked) }))}
+                            />
+                            <span>Visible</span>
+                        </label>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="space-y-1">
                         <div className="text-xs text-muted-foreground">Titre</div>
@@ -257,10 +301,14 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                         />
                     </div>
                 </div>
+            </div>
 
+            {/* Section Ingrédients */}
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-foreground border-b pb-2">Ingrédients</h3>
                 <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">
-                        Ingrédients
+                        Liste des ingrédients
                     </div>
                     <div className="flex gap-2 w-full">
                         <Popover open={ingredientOpen} onOpenChange={setIngredientOpen}>
@@ -360,9 +408,13 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                         rows={3}
                     />
                 </div>
+            </div>
 
+            {/* Section Instructions */}
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-foreground border-b pb-2">Instructions</h3>
                 <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Instructions</div>
+                    <div className="text-xs text-muted-foreground">Instructions de préparation</div>
                     <Textarea
                         value={values.instructions ?? ''}
                         onChange={(e) => setValues(prev => ({ ...prev, instructions: e.target.value }))}
@@ -370,31 +422,12 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                         rows={4}
                     />
                 </div>
+            </div>
 
-                {/* Options de la recette */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <div className="text-xs text-muted-foreground">Options</div>
-                        <div className="space-y-3">
-                            <label className="flex items-center gap-2 text-sm">
-                                <Checkbox
-                                    checked={values.is_folklore}
-                                    onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_folklore: Boolean(checked) }))}
-                                />
-                                <span>Recette folklore</span>
-                            </label>
-                            <label className="flex items-center gap-2 text-sm">
-                                <Checkbox
-                                    checked={values.is_visible}
-                                    onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_visible: Boolean(checked) }))}
-                                />
-                                <span>Visible</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Section des checkboxes sur 3 colonnes */}
+            {/* Section Critères */}
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-foreground border-b pb-2">Critères de sélection</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Saisonnalité */}
                     <div className="space-y-2">
@@ -447,11 +480,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                     </div>
                 </div>
             </div>
-            <div className="flex justify-end gap-2">
-                <Button type="submit" disabled={loading}>
-                    {loading ? submittingLabel : 'Enregistrer'}
-                </Button>
-            </div>
+
         </form>
     )
 }

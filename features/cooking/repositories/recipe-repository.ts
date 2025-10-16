@@ -6,7 +6,7 @@ export class RecipeRepository extends BaseRepository<Recipe> {
         super(client, 'recipes')
     }
 
-    async findPage({ search, page, pageSize, noImage, dishType, quantificationType }: { search?: string; page: number; pageSize: number; noImage?: boolean; dishType?: number; quantificationType?: number }): Promise<{ data: Recipe[]; total: number }> {
+    async findPage({ search, page, pageSize, noImage, dishType, quantificationType, isVisible, isFolklore }: { search?: string; page: number; pageSize: number; noImage?: boolean; dishType?: number; quantificationType?: number; isVisible?: boolean; isFolklore?: boolean }): Promise<{ data: Recipe[]; total: number }> {
         const from = (page - 1) * pageSize
         const to = from + pageSize - 1
         let query = (this.client as any).from(this.table).select('*', { count: 'exact' })
@@ -27,16 +27,24 @@ export class RecipeRepository extends BaseRepository<Recipe> {
             query = query.eq('quantification_type', quantificationType)
         }
 
+        if (isVisible !== undefined) {
+            query = query.eq('is_visible', isVisible)
+        }
+
+        if (isFolklore !== undefined) {
+            query = query.eq('is_folklore', isFolklore)
+        }
+
         query = query.order('title', { ascending: true })
         const { data, error, count } = await query.range(from, to)
         if (error) throw error
         return { data: (data ?? []) as Recipe[], total: count ?? 0 }
     }
 
-    async findPageWithDiets({ search, page, pageSize, noImage, dishType, diets, quantificationType }: { search?: string; page: number; pageSize: number; noImage?: boolean; dishType?: number; diets?: number[]; quantificationType?: number }): Promise<{ data: Recipe[]; total: number }> {
+    async findPageWithDiets({ search, page, pageSize, noImage, dishType, diets, quantificationType, isVisible, isFolklore }: { search?: string; page: number; pageSize: number; noImage?: boolean; dishType?: number; diets?: number[]; quantificationType?: number; isVisible?: boolean; isFolklore?: boolean }): Promise<{ data: Recipe[]; total: number }> {
         // Pour l'instant, utiliser la méthode normale et filtrer côté client
         // TODO: Implémenter une solution SQL plus robuste si nécessaire
-        const result = await this.findPage({ search, page, pageSize, noImage, dishType, quantificationType })
+        const result = await this.findPage({ search, page, pageSize, noImage, dishType, quantificationType, isVisible, isFolklore })
 
         if (diets && diets.length > 0) {
             const filteredRecipes = result.data.filter((recipe: Recipe) => {
