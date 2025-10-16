@@ -79,6 +79,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
             if (quantificationType !== 'all') params.set('quantificationType', String(quantificationType))
             if (isVisible !== null) params.set('isVisible', String(isVisible))
             if (isFolklore !== null) params.set('isFolklore', String(isFolklore))
+
             const res = await fetch(`/api/recipes?${params.toString()}`)
             const json = await res.json()
             set({ recipes: json.data ?? [], total: json.total ?? 0 })
