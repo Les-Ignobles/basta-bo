@@ -53,6 +53,8 @@ export type Recipe = {
     instructions: string | null
     dish_type: DishType
     quantification_type: QuantificationType
+    is_folklore: boolean
+    is_visible: boolean
 }
 
 export type KitchenEquipment = {
@@ -75,6 +77,8 @@ export type RecipeFormValues = {
     instructions?: string | null
     dish_type: DishType
     quantification_type: QuantificationType
+    is_folklore: boolean
+    is_visible: boolean
 }
 
 export type PendingIngredient = {

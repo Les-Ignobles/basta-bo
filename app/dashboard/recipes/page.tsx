@@ -95,6 +95,8 @@ export default function RecipesIndexPage() {
                 instructions: values.instructions ?? null,
                 dish_type: values.dish_type,
                 quantification_type: values.quantification_type,
+                is_folklore: values.is_folklore,
+                is_visible: values.is_visible,
             })
         } else {
             // Create new recipe
@@ -109,6 +111,8 @@ export default function RecipesIndexPage() {
                 instructions: values.instructions ?? null,
                 dish_type: values.dish_type,
                 quantification_type: values.quantification_type,
+                is_folklore: values.is_folklore,
+                is_visible: values.is_visible,
             })
         }
         setOpen(false)

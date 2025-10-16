@@ -53,6 +53,8 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
         instructions: '',
         dish_type: DishType.PLAT, // Par défaut "plat"
         quantification_type: QuantificationType.PER_PERSON, // Par défaut "par personne"
+        is_folklore: false, // Par défaut false
+        is_visible: true, // Par défaut true
         ...defaultValues,
     } as RecipeFormValues)
     const [loading, setLoading] = useState(false)
@@ -369,6 +371,28 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                     />
                 </div>
 
+                {/* Options de la recette */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground">Options</div>
+                        <div className="space-y-3">
+                            <label className="flex items-center gap-2 text-sm">
+                                <Checkbox
+                                    checked={values.is_folklore}
+                                    onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_folklore: Boolean(checked) }))}
+                                />
+                                <span>Recette folklore</span>
+                            </label>
+                            <label className="flex items-center gap-2 text-sm">
+                                <Checkbox
+                                    checked={values.is_visible}
+                                    onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_visible: Boolean(checked) }))}
+                                />
+                                <span>Visible</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
 
                 {/* Section des checkboxes sur 3 colonnes */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
