@@ -168,6 +168,18 @@ export default function RecipesIndexPage() {
         await bulkUpdateKitchenEquipmentsMask(selectedRecipes, mask)
     }
 
+    const handleDuplicateRecipe = (recipe: Recipe) => {
+        // Créer une copie de la recette sans l'ID pour la duplication
+        const { id, ...recipeWithoutId } = recipe
+        const duplicatedRecipe = {
+            ...recipeWithoutId,
+            title: `${recipe.title} (copie)`, // Ajouter "(copie)" au titre
+            created_at: new Date().toISOString(), // Nouvelle date de création
+        }
+        setEditingRecipe(duplicatedRecipe as Recipe)
+        setOpen(true)
+    }
+
     const handleDietToggle = (dietId: number) => {
         const newSelectedDiets = selectedDiets.includes(dietId)
             ? selectedDiets.filter(id => id !== dietId)
@@ -352,6 +364,7 @@ export default function RecipesIndexPage() {
                     setEditingRecipe(recipe)
                     setOpen(true)
                 }}
+                onDuplicate={handleDuplicateRecipe}
                 onDelete={handleDeleteRecipe}
             />
 

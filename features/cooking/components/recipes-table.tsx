@@ -11,6 +11,7 @@ type Props = {
     loading?: boolean
     onEdit?: (recipe: Recipe) => void
     onDelete?: (recipe: Recipe) => void
+    onDuplicate?: (recipe: Recipe) => void
     selectedRecipes?: number[]
     onSelectRecipe?: (recipeId: number, selected: boolean) => void
     onSelectAll?: (selected: boolean) => void
@@ -21,7 +22,7 @@ const MONTHS = [
     'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
 ]
 
-export function RecipesTable({ recipes, loading = false, onEdit, onDelete, selectedRecipes = [], onSelectRecipe, onSelectAll }: Props) {
+export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDuplicate, selectedRecipes = [], onSelectRecipe, onSelectAll }: Props) {
     const allSelected = recipes.length > 0 && selectedRecipes.length === recipes.length
     const someSelected = selectedRecipes.length > 0 && selectedRecipes.length < recipes.length
     const getSeasonalityMonths = (mask: number | null) => {
@@ -129,6 +130,7 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, selec
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(recipe); }}>Éditer</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate?.(recipe); }}>Créer à partir de cette recette</DropdownMenuItem>
                                                     <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete?.(recipe); }}>Supprimer</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
