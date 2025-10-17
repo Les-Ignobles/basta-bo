@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
@@ -59,13 +59,15 @@ export default function RecipesIndexPage() {
         setIsFolklore
     } = useRecipeStore()
     // Plus besoin de charger tous les ingrédients, la recherche se fait côté serveur
+    const isInitialized = useRef(false)
 
+    // Charger les données une seule fois au montage
     useEffect(() => {
         fetchKitchenEquipments()
         fetchDiets()
     }, [fetchKitchenEquipments, fetchDiets])
 
-    // Synchroniser la page avec l'URL au chargement
+    // Synchroniser la page avec l'URL
     useEffect(() => {
         const pageParam = searchParams.get('page')
         if (pageParam && !isNaN(Number(pageParam))) {
@@ -76,7 +78,12 @@ export default function RecipesIndexPage() {
         }
     }, [searchParams, page, setPage])
 
+    // Fetch recipes quand les filtres changent (séparé de la synchronisation URL)
     useEffect(() => {
+        if (!isInitialized.current) {
+            isInitialized.current = true
+            return
+        }
         fetchRecipes()
     }, [fetchRecipes, page, noImage, dishType])
 
@@ -164,6 +171,9 @@ export default function RecipesIndexPage() {
 
     // Fonction pour mettre à jour l'URL avec la page actuelle
     const updateUrlWithPage = (newPage: number) => {
+        // Éviter les mises à jour inutiles
+        if (newPage === page) return
+
         const params = new URLSearchParams(searchParams.toString())
         params.set('page', newPage.toString())
         router.push(`/dashboard/recipes?${params.toString()}`, { scroll: false })

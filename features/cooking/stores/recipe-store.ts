@@ -72,6 +72,17 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
         set({ loading: true, error: undefined })
         try {
             const { page, pageSize, search, noImage, dishType, selectedDiets, quantificationType, isVisible, isFolklore } = get()
+
+            // Protection contre les requêtes avec page=1 non désirées
+            if (page === 1 && typeof window !== 'undefined') {
+                const urlParams = new URLSearchParams(window.location.search)
+                const urlPage = urlParams.get('page')
+                if (urlPage && urlPage !== '1') {
+                    console.log('Skipping fetchRecipes with page=1 when URL has page=' + urlPage)
+                    return
+                }
+            }
+
             const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
             if (search) params.set('search', search)
             if (noImage) params.set('noImage', 'true')
@@ -91,6 +102,9 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
         }
     },
     async fetchKitchenEquipments() {
+        const state = get()
+        if (state.kitchenEquipments.length > 0) return // Déjà chargé
+
         set({ loading: true })
         try {
             const res = await fetch('/api/kitchen-equipments')
@@ -104,6 +118,9 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     },
 
     async fetchDiets() {
+        const state = get()
+        if (state.diets.length > 0) return // Déjà chargé
+
         set({ loading: true })
         try {
             const res = await fetch('/api/diets')
@@ -138,7 +155,8 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id, ...payload }),
             })
-            get().fetchRecipes() // Refresh list
+            // Ne pas faire fetchRecipes() ici car la page liste va se recharger
+            // get().fetchRecipes() // Refresh list
         } catch (error) {
             console.error('Failed to update recipe:', error)
         } finally {
