@@ -49,13 +49,13 @@ export class OpenaiIaService extends IaService {
             return result.output_parsed as T;
         }
 
-        const result = await client.responses.create({
+        const result = await client.chat.completions.create({
             model: this.model,
-            reasoning: { effort: 'low' },
-            instructions: this.getSystemMessages(),
-            input: this.getUserMessages(),
+            messages: this.messages,
+            max_tokens: options.maxTokens,
+            temperature: options.temperature,
         });
 
-        return result.output_text as T;
+        return result.choices[0]?.message?.content as T;
     }
 }
