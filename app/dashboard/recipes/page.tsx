@@ -157,6 +157,7 @@ export default function RecipesIndexPage() {
 
     const handleDuplicateRecipe = (recipe: Recipe) => {
         // Créer une copie de la recette sans l'ID pour la duplication
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { id, ...recipeWithoutId } = recipe
         const duplicatedRecipe = {
             ...recipeWithoutId,
