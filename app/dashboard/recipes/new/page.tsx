@@ -11,13 +11,14 @@ export default function NewRecipePage() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const returnPage = searchParams.get('returnPage')
-    const { fetchKitchenEquipments, fetchDiets, createRecipe, kitchenEquipments, diets } = useRecipeStore()
+    const { fetchKitchenEquipments, fetchDiets, fetchAllergies, createRecipe, kitchenEquipments, diets, allergies } = useRecipeStore()
     const [duplicatedRecipe, setDuplicatedRecipe] = useState<RecipeFormValues | null>(null)
     const [loading, setLoading] = useState(false)
 
     useEffect(() => {
         fetchKitchenEquipments()
         fetchDiets()
+        fetchAllergies()
 
         // Vérifier s'il y a une recette dupliquée dans sessionStorage
         const stored = sessionStorage.getItem('duplicatedRecipe')
@@ -30,7 +31,7 @@ export default function NewRecipePage() {
                 console.error('Failed to parse duplicated recipe:', error)
             }
         }
-    }, [fetchKitchenEquipments, fetchDiets])
+    }, [fetchKitchenEquipments, fetchDiets, fetchAllergies])
 
     async function handleSubmit(values: RecipeFormValues) {
         setLoading(true)
@@ -43,6 +44,7 @@ export default function NewRecipePage() {
                 seasonality_mask: values.seasonality_mask ?? null,
                 kitchen_equipments_mask: values.kitchen_equipments_mask ?? null,
                 diet_mask: values.diet_mask ?? null,
+                allergy_mask: values.allergy_mask ?? null,
                 instructions: values.instructions ?? null,
                 dish_type: values.dish_type,
                 quantification_type: values.quantification_type,
@@ -94,6 +96,7 @@ export default function NewRecipePage() {
                     defaultValues={duplicatedRecipe || undefined}
                     kitchenEquipments={kitchenEquipments}
                     diets={diets}
+                    allergies={allergies}
                     submittingLabel="Création..."
                     formId="recipe-form"
                 />

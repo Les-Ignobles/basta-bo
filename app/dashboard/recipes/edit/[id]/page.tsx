@@ -13,7 +13,7 @@ export default function EditRecipePage() {
     const searchParams = useSearchParams()
     const recipeId = Number(params.id)
     const returnPage = searchParams.get('returnPage')
-    const { fetchKitchenEquipments, fetchDiets, updateRecipe, kitchenEquipments, diets } = useRecipeStore()
+    const { fetchKitchenEquipments, fetchDiets, fetchAllergies, updateRecipe, kitchenEquipments, diets, allergies } = useRecipeStore()
 
     const [recipe, setRecipe] = useState<Recipe | null>(null)
     const [loading, setLoading] = useState(true)
@@ -22,7 +22,8 @@ export default function EditRecipePage() {
     useEffect(() => {
         fetchKitchenEquipments()
         fetchDiets()
-    }, [fetchKitchenEquipments, fetchDiets])
+        fetchAllergies()
+    }, [fetchKitchenEquipments, fetchDiets, fetchAllergies])
 
     useEffect(() => {
         async function fetchRecipe() {
@@ -58,6 +59,7 @@ export default function EditRecipePage() {
                 seasonality_mask: values.seasonality_mask ?? null,
                 kitchen_equipments_mask: values.kitchen_equipments_mask ?? null,
                 diet_mask: values.diet_mask ?? null,
+                allergy_mask: values.allergy_mask ?? null,
                 instructions: values.instructions ?? null,
                 dish_type: values.dish_type,
                 quantification_type: values.quantification_type,
@@ -139,6 +141,7 @@ export default function EditRecipePage() {
                     defaultValues={recipe}
                     kitchenEquipments={kitchenEquipments}
                     diets={diets}
+                    allergies={allergies}
                     submittingLabel="Mise à jour..."
                     formId="recipe-form"
                 />

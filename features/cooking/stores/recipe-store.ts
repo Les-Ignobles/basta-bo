@@ -1,11 +1,13 @@
 import { create } from 'zustand'
 import { Recipe, KitchenEquipment, RecipeFormValues, DishType, QuantificationType } from '../types'
 import type { Diet } from '@/features/cooking/types/diet'
+import type { Allergy } from '@/features/cooking/types/allergy'
 
 type RecipeState = {
     recipes: Recipe[]
     kitchenEquipments: KitchenEquipment[]
     diets: Diet[]
+    allergies: Allergy[]
     loading: boolean
     error?: string
     // editing state
@@ -26,6 +28,7 @@ type RecipeState = {
     fetchRecipes: () => Promise<void>
     fetchKitchenEquipments: () => Promise<void>
     fetchDiets: () => Promise<void>
+    fetchAllergies: () => Promise<void>
     createRecipe: (payload: Omit<RecipeFormValues, 'id'>) => Promise<void>
     updateRecipe: (id: number, payload: Partial<RecipeFormValues>) => Promise<void>
     deleteRecipe: (id: number) => Promise<void>
@@ -54,6 +57,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     recipes: [],
     kitchenEquipments: [],
     diets: [],
+    allergies: [],
     loading: false,
     error: undefined,
     editingRecipe: null,
@@ -128,6 +132,22 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
             set({ diets: data })
         } catch (error) {
             console.error('Failed to fetch diets:', error)
+        } finally {
+            set({ loading: false })
+        }
+    },
+
+    async fetchAllergies() {
+        const state = get()
+        if (state.allergies.length > 0) return // Déjà chargé
+
+        set({ loading: true })
+        try {
+            const res = await fetch('/api/allergies')
+            const { data } = await res.json()
+            set({ allergies: data })
+        } catch (error) {
+            console.error('Failed to fetch allergies:', error)
         } finally {
             set({ loading: false })
         }

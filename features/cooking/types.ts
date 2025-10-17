@@ -50,6 +50,7 @@ export type Recipe = {
     seasonality_mask: number | null
     kitchen_equipments_mask: number | null
     diet_mask: number | null
+    allergy_mask: number | null
     instructions: string | null
     dish_type: DishType
     quantification_type: QuantificationType
@@ -74,6 +75,7 @@ export type RecipeFormValues = {
     seasonality_mask?: number | null
     kitchen_equipments_mask?: number | null
     diet_mask?: number | null
+    allergy_mask?: number | null
     instructions?: string | null
     dish_type: DishType
     quantification_type: QuantificationType

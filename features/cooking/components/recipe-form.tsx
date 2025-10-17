@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 import type { RecipeFormValues, KitchenEquipment, Ingredient } from '@/features/cooking/types'
 import { DishType, DISH_TYPE_LABELS, QuantificationType, QUANTIFICATION_TYPE_LABELS } from '@/features/cooking/types'
 import type { Diet } from '@/features/cooking/types/diet'
+import type { Allergy } from '@/features/cooking/types/allergy'
 import { useCookingStore } from '@/features/cooking/store'
 
 export type { RecipeFormValues }
@@ -23,6 +24,7 @@ type Props = {
     submittingLabel?: string
     kitchenEquipments: KitchenEquipment[]
     diets: Diet[]
+    allergies: Allergy[]
     formId?: string
 }
 
@@ -42,7 +44,7 @@ const QUANTIFICATION_TYPES = [
     { value: QuantificationType.PER_UNIT, label: QUANTIFICATION_TYPE_LABELS[QuantificationType.PER_UNIT] }
 ]
 
-export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets, formId }: Props) {
+export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets, allergies, formId }: Props) {
     const [values, setValues] = useState<RecipeFormValues>({
         title: '',
         ingredients_name: [],
@@ -51,6 +53,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
         seasonality_mask: null,
         kitchen_equipments_mask: null,
         diet_mask: null,
+        allergy_mask: null,
         instructions: '',
         dish_type: DishType.PLAT, // Par défaut "plat"
         quantification_type: QuantificationType.PER_PERSON, // Par défaut "par personne"
@@ -63,6 +66,7 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
     const [selectedMonths, setSelectedMonths] = useState<boolean[]>(new Array(12).fill(false))
     const [selectedEquipments, setSelectedEquipments] = useState<boolean[]>(new Array(kitchenEquipments.length).fill(false))
     const [selectedDiets, setSelectedDiets] = useState<boolean[]>(new Array(diets?.length || 0).fill(false))
+    const [selectedAllergies, setSelectedAllergies] = useState<boolean[]>(new Array(allergies?.length || 0).fill(false))
     const [ingredientOpen, setIngredientOpen] = useState(false)
     const [searchResults, setSearchResults] = useState<Ingredient[]>([])
     const [searching, setSearching] = useState(false)
@@ -132,7 +136,14 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
             )
             setSelectedDiets(dietSelections)
         }
-    }, [defaultValues, kitchenEquipments, diets])
+
+        if (defaultValues?.allergy_mask && allergies) {
+            const allergySelections = allergies.map(allergy =>
+                (defaultValues.allergy_mask! & (1 << allergy.bit_index)) !== 0
+            )
+            setSelectedAllergies(allergySelections)
+        }
+    }, [defaultValues, kitchenEquipments, diets, allergies])
 
     // Mettre à jour selectedDiets quand diets change
     useEffect(() => {
@@ -140,6 +151,13 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
             setSelectedDiets(new Array(diets.length).fill(false))
         }
     }, [diets, selectedDiets.length])
+
+    // Mettre à jour selectedAllergies quand allergies change
+    useEffect(() => {
+        if (allergies && allergies.length !== selectedAllergies.length) {
+            setSelectedAllergies(new Array(allergies.length).fill(false))
+        }
+    }, [allergies, selectedAllergies.length])
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -171,11 +189,22 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                 })
             }
 
+            // Convert selected allergies to bitmask
+            let allergyMask = 0
+            if (allergies) {
+                selectedAllergies.forEach((selected, index) => {
+                    if (selected && allergies[index]) {
+                        allergyMask |= (1 << allergies[index].bit_index)
+                    }
+                })
+            }
+
             await onSubmit({
                 ...values,
                 seasonality_mask: seasonalityMask || null,
                 kitchen_equipments_mask: equipmentsMask || null,
                 diet_mask: dietMask || null,
+                allergy_mask: allergyMask || null,
             })
         } finally {
             setLoading(false)
@@ -211,6 +240,10 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
 
     function toggleDiet(index: number) {
         setSelectedDiets(prev => prev.map((selected, i) => i === index ? !selected : selected))
+    }
+
+    function toggleAllergy(index: number) {
+        setSelectedAllergies(prev => prev.map((selected, i) => i === index ? !selected : selected))
     }
 
     return (
@@ -475,6 +508,24 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                                 </label>
                             )) || (
                                     <div className="text-sm text-muted-foreground">Chargement des régimes...</div>
+                                )}
+                        </div>
+                    </div>
+
+                    {/* Allergies */}
+                    <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground">Allergies non compatibles</div>
+                        <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                            {allergies?.map((allergy, index) => (
+                                <label key={allergy.id} className="flex items-center gap-2 text-sm">
+                                    <Checkbox
+                                        checked={selectedAllergies[index] || false}
+                                        onCheckedChange={() => toggleAllergy(index)}
+                                    />
+                                    <span>{allergy.emoji} {allergy.name.fr}</span>
+                                </label>
+                            )) || (
+                                    <div className="text-sm text-muted-foreground">Chargement des allergies...</div>
                                 )}
                         </div>
                     </div>
