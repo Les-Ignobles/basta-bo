@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
@@ -17,6 +17,7 @@ import { BookOpen, Utensils, Users, Hash, ImageOff, ChefHat, Scale, Eye, EyeOff,
 
 export default function RecipesIndexPage() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
     const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null)
@@ -62,6 +63,17 @@ export default function RecipesIndexPage() {
         fetchKitchenEquipments()
         fetchDiets()
     }, [fetchKitchenEquipments, fetchDiets])
+
+    // Synchroniser la page avec l'URL au chargement
+    useEffect(() => {
+        const pageParam = searchParams.get('page')
+        if (pageParam && !isNaN(Number(pageParam))) {
+            const pageNumber = Number(pageParam)
+            if (pageNumber !== page) {
+                setPage(pageNumber)
+            }
+        }
+    }, [searchParams, page, setPage])
 
     useEffect(() => {
         fetchRecipes()
@@ -142,7 +154,14 @@ export default function RecipesIndexPage() {
 
         // Stocker la recette dupliquée dans sessionStorage pour la page de création
         sessionStorage.setItem('duplicatedRecipe', JSON.stringify(duplicatedRecipe))
-        router.push('/dashboard/recipes/new')
+        router.push(`/dashboard/recipes/new?returnPage=${page}`)
+    }
+
+    // Fonction pour mettre à jour l'URL avec la page actuelle
+    const updateUrlWithPage = (newPage: number) => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('page', newPage.toString())
+        router.push(`/dashboard/recipes?${params.toString()}`, { scroll: false })
     }
 
     const handleDietToggle = (dietId: number) => {
@@ -335,19 +354,23 @@ export default function RecipesIndexPage() {
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 text-sm">
-                        <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                        <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => updateUrlWithPage(page - 1)}>
                             Précédent
                         </Button>
                         <span className="text-muted-foreground">
                             Page {page} / {totalPages}
                         </span>
-                        <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+                        <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => updateUrlWithPage(page + 1)}>
                             Suivant
                         </Button>
                     </div>
                     <Button
                         disabled={loading}
-                        onClick={() => router.push('/dashboard/recipes/new')}
+                        onClick={() => {
+                            const params = new URLSearchParams(searchParams.toString())
+                            params.set('page', page.toString())
+                            router.push(`/dashboard/recipes/new?returnPage=${page}`)
+                        }}
                     >
                         Nouvelle recette
                     </Button>
@@ -373,7 +396,9 @@ export default function RecipesIndexPage() {
                 onSelectRecipe={handleSelectRecipe}
                 onSelectAll={handleSelectAll}
                 onEdit={(recipe) => {
-                    router.push(`/dashboard/recipes/edit/${recipe.id}`)
+                    const params = new URLSearchParams(searchParams.toString())
+                    params.set('page', page.toString())
+                    router.push(`/dashboard/recipes/edit/${recipe.id}?returnPage=${page}`)
                 }}
                 onDuplicate={handleDuplicateRecipe}
                 onDelete={handleDeleteRecipe}

@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { RecipeForm } from '@/features/cooking/components/recipe-form'
 import type { RecipeFormValues, Recipe } from '@/features/cooking/types'
@@ -10,7 +10,9 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 export default function EditRecipePage() {
     const router = useRouter()
     const params = useParams()
+    const searchParams = useSearchParams()
     const recipeId = Number(params.id)
+    const returnPage = searchParams.get('returnPage')
     const { fetchKitchenEquipments, fetchDiets, updateRecipe, kitchenEquipments, diets } = useRecipeStore()
 
     const [recipe, setRecipe] = useState<Recipe | null>(null)
@@ -62,7 +64,9 @@ export default function EditRecipePage() {
                 is_folklore: values.is_folklore,
                 is_visible: values.is_visible,
             })
-            router.push('/dashboard/recipes')
+            // Retourner à la page spécifiée ou à la page 1 par défaut
+            const targetPage = returnPage ? `?page=${returnPage}` : ''
+            router.push(`/dashboard/recipes${targetPage}`)
         } finally {
             setSubmitting(false)
         }
@@ -107,7 +111,10 @@ export default function EditRecipePage() {
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.back()}
+                            onClick={() => {
+                                const targetPage = returnPage ? `?page=${returnPage}` : ''
+                                router.push(`/dashboard/recipes${targetPage}`)
+                            }}
                             className="flex items-center gap-2"
                         >
                             <ArrowLeft className="h-4 w-4" />
