@@ -34,6 +34,7 @@ export default function RecipesIndexPage() {
         bulkUpdateSeasonality,
         bulkUpdateDietMask,
         bulkUpdateKitchenEquipmentsMask,
+        bulkUpdateVisibility,
         loading,
         selectedRecipes,
         toggleRecipeSelection,
@@ -141,6 +142,10 @@ export default function RecipesIndexPage() {
 
     const handleBulkUpdateKitchenEquipmentsMask = async (mask: number) => {
         await bulkUpdateKitchenEquipmentsMask(selectedRecipes, mask)
+    }
+
+    const handleBulkUpdateVisibility = async (isVisible: boolean) => {
+        await bulkUpdateVisibility(selectedRecipes, isVisible)
     }
 
     const handleDuplicateRecipe = (recipe: Recipe) => {
@@ -385,6 +390,7 @@ export default function RecipesIndexPage() {
                     onBulkUpdateSeasonality={handleBulkUpdateSeasonality}
                     onBulkUpdateDietMask={handleBulkUpdateDietMask}
                     onBulkUpdateKitchenEquipmentsMask={handleBulkUpdateKitchenEquipmentsMask}
+                    onBulkUpdateVisibility={handleBulkUpdateVisibility}
                     diets={diets}
                     kitchenEquipments={kitchenEquipments}
                 />

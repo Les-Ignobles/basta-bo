@@ -34,6 +34,7 @@ type RecipeState = {
     bulkUpdateSeasonality: (ids: number[], seasonalityMask: number) => Promise<void>
     bulkUpdateDietMask: (ids: number[], dietMask: number) => Promise<void>
     bulkUpdateKitchenEquipmentsMask: (ids: number[], equipmentsMask: number) => Promise<void>
+    bulkUpdateVisibility: (ids: number[], isVisible: boolean) => Promise<void>
     setSearch: (s: string) => void
     setPage: (p: number) => void
     setNoImage: (b: boolean) => void
@@ -268,6 +269,27 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
             get().fetchRecipes() // Refresh list
         } catch (error) {
             console.error('Failed to bulk update kitchen equipments mask:', error)
+        } finally {
+            set({ loading: false })
+        }
+    },
+
+    async bulkUpdateVisibility(ids, isVisible) {
+        set({ loading: true })
+        try {
+            await Promise.all(
+                ids.map(id =>
+                    fetch('/api/recipes', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id, is_visible: isVisible })
+                    })
+                )
+            )
+            set({ selectedRecipes: [] })
+            get().fetchRecipes() // Refresh list
+        } catch (error) {
+            console.error('Failed to bulk update visibility:', error)
         } finally {
             set({ loading: false })
         }

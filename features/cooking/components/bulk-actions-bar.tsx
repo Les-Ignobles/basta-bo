@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Trash2, X, Calendar, Utensils, ChefHat } from 'lucide-react'
+import { Trash2, X, Calendar, Utensils, ChefHat, Eye, EyeOff } from 'lucide-react'
 import { DISH_TYPE_LABELS, DishType, KitchenEquipment } from '@/features/cooking/types'
 import type { Diet } from '@/features/cooking/types/diet'
 import { useState } from 'react'
@@ -16,6 +16,7 @@ type Props = {
     onBulkUpdateSeasonality: (mask: number) => void
     onBulkUpdateDietMask: (mask: number) => void
     onBulkUpdateKitchenEquipmentsMask: (mask: number) => void
+    onBulkUpdateVisibility: (isVisible: boolean) => void
     diets: Diet[]
     kitchenEquipments: KitchenEquipment[]
 }
@@ -25,7 +26,7 @@ const MONTHS = [
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
 ]
 
-export function BulkActionsBar({ selectedCount, onClearSelection, onBulkDelete, onBulkUpdateDishType, onBulkUpdateSeasonality, onBulkUpdateDietMask, onBulkUpdateKitchenEquipmentsMask, diets, kitchenEquipments }: Props) {
+export function BulkActionsBar({ selectedCount, onClearSelection, onBulkDelete, onBulkUpdateDishType, onBulkUpdateSeasonality, onBulkUpdateDietMask, onBulkUpdateKitchenEquipmentsMask, onBulkUpdateVisibility, diets, kitchenEquipments }: Props) {
     const [selectedDishType, setSelectedDishType] = useState<DishType | ''>('')
     const [selectedMonths, setSelectedMonths] = useState<number[]>([])
     const [selectedDiets, setSelectedDiets] = useState<number[]>([])
@@ -311,6 +312,29 @@ export function BulkActionsBar({ selectedCount, onClearSelection, onBulkDelete, 
                             </div>
                         </PopoverContent>
                     </Popover>
+
+                    <Select onValueChange={(value) => onBulkUpdateVisibility(value === 'true')}>
+                        <SelectTrigger className="w-[180px] h-8 bg-white">
+                            <div className="flex items-center gap-2">
+                                <Eye className="h-4 w-4" />
+                                <SelectValue placeholder="Visibilité" />
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="true">
+                                <div className="flex items-center gap-2">
+                                    <Eye className="h-4 w-4" />
+                                    Rendre visible
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="false">
+                                <div className="flex items-center gap-2">
+                                    <EyeOff className="h-4 w-4" />
+                                    Masquer
+                                </div>
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
 
                     <Button
                         variant="destructive"
