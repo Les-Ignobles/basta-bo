@@ -7,14 +7,14 @@ type BatchCookingSessionState = {
     total: number
     page: number
     pageSize: number
-    
+
     // États
     loading: boolean
     error: string | null
-    
+
     // Filtres
     filters: BatchCookingSessionFilters
-    
+
     // Actions
     setSessions: (sessions: BatchCookingSession[]) => void
     setTotal: (total: number) => void
@@ -24,14 +24,14 @@ type BatchCookingSessionState = {
     setError: (error: string | null) => void
     setFilters: (filters: Partial<BatchCookingSessionFilters>) => void
     clearFilters: () => void
-    
+
     // Actions CRUD
     fetchSessions: () => Promise<void>
     createSession: (formData: BatchCookingSessionForm) => Promise<BatchCookingSession>
     updateSession: (id: number, formData: Partial<BatchCookingSessionForm>) => Promise<BatchCookingSession>
     deleteSession: (id: number) => Promise<void>
     markAsCooked: (id: number) => Promise<void>
-    
+
     // Actions spécifiques
     fetchOriginalSessions: () => Promise<void>
     fetchChildrenByParentId: (parentId: number) => Promise<BatchCookingSession[]>
@@ -58,13 +58,13 @@ export const useBatchCookingSessionStore = create<BatchCookingSessionState>((set
     setPageSize: (pageSize) => set({ pageSize }),
     setLoading: (loading) => set({ loading }),
     setError: (error) => set({ error }),
-    
+
     setFilters: (newFilters) => set((state) => ({
         filters: { ...state.filters, ...newFilters },
         page: 1 // Reset page when filters change
     })),
-    
-    clearFilters: () => set({ 
+
+    clearFilters: () => set({
         filters: { is_original: true },
         page: 1
     }),
@@ -72,22 +72,22 @@ export const useBatchCookingSessionStore = create<BatchCookingSessionState>((set
     fetchSessions: async () => {
         const { page, pageSize, filters } = get()
         set({ loading: true, error: null })
-        
+
         try {
             const response = await fetch(`/api/batch-cooking-sessions?page=${page}&pageSize=${pageSize}&${new URLSearchParams(filters as any).toString()}`)
-            
+
             if (!response.ok) {
                 throw new Error(`Erreur HTTP: ${response.status}`)
             }
-            
+
             const data = await response.json()
-            set({ 
+            set({
                 sessions: data.data,
                 total: data.total,
                 loading: false
             })
         } catch (error) {
-            set({ 
+            set({
                 error: error instanceof Error ? error.message : 'Erreur inconnue',
                 loading: false
             })
@@ -97,22 +97,22 @@ export const useBatchCookingSessionStore = create<BatchCookingSessionState>((set
     fetchOriginalSessions: async () => {
         const { page, pageSize, filters } = get()
         set({ loading: true, error: null })
-        
+
         try {
             const response = await fetch(`/api/batch-cooking-sessions/original?page=${page}&pageSize=${pageSize}&${new URLSearchParams(filters as any).toString()}`)
-            
+
             if (!response.ok) {
                 throw new Error(`Erreur HTTP: ${response.status}`)
             }
-            
+
             const data = await response.json()
-            set({ 
+            set({
                 sessions: data.data,
                 total: data.total,
                 loading: false
             })
         } catch (error) {
-            set({ 
+            set({
                 error: error instanceof Error ? error.message : 'Erreur inconnue',
                 loading: false
             })
@@ -121,28 +121,28 @@ export const useBatchCookingSessionStore = create<BatchCookingSessionState>((set
 
     createSession: async (formData) => {
         set({ loading: true, error: null })
-        
+
         try {
             const response = await fetch('/api/batch-cooking-sessions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             })
-            
+
             if (!response.ok) {
                 throw new Error(`Erreur HTTP: ${response.status}`)
             }
-            
+
             const newSession = await response.json()
             set((state) => ({
                 sessions: [newSession, ...state.sessions],
                 total: state.total + 1,
                 loading: false
             }))
-            
+
             return newSession
         } catch (error) {
-            set({ 
+            set({
                 error: error instanceof Error ? error.message : 'Erreur inconnue',
                 loading: false
             })
@@ -152,29 +152,29 @@ export const useBatchCookingSessionStore = create<BatchCookingSessionState>((set
 
     updateSession: async (id, formData) => {
         set({ loading: true, error: null })
-        
+
         try {
             const response = await fetch(`/api/batch-cooking-sessions/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             })
-            
+
             if (!response.ok) {
                 throw new Error(`Erreur HTTP: ${response.status}`)
             }
-            
+
             const updatedSession = await response.json()
             set((state) => ({
-                sessions: state.sessions.map(session => 
+                sessions: state.sessions.map(session =>
                     session.id === id ? updatedSession : session
                 ),
                 loading: false
             }))
-            
+
             return updatedSession
         } catch (error) {
-            set({ 
+            set({
                 error: error instanceof Error ? error.message : 'Erreur inconnue',
                 loading: false
             })
@@ -184,23 +184,23 @@ export const useBatchCookingSessionStore = create<BatchCookingSessionState>((set
 
     deleteSession: async (id) => {
         set({ loading: true, error: null })
-        
+
         try {
             const response = await fetch(`/api/batch-cooking-sessions/${id}`, {
                 method: 'DELETE'
             })
-            
+
             if (!response.ok) {
                 throw new Error(`Erreur HTTP: ${response.status}`)
             }
-            
+
             set((state) => ({
                 sessions: state.sessions.filter(session => session.id !== id),
                 total: state.total - 1,
                 loading: false
             }))
         } catch (error) {
-            set({ 
+            set({
                 error: error instanceof Error ? error.message : 'Erreur inconnue',
                 loading: false
             })
@@ -210,25 +210,25 @@ export const useBatchCookingSessionStore = create<BatchCookingSessionState>((set
 
     markAsCooked: async (id) => {
         set({ loading: true, error: null })
-        
+
         try {
             const response = await fetch(`/api/batch-cooking-sessions/${id}/cooked`, {
                 method: 'PATCH'
             })
-            
+
             if (!response.ok) {
                 throw new Error(`Erreur HTTP: ${response.status}`)
             }
-            
+
             const updatedSession = await response.json()
             set((state) => ({
-                sessions: state.sessions.map(session => 
+                sessions: state.sessions.map(session =>
                     session.id === id ? updatedSession : session
                 ),
                 loading: false
             }))
         } catch (error) {
-            set({ 
+            set({
                 error: error instanceof Error ? error.message : 'Erreur inconnue',
                 loading: false
             })
@@ -239,14 +239,14 @@ export const useBatchCookingSessionStore = create<BatchCookingSessionState>((set
     fetchChildrenByParentId: async (parentId) => {
         try {
             const response = await fetch(`/api/batch-cooking-sessions/${parentId}/children`)
-            
+
             if (!response.ok) {
                 throw new Error(`Erreur HTTP: ${response.status}`)
             }
-            
+
             return await response.json()
         } catch (error) {
-            set({ 
+            set({
                 error: error instanceof Error ? error.message : 'Erreur inconnue'
             })
             throw error

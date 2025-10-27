@@ -12,12 +12,11 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
         pageSize: number = 50,
         filters: BatchCookingSessionFilters = {}
     ): Promise<BatchCookingSessionListResponse> {
+        console.log('Repository findPage appelé avec:', { page, pageSize, filters })
+        
         let query = this.supabase
             .from(this.tableName)
-            .select(`
-                *,
-                children:batch_cooking_sessions!parent_id(count)
-            `, { count: 'exact' })
+            .select('*', { count: 'exact' })
 
         // Filtres
         if (filters.search) {
@@ -60,20 +59,34 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
             .order('created_at', { ascending: false })
             .range(from, to)
 
+        console.log('Exécution de la requête Supabase...')
         const { data, error, count } = await query
 
         if (error) {
+            console.error('Erreur Supabase:', error)
             throw new Error(`Erreur lors de la récupération des batch cooking sessions: ${error.message}`)
         }
 
-        // Transformer les données pour inclure le nombre d'enfants
-        const transformedData = data?.map(session => ({
-            ...session,
-            children_count: session.children?.[0]?.count || 0
-        })) || []
+        console.log('Données récupérées:', { count, dataLength: data?.length })
 
+        // Compter les enfants pour chaque session
+        const sessionsWithChildrenCount = await Promise.all(
+            (data || []).map(async (session) => {
+                const { count: childrenCount } = await this.supabase
+                    .from(this.tableName)
+                    .select('*', { count: 'exact', head: true })
+                    .eq('parent_id', session.id)
+
+                return {
+                    ...session,
+                    children_count: childrenCount || 0
+                }
+            })
+        )
+
+        console.log('Sessions avec comptage des enfants terminé')
         return {
-            data: transformedData,
+            data: sessionsWithChildrenCount,
             total: count || 0,
             page,
             pageSize
@@ -140,7 +153,7 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
     async markAsCooked(id: number): Promise<BatchCookingSession> {
         const { data, error } = await this.supabase
             .from(this.tableName)
-            .update({ 
+            .update({
                 is_cooked: true,
                 cooked_at: new Date().toISOString()
             })

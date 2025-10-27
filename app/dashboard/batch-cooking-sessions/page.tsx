@@ -9,13 +9,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { 
-    ChefHat, 
-    Users, 
-    Clock, 
-    DollarSign, 
-    CheckCircle, 
-    XCircle, 
+import {
+    ChefHat,
+    Users,
+    Clock,
+    DollarSign,
+    CheckCircle,
+    XCircle,
     AlertCircle,
     Search,
     Filter,
@@ -28,17 +28,17 @@ import { useBatchCookingSessionStore } from '@/features/cooking/stores/batch-coo
 import { useDebounce } from '@/hooks/use-debounce'
 
 const CREATION_STATUS_LABELS: Record<CreationStatus, string> = {
-    pending: 'En attente',
-    processing: 'En cours',
-    completed: 'Terminé',
-    failed: 'Échoué'
+    1: 'En attente',
+    2: 'En cours',
+    3: 'Terminé',
+    4: 'Échoué'
 }
 
 const CREATION_STATUS_COLORS: Record<CreationStatus, string> = {
-    pending: 'bg-yellow-100 text-yellow-800',
-    processing: 'bg-blue-100 text-blue-800',
-    completed: 'bg-green-100 text-green-800',
-    failed: 'bg-red-100 text-red-800'
+    1: 'bg-yellow-100 text-yellow-800',
+    2: 'bg-blue-100 text-blue-800',
+    3: 'bg-green-100 text-green-800',
+    4: 'bg-red-100 text-red-800'
 }
 
 export default function BatchCookingSessionsPage() {
@@ -150,7 +150,7 @@ export default function BatchCookingSessionsPage() {
                                 />
                             </div>
                         </div>
-                        
+
                         <Popover open={showFilters} onOpenChange={setShowFilters}>
                             <PopoverTrigger asChild>
                                 <Button variant="outline">
@@ -197,7 +197,7 @@ export default function BatchCookingSessionsPage() {
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="flex gap-2">
                                         <Button variant="outline" size="sm" onClick={clearFilters}>
                                             Effacer
@@ -313,7 +313,7 @@ export default function BatchCookingSessionsPage() {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        onClick={() => {/* TODO: Voir les détails */}}
+                                                        onClick={() => {/* TODO: Voir les détails */ }}
                                                     >
                                                         <Eye className="h-4 w-4" />
                                                     </Button>

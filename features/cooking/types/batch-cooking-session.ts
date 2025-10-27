@@ -1,5 +1,5 @@
 // Types pour les batch cooking sessions
-export type CreationStatus = 'pending' | 'processing' | 'completed' | 'failed'
+export type CreationStatus = 1 | 2 | 3 | 4 // pending | processing | completed | failed
 
 export type BatchCookingSession = {
     id: number

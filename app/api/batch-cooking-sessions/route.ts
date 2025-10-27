@@ -4,12 +4,15 @@ import { BatchCookingSessionRepository } from '@/features/cooking/repositories/b
 
 export async function GET(req: NextRequest) {
     try {
+        console.log('Début de la requête GET /api/batch-cooking-sessions')
         const repo = new BatchCookingSessionRepository(supabaseServer)
         const { searchParams } = new URL(req.url)
 
         // Paramètres de pagination
         const page = parseInt(searchParams.get('page') || '1')
         const pageSize = parseInt(searchParams.get('pageSize') || '50')
+
+        console.log('Paramètres:', { page, pageSize })
 
         // Filtres
         const filters = {
@@ -28,12 +31,15 @@ export async function GET(req: NextRequest) {
             Object.entries(filters).filter(([_, value]) => value !== undefined)
         )
 
+        console.log('Filtres nettoyés:', cleanFilters)
+
         const result = await repo.findPage(page, pageSize, cleanFilters)
+        console.log('Résultat:', { total: result.total, dataLength: result.data.length })
         return Response.json(result)
     } catch (error) {
         console.error('Erreur lors de la récupération des batch cooking sessions:', error)
         return Response.json(
-            { error: 'Erreur lors de la récupération des sessions' },
+            { error: 'Erreur lors de la récupération des sessions', details: error instanceof Error ? error.message : 'Erreur inconnue' },
             { status: 500 }
         )
     }
