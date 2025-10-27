@@ -42,6 +42,7 @@ export const ROUTE_SCOPE_MAP: Record<string, RoleScope[]> = {
     '/dashboard/ingredients': ['cooking:read'],
     '/dashboard/recipes': ['cooking:read'],
     '/dashboard/pending-ingredients': ['cooking:read'],
+    '/dashboard/batch-cooking-sessions': ['cooking:read'],
     '/dashboard/advice/articles': ['advice:read'],
     '/dashboard/advice/categories': ['advice:read'],
     '/dashboard/advice/faq': ['advice:read'],
