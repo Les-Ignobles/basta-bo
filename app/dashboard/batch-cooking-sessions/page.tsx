@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
     ChefHat,
     Search,
@@ -187,9 +188,18 @@ export default function BatchCookingSessionsPage() {
                                                 )}
                                             </TableCell>
                                             <TableCell>
-                                                <Badge variant="secondary">
-                                                    {session.recipes?.length || 0}
-                                                </Badge>
+                                                <div className="space-y-1">
+                                                    {session.recipes?.slice(0, 3).map((recipe, index) => (
+                                                        <Badge key={index} variant="secondary" className="mr-1 text-xs">
+                                                            {recipe.title}
+                                                        </Badge>
+                                                    ))}
+                                                    {session.recipes && session.recipes.length > 3 && (
+                                                        <Badge variant="outline" className="text-xs">
+                                                            +{session.recipes.length - 3} autres
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             </TableCell>
                                             <TableCell>
                                                 {session.algo_name || (
@@ -258,70 +268,73 @@ export default function BatchCookingSessionsPage() {
                 </CardContent>
             </Card>
 
-            {/* Sessions enfants */}
-            {selectedSession && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+            {/* Modal des sessions enfants */}
+            <Dialog open={!!selectedSession} onOpenChange={() => setSelectedSession(null)}>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
                             <ChevronRight className="h-5 w-5" />
-                            Sessions Enfants - Session #{selectedSession.id}
-                        </CardTitle>
-                        <CardDescription>
+                            Sessions Enfants - Session #{selectedSession?.id}
+                        </DialogTitle>
+                        <DialogDescription>
                             Sessions générées à partir de la session originale
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {loadingChildren ? (
-                            <div className="flex items-center justify-center py-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                            </div>
-                        ) : childrenSessions.length === 0 ? (
-                            <div className="flex items-center justify-center py-8 text-muted-foreground">
-                                Aucune session enfant trouvée pour cette session originale
-                            </div>
-                        ) : (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>ID</TableHead>
-                                        <TableHead>Seed</TableHead>
-                                        <TableHead>Recettes</TableHead>
-                                        <TableHead>Algo Name</TableHead>
-                                        <TableHead>Créé le</TableHead>
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    {loadingChildren ? (
+                        <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                    ) : childrenSessions.length === 0 ? (
+                        <div className="flex items-center justify-center py-8 text-muted-foreground">
+                            Aucune session enfant trouvée pour cette session originale
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>ID</TableHead>
+                                    <TableHead>Seed</TableHead>
+                                    <TableHead>Recettes</TableHead>
+                                    <TableHead>Algo Name</TableHead>
+                                    <TableHead>Créé le</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {childrenSessions.map((child) => (
+                                    <TableRow key={child.id}>
+                                        <TableCell className="font-medium">{child.id}</TableCell>
+                                        <TableCell>
+                                            {child.seed ? (
+                                                <code className="text-xs bg-muted px-2 py-1 rounded">
+                                                    {child.seed.substring(0, 20)}...
+                                                </code>
+                                            ) : (
+                                                <span className="text-muted-foreground">-</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="space-y-1">
+                                                {child.recipes?.map((recipe, index) => (
+                                                    <Badge key={index} variant="secondary" className="mr-1">
+                                                        {recipe.title}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            {child.algo_name || (
+                                                <span className="text-muted-foreground">N/A</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>{formatDate(child.created_at)}</TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {childrenSessions.map((child) => (
-                                        <TableRow key={child.id}>
-                                            <TableCell className="font-medium">{child.id}</TableCell>
-                                            <TableCell>
-                                                {child.seed ? (
-                                                    <code className="text-xs bg-muted px-2 py-1 rounded">
-                                                        {child.seed.substring(0, 20)}...
-                                                    </code>
-                                                ) : (
-                                                    <span className="text-muted-foreground">-</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant="secondary">
-                                                    {child.recipes?.length || 0}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                {child.algo_name || (
-                                                    <span className="text-muted-foreground">N/A</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>{formatDate(child.created_at)}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
+                </DialogContent>
+            </Dialog>
 
             {/* Dialog de suppression */}
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

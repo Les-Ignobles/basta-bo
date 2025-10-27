@@ -12,7 +12,8 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
         filters: BatchCookingSessionFilters = {}
     ): Promise<BatchCookingSessionListResponse> {
         console.log('Repository findPage appelé avec:', { page, pageSize, filters })
-
+        
+        // D'abord récupérer toutes les sessions originales pour pouvoir les trier
         let query = this.client
             .from(this.table)
             .select('*', { count: 'exact' })
@@ -50,13 +51,8 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
             query = query.eq('created_by', filters.created_by)
         }
 
-        // Pagination
-        const from = (page - 1) * pageSize
-        const to = from + pageSize - 1
-
-        query = query
-            .order('created_at', { ascending: false })
-            .range(from, to)
+        // Récupérer toutes les données pour pouvoir les trier
+        query = query.order('created_at', { ascending: false })
 
         console.log('Exécution de la requête Supabase...')
         const { data, error, count } = await query
@@ -68,7 +64,7 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
 
         console.log('Données récupérées:', { count, dataLength: data?.length })
 
-        // Compter les enfants pour chaque session
+        // Compter les enfants pour chaque session et extraire l'algo_name
         const sessionsWithChildrenCount = await Promise.all(
             (data || []).map(async (session) => {
                 const { count: childrenCount } = await this.client
@@ -94,9 +90,14 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
         // Trier par nombre d'enfants décroissant
         sessionsWithChildrenCount.sort((a, b) => (b.children_count || 0) - (a.children_count || 0))
 
+        // Appliquer la pagination après le tri
+        const from = (page - 1) * pageSize
+        const to = from + pageSize
+        const paginatedData = sessionsWithChildrenCount.slice(from, to)
+
         console.log('Sessions avec comptage des enfants terminé')
         return {
-            data: sessionsWithChildrenCount,
+            data: paginatedData,
             total: count || 0,
             page,
             pageSize
@@ -113,7 +114,7 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
 
     async findChildrenByParentId(parentId: number): Promise<BatchCookingSession[]> {
         console.log('Recherche des sessions enfants pour parent_id:', parentId)
-        
+
         const { data, error } = await this.client
             .from(this.table)
             .select('*')
