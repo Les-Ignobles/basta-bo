@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { 
-    ChefHat, 
+import {
+    ChefHat,
     Search,
     Eye,
     Trash2,
@@ -77,10 +77,13 @@ export default function BatchCookingSessionsPage() {
     }
 
     const handleRowClick = async (session: BatchCookingSession) => {
+        console.log('Clic sur la session:', session.id)
         setSelectedSession(session)
         setLoadingChildren(true)
         try {
+            console.log('Chargement des sessions enfants pour:', session.id)
             const children = await fetchChildrenByParentId(session.id)
+            console.log('Sessions enfants reçues:', children)
             setChildrenSessions(children)
         } catch (error) {
             console.error('Erreur lors du chargement des sessions enfants:', error)
@@ -168,8 +171,8 @@ export default function BatchCookingSessionsPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {sessions.map((session) => (
-                                        <TableRow 
-                                            key={session.id} 
+                                        <TableRow
+                                            key={session.id}
                                             className="cursor-pointer hover:bg-muted/50"
                                             onClick={() => handleRowClick(session)}
                                         >
@@ -271,6 +274,10 @@ export default function BatchCookingSessionsPage() {
                         {loadingChildren ? (
                             <div className="flex items-center justify-center py-8">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            </div>
+                        ) : childrenSessions.length === 0 ? (
+                            <div className="flex items-center justify-center py-8 text-muted-foreground">
+                                Aucune session enfant trouvée pour cette session originale
                             </div>
                         ) : (
                             <Table>

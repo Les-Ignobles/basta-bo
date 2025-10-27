@@ -91,6 +91,9 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
             })
         )
 
+        // Trier par nombre d'enfants décroissant
+        sessionsWithChildrenCount.sort((a, b) => (b.children_count || 0) - (a.children_count || 0))
+
         console.log('Sessions avec comptage des enfants terminé')
         return {
             data: sessionsWithChildrenCount,
@@ -109,6 +112,8 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
     }
 
     async findChildrenByParentId(parentId: number): Promise<BatchCookingSession[]> {
+        console.log('Recherche des sessions enfants pour parent_id:', parentId)
+        
         const { data, error } = await this.client
             .from(this.table)
             .select('*')
@@ -116,9 +121,11 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
             .order('created_at', { ascending: false })
 
         if (error) {
+            console.error('Erreur lors de la récupération des sessions enfants:', error)
             throw new Error(`Erreur lors de la récupération des sessions enfants: ${error.message}`)
         }
 
+        console.log('Sessions enfants trouvées:', data?.length || 0)
         return data || []
     }
 
