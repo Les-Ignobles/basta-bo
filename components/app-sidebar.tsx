@@ -77,6 +77,14 @@ export function AppSidebar() {
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/batch-cooking-sessions/details'}>
+                                        <Link href="/dashboard/batch-cooking-sessions/details" className="flex items-center gap-2">
+                                            <ChefHat className="size-4" />
+                                            <span>Détails Session</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
                             </SidebarMenu>
                         </SidebarGroupContent>
                     </SidebarGroup>

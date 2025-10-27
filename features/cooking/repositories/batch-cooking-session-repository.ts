@@ -12,7 +12,7 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
         filters: BatchCookingSessionFilters = {}
     ): Promise<BatchCookingSessionListResponse> {
         console.log('Repository findPage appelé avec:', { page, pageSize, filters })
-        
+
         // D'abord récupérer toutes les sessions originales pour pouvoir les trier
         let query = this.client
             .from(this.table)
