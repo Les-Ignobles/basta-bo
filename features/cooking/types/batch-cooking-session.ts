@@ -1,10 +1,26 @@
 // Types pour les batch cooking sessions
 export type CreationStatus = 1 | 2 | 3 | 4 // pending | processing | completed | failed
 
+export type SessionRecipe = {
+    id: string
+    title: string
+    img_path: string | null
+    ingredients: string[]
+    meal_count: number
+    original_recipe_id: number | null
+    quantification_type: string
+    remaining_meal_count: number
+    is_adapted: boolean
+    expiration_days: number
+    conservation: any | null
+    warming: any | null
+    meals: any[]
+}
+
 export type BatchCookingSession = {
     id: number
     created_at: string
-    recipes: any[]
+    recipes: SessionRecipe[]
     ingredients: any[]
     cooking_steps: any[]
     assembly_steps: any[]
@@ -30,6 +46,7 @@ export type BatchCookingSession = {
     parent_id: number | null
     // Champs calculés
     children_count?: number
+    algo_name?: string // Extrait des recettes
 }
 
 export type BatchCookingSessionForm = {

@@ -76,9 +76,17 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
                     .select('*', { count: 'exact', head: true })
                     .eq('parent_id', session.id)
 
+                // Extraire l'algo_name des recettes
+                let algo_name = 'N/A'
+                if (session.recipes && Array.isArray(session.recipes) && session.recipes.length > 0) {
+                    // Prendre le premier titre de recette comme algo_name
+                    algo_name = session.recipes[0]?.title || 'N/A'
+                }
+
                 return {
                     ...session,
-                    children_count: childrenCount || 0
+                    children_count: childrenCount || 0,
+                    algo_name
                 }
             })
         )
@@ -152,7 +160,7 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
     async markAsCooked(id: number): Promise<BatchCookingSession> {
         const { data, error } = await this.client
             .from(this.table)
-            .update({ 
+            .update({
                 is_cooked: true,
                 cooked_at: new Date().toISOString()
             })

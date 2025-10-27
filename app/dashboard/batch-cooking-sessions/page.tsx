@@ -5,41 +5,18 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import {
-    ChefHat,
-    Users,
-    Clock,
-    DollarSign,
-    CheckCircle,
-    XCircle,
-    AlertCircle,
+import { 
+    ChefHat, 
     Search,
-    Filter,
     Eye,
     Trash2,
-    Plus
+    Plus,
+    ChevronRight
 } from 'lucide-react'
-import { BatchCookingSession, CreationStatus } from '@/features/cooking/types/batch-cooking-session'
+import { BatchCookingSession } from '@/features/cooking/types/batch-cooking-session'
 import { useBatchCookingSessionStore } from '@/features/cooking/stores/batch-cooking-session-store'
 import { useDebounce } from '@/hooks/use-debounce'
-
-const CREATION_STATUS_LABELS: Record<CreationStatus, string> = {
-    1: 'En attente',
-    2: 'En cours',
-    3: 'Terminé',
-    4: 'Échoué'
-}
-
-const CREATION_STATUS_COLORS: Record<CreationStatus, string> = {
-    1: 'bg-yellow-100 text-yellow-800',
-    2: 'bg-blue-100 text-blue-800',
-    3: 'bg-green-100 text-green-800',
-    4: 'bg-red-100 text-red-800'
-}
 
 export default function BatchCookingSessionsPage() {
     const {
@@ -56,13 +33,15 @@ export default function BatchCookingSessionsPage() {
         clearFilters,
         fetchOriginalSessions,
         deleteSession,
-        markAsCooked
+        fetchChildrenByParentId
     } = useBatchCookingSessionStore()
 
     const [searchInput, setSearchInput] = useState('')
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [sessionToDelete, setSessionToDelete] = useState<BatchCookingSession | null>(null)
-    const [showFilters, setShowFilters] = useState(false)
+    const [selectedSession, setSelectedSession] = useState<BatchCookingSession | null>(null)
+    const [childrenSessions, setChildrenSessions] = useState<BatchCookingSession[]>([])
+    const [loadingChildren, setLoadingChildren] = useState(false)
 
     const debouncedSearch = useDebounce(searchInput, 400)
 
@@ -97,8 +76,17 @@ export default function BatchCookingSessionsPage() {
         }
     }
 
-    const handleMarkAsCooked = async (session: BatchCookingSession) => {
-        await markAsCooked(session.id)
+    const handleRowClick = async (session: BatchCookingSession) => {
+        setSelectedSession(session)
+        setLoadingChildren(true)
+        try {
+            const children = await fetchChildrenByParentId(session.id)
+            setChildrenSessions(children)
+        } catch (error) {
+            console.error('Erreur lors du chargement des sessions enfants:', error)
+        } finally {
+            setLoadingChildren(false)
+        }
     }
 
     const formatDate = (dateString: string) => {
@@ -109,15 +97,6 @@ export default function BatchCookingSessionsPage() {
             hour: '2-digit',
             minute: '2-digit'
         })
-    }
-
-    const formatDuration = (minutes: number) => {
-        const hours = Math.floor(minutes / 60)
-        const mins = minutes % 60
-        if (hours > 0) {
-            return `${hours}h ${mins}min`
-        }
-        return `${mins}min`
     }
 
     return (
@@ -135,7 +114,7 @@ export default function BatchCookingSessionsPage() {
                 </Button>
             </div>
 
-            {/* Barre de recherche et filtres */}
+            {/* Barre de recherche */}
             <Card>
                 <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
@@ -143,72 +122,13 @@ export default function BatchCookingSessionsPage() {
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                                 <Input
-                                    placeholder="Rechercher par seed ou version d'algorithme..."
+                                    placeholder="Rechercher par seed..."
                                     value={searchInput}
                                     onChange={(e) => setSearchInput(e.target.value)}
                                     className="pl-10 w-80"
                                 />
                             </div>
                         </div>
-
-                        <Popover open={showFilters} onOpenChange={setShowFilters}>
-                            <PopoverTrigger asChild>
-                                <Button variant="outline">
-                                    <Filter className="mr-2 h-4 w-4" />
-                                    Filtres
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80">
-                                <div className="space-y-4">
-                                    <div>
-                                        <h4 className="font-medium mb-2">Statut de cuisson</h4>
-                                        <div className="space-y-2">
-                                            <div className="flex items-center space-x-2">
-                                                <Checkbox
-                                                    id="is_cooked_all"
-                                                    checked={filters.is_cooked === undefined}
-                                                    onCheckedChange={(checked) => {
-                                                        if (checked) {
-                                                            setFilters({ is_cooked: undefined })
-                                                        }
-                                                    }}
-                                                />
-                                                <label htmlFor="is_cooked_all" className="text-sm">Tous</label>
-                                            </div>
-                                            <div className="flex items-center space-x-2">
-                                                <Checkbox
-                                                    id="is_cooked_true"
-                                                    checked={filters.is_cooked === true}
-                                                    onCheckedChange={(checked) => {
-                                                        setFilters({ is_cooked: checked ? true : undefined })
-                                                    }}
-                                                />
-                                                <label htmlFor="is_cooked_true" className="text-sm">Cuisinées</label>
-                                            </div>
-                                            <div className="flex items-center space-x-2">
-                                                <Checkbox
-                                                    id="is_cooked_false"
-                                                    checked={filters.is_cooked === false}
-                                                    onCheckedChange={(checked) => {
-                                                        setFilters({ is_cooked: checked ? false : undefined })
-                                                    }}
-                                                />
-                                                <label htmlFor="is_cooked_false" className="text-sm">Non cuisinées</label>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-2">
-                                        <Button variant="outline" size="sm" onClick={clearFilters}>
-                                            Effacer
-                                        </Button>
-                                        <Button size="sm" onClick={() => setShowFilters(false)}>
-                                            Appliquer
-                                        </Button>
-                                    </div>
-                                </div>
-                            </PopoverContent>
-                        </Popover>
                     </div>
                 </CardContent>
             </Card>
@@ -221,7 +141,7 @@ export default function BatchCookingSessionsPage() {
                         Sessions Originales ({total})
                     </CardTitle>
                     <CardDescription>
-                        Liste des sessions de batch cooking originales avec leurs enfants
+                        Cliquez sur une ligne pour voir les sessions enfants
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -231,7 +151,6 @@ export default function BatchCookingSessionsPage() {
                         </div>
                     ) : error ? (
                         <div className="flex items-center justify-center py-8 text-red-600">
-                            <AlertCircle className="mr-2 h-4 w-4" />
                             {error}
                         </div>
                     ) : (
@@ -241,21 +160,19 @@ export default function BatchCookingSessionsPage() {
                                     <TableRow>
                                         <TableHead>ID</TableHead>
                                         <TableHead>Seed</TableHead>
-                                        <TableHead>Algo Version</TableHead>
-                                        <TableHead>Repas</TableHead>
-                                        <TableHead>Personnes</TableHead>
+                                        <TableHead>Recettes</TableHead>
+                                        <TableHead>Algo Name</TableHead>
                                         <TableHead>Enfants</TableHead>
-                                        <TableHead>Statut</TableHead>
-                                        <TableHead>Temps Économisé</TableHead>
-                                        <TableHead>Argent Économisé</TableHead>
-                                        <TableHead>Créé le</TableHead>
-                                        <TableHead>Cuisiné</TableHead>
                                         <TableHead>Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {sessions.map((session) => (
-                                        <TableRow key={session.id} className="cursor-pointer">
+                                        <TableRow 
+                                            key={session.id} 
+                                            className="cursor-pointer hover:bg-muted/50"
+                                            onClick={() => handleRowClick(session)}
+                                        >
                                             <TableCell className="font-medium">{session.id}</TableCell>
                                             <TableCell>
                                                 {session.seed ? (
@@ -267,65 +184,29 @@ export default function BatchCookingSessionsPage() {
                                                 )}
                                             </TableCell>
                                             <TableCell>
-                                                {session.algo_version || (
-                                                    <span className="text-muted-foreground">-</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>{session.meal_count}</TableCell>
-                                            <TableCell>{session.people_count}</TableCell>
-                                            <TableCell>
                                                 <Badge variant="secondary">
-                                                    {session.children_count || 0}
+                                                    {session.recipes?.length || 0}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="space-y-1">
-                                                    <Badge className={CREATION_STATUS_COLORS[session.recipe_generation_status]}>
-                                                        {CREATION_STATUS_LABELS[session.recipe_generation_status]}
-                                                    </Badge>
-                                                    <Badge className={CREATION_STATUS_COLORS[session.ingredient_generation_status]}>
-                                                        {CREATION_STATUS_LABELS[session.ingredient_generation_status]}
-                                                    </Badge>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                {session.time_saved > 0 ? formatDuration(session.time_saved) : '-'}
-                                            </TableCell>
-                                            <TableCell>
-                                                {session.money_saved > 0 ? `${session.money_saved.toFixed(2)}€` : '-'}
-                                            </TableCell>
-                                            <TableCell>{formatDate(session.created_at)}</TableCell>
-                                            <TableCell>
-                                                {session.is_cooked ? (
-                                                    <Badge className="bg-green-100 text-green-800">
-                                                        <CheckCircle className="mr-1 h-3 w-3" />
-                                                        Oui
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="secondary">
-                                                        <XCircle className="mr-1 h-3 w-3" />
-                                                        Non
-                                                    </Badge>
+                                                {session.algo_name || (
+                                                    <span className="text-muted-foreground">N/A</span>
                                                 )}
                                             </TableCell>
                                             <TableCell>
+                                                <Badge variant="outline">
+                                                    {session.children_count || 0}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex items-center gap-2">
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        onClick={() => {/* TODO: Voir les détails */ }}
+                                                        onClick={() => handleRowClick(session)}
                                                     >
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
-                                                    {!session.is_cooked && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => handleMarkAsCooked(session)}
-                                                        >
-                                                            <CheckCircle className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
@@ -374,6 +255,67 @@ export default function BatchCookingSessionsPage() {
                 </CardContent>
             </Card>
 
+            {/* Sessions enfants */}
+            {selectedSession && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <ChevronRight className="h-5 w-5" />
+                            Sessions Enfants - Session #{selectedSession.id}
+                        </CardTitle>
+                        <CardDescription>
+                            Sessions générées à partir de la session originale
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {loadingChildren ? (
+                            <div className="flex items-center justify-center py-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            </div>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>ID</TableHead>
+                                        <TableHead>Seed</TableHead>
+                                        <TableHead>Recettes</TableHead>
+                                        <TableHead>Algo Name</TableHead>
+                                        <TableHead>Créé le</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {childrenSessions.map((child) => (
+                                        <TableRow key={child.id}>
+                                            <TableCell className="font-medium">{child.id}</TableCell>
+                                            <TableCell>
+                                                {child.seed ? (
+                                                    <code className="text-xs bg-muted px-2 py-1 rounded">
+                                                        {child.seed.substring(0, 20)}...
+                                                    </code>
+                                                ) : (
+                                                    <span className="text-muted-foreground">-</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary">
+                                                    {child.recipes?.length || 0}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                {child.algo_name || (
+                                                    <span className="text-muted-foreground">N/A</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>{formatDate(child.created_at)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Dialog de suppression */}
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <AlertDialogContent>
@@ -394,4 +336,5 @@ export default function BatchCookingSessionsPage() {
             </AlertDialog>
         </div>
     )
+}
 }
