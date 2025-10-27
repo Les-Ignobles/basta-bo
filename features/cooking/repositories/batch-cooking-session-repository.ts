@@ -1,10 +1,9 @@
-import { SupabaseClient } from '@supabase/supabase-js'
 import { BaseRepository } from '@/lib/repositories/base-repository'
 import { BatchCookingSession, BatchCookingSessionForm, BatchCookingSessionFilters, BatchCookingSessionListResponse } from '@/features/cooking/types/batch-cooking-session'
 
 export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSession> {
-    constructor(supabase: SupabaseClient) {
-        super(supabase, 'batch_cooking_sessions')
+    constructor(client: any) {
+        super(client, 'batch_cooking_sessions')
     }
 
     async findPage(
@@ -13,9 +12,9 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
         filters: BatchCookingSessionFilters = {}
     ): Promise<BatchCookingSessionListResponse> {
         console.log('Repository findPage appelé avec:', { page, pageSize, filters })
-        
-        let query = this.supabase
-            .from(this.tableName)
+
+        let query = this.client
+            .from(this.table)
             .select('*', { count: 'exact' })
 
         // Filtres
@@ -72,8 +71,8 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
         // Compter les enfants pour chaque session
         const sessionsWithChildrenCount = await Promise.all(
             (data || []).map(async (session) => {
-                const { count: childrenCount } = await this.supabase
-                    .from(this.tableName)
+                const { count: childrenCount } = await this.client
+                    .from(this.table)
                     .select('*', { count: 'exact', head: true })
                     .eq('parent_id', session.id)
 
@@ -102,8 +101,8 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
     }
 
     async findChildrenByParentId(parentId: number): Promise<BatchCookingSession[]> {
-        const { data, error } = await this.supabase
-            .from(this.tableName)
+        const { data, error } = await this.client
+            .from(this.table)
             .select('*')
             .eq('parent_id', parentId)
             .order('created_at', { ascending: false })
@@ -116,8 +115,8 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
     }
 
     async create(formData: BatchCookingSessionForm): Promise<BatchCookingSession> {
-        const { data, error } = await this.supabase
-            .from(this.tableName)
+        const { data, error } = await this.client
+            .from(this.table)
             .insert({
                 meal_count: formData.meal_count,
                 people_count: formData.people_count,
@@ -136,8 +135,8 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
     }
 
     async update(id: number, formData: Partial<BatchCookingSessionForm>): Promise<BatchCookingSession> {
-        const { data, error } = await this.supabase
-            .from(this.tableName)
+        const { data, error } = await this.client
+            .from(this.table)
             .update(formData)
             .eq('id', id)
             .select()
@@ -151,9 +150,9 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
     }
 
     async markAsCooked(id: number): Promise<BatchCookingSession> {
-        const { data, error } = await this.supabase
-            .from(this.tableName)
-            .update({
+        const { data, error } = await this.client
+            .from(this.table)
+            .update({ 
                 is_cooked: true,
                 cooked_at: new Date().toISOString()
             })
