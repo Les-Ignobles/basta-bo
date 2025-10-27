@@ -139,6 +139,20 @@ export default function BatchCookingSessionDetailsPage() {
         return `${mins}min`
     }
 
+    const formatSeconds = (seconds: number) => {
+        const hours = Math.floor(seconds / 3600)
+        const minutes = Math.floor((seconds % 3600) / 60)
+        const secs = seconds % 60
+        
+        if (hours > 0) {
+            return `${hours}h ${minutes}min ${secs}s`
+        } else if (minutes > 0) {
+            return `${minutes}min ${secs}s`
+        } else {
+            return `${secs}s`
+        }
+    }
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -374,12 +388,12 @@ export default function BatchCookingSessionDetailsPage() {
                                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                                                     <div>
                                                         <p className="font-medium text-muted-foreground">Temps étape</p>
-                                                        <p>{formatDuration(step.step_time)}</p>
+                                                        <p>{formatSeconds(step.step_time)}</p>
                                                     </div>
                                                     {step.cooking_time && (
                                                         <div>
                                                             <p className="font-medium text-muted-foreground">Temps cuisson</p>
-                                                            <p>{formatDuration(step.cooking_time)}</p>
+                                                            <p>{formatSeconds(step.cooking_time)}</p>
                                                         </div>
                                                     )}
                                                     <div>
