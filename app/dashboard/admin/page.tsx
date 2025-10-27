@@ -1,966 +1,235 @@
 "use client"
-
-import { useEffect, useState, Fragment, useCallback } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { useRecipeGenerationResultStore } from '@/features/cooking/stores/recipe-generation-result-store'
-import { useAllergyStore } from '@/features/cooking/stores/allergy-store'
-import { useKitchenEquipmentStore } from '@/features/cooking/stores/kitchen-equipment-store'
-import { MaskDisplay } from '@/features/cooking/components/mask-display'
-
-interface SessionRecipe {
-    title?: string
-    description?: string
-    instructions?: string
-    ingredients?: string[]
-    is_adapted?: boolean
-    original_recipe_id?: number | null
-    meal_count?: number
-    remaining_meal_count?: number
-    expiration_days?: number
-}
-import {
-    Database,
-    Cpu,
-    TrendingUp,
-    AlertTriangle,
-    CheckCircle,
-    RefreshCw,
-    Activity,
-    Search,
-    Trash2,
-    Eye,
-    Filter,
-    X,
-    ArrowUp,
-    ArrowDown
-} from 'lucide-react'
-import { useDietStore } from '@/features/cooking/stores/diet-store'
+import { Label } from '@/components/ui/label'
+import { Loader2, Brain, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 
 export default function AdminPage() {
-    const [searchTerm, setSearchTerm] = useState('')
-    const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
-    const [showDetails, setShowDetails] = useState<number | null>(null)
-    const [selectedDiets, setSelectedDiets] = useState<number[]>([])
-    const [selectedAllergies, setSelectedAllergies] = useState<number[]>([])
-    const [selectedKitchenEquipment, setSelectedKitchenEquipment] = useState<number[]>([])
-    const [clearCacheDialogOpen, setClearCacheDialogOpen] = useState(false)
+    const [batchSize, setBatchSize] = useState(10)
+    const [startFrom, setStartFrom] = useState(0)
+    const [loading, setLoading] = useState(false)
+    const [completeLoading, setCompleteLoading] = useState(false)
+    const [results, setResults] = useState<{
+        message: string
+        processed: number
+        failed: number
+        total: number
+        successRate: string
+        nextStart: number
+        hasMore: boolean
+        results: any[]
+    } | null>(null)
+    const [error, setError] = useState<string | null>(null)
 
-    const {
-        results,
-        stats,
-        loading,
-        error,
-        page,
-        pageSize,
-        total,
-        fetchResults,
-        fetchStats,
-        fetchRecentActivity,
-        setSearch,
-        setDietMask,
-        setAllergyMask,
-        setKitchenEquipmentMask,
-        setSortBy,
-        setSortOrder,
-        sortBy,
-        sortOrder,
-        setPage,
-        clearOldEntries,
-        deleteBatch,
-        clearError
-    } = useRecipeGenerationResultStore()
+    const handleBatchAnalysis = async () => {
+        setLoading(true)
+        setError(null)
+        setResults(null)
 
-    const {
-        diets,
-        loading: dietsLoading,
-        fetchDiets
-    } = useDietStore()
-
-    const {
-        allergies,
-        loading: allergiesLoading,
-        fetchAllergies
-    } = useAllergyStore()
-
-    const {
-        kitchenEquipment,
-        loading: kitchenEquipmentLoading,
-        fetchKitchenEquipment
-    } = useKitchenEquipmentStore()
-
-    const fetchAllData = useCallback(async () => {
-        await Promise.all([
-            fetchResults(),
-            fetchStats(),
-            fetchRecentActivity(),
-            fetchDiets(),
-            fetchAllergies(),
-            fetchKitchenEquipment()
-        ])
-        setLastRefresh(new Date())
-    }, [fetchResults, fetchStats, fetchRecentActivity, fetchDiets, fetchAllergies, fetchKitchenEquipment])
-
-    useEffect(() => {
-        fetchAllData()
-        // Rafraîchir automatiquement toutes les 30 secondes
-        const interval = setInterval(fetchAllData, 30000)
-        return () => clearInterval(interval)
-    }, [fetchAllData])
-
-    useEffect(() => {
-        const timeout = setTimeout(() => {
-            setSearch(searchTerm)
-            setPage(1)
-            fetchResults()
-        }, 400)
-        return () => clearTimeout(timeout)
-    }, [searchTerm, setSearch, setPage, fetchResults])
-
-    useEffect(() => {
-        fetchResults()
-    }, [sortBy, sortOrder, fetchResults])
-
-    useEffect(() => {
-        fetchResults()
-    }, [page, fetchResults])
-
-    const handleDietToggle = (dietId: number) => {
-        const newSelectedDiets = selectedDiets.includes(dietId)
-            ? selectedDiets.filter(id => id !== dietId)
-            : [...selectedDiets, dietId]
-
-        setSelectedDiets(newSelectedDiets)
-
-        // Calculer le diet_mask : somme des bit_index des régimes sélectionnés
-        const newDietMask = newSelectedDiets.reduce((mask: number, dietId: number) => {
-            const diet = diets.find((d) => d.id === dietId)
-            if (diet && diet.bit_index !== null) {
-                const bitPosition = 1 << diet.bit_index
-                return mask | bitPosition
-            }
-            return mask
-        }, 0)
-
-        setDietMask(newSelectedDiets.length > 0 ? newDietMask : null)
-        setPage(1)
-        fetchResults()
-    }
-
-    const handleAllergyToggle = (allergyId: number) => {
-        const newSelectedAllergies = selectedAllergies.includes(allergyId)
-            ? selectedAllergies.filter(id => id !== allergyId)
-            : [...selectedAllergies, allergyId]
-
-        setSelectedAllergies(newSelectedAllergies)
-
-        // Calculer le allergy_mask
-        const newAllergyMask = newSelectedAllergies.reduce((mask, allergyId) => {
-            const allergy = allergies.find(a => a.id === allergyId)
-            if (allergy && allergy.bit_index !== null) {
-                const bitPosition = 1 << allergy.bit_index
-                return mask | bitPosition
-            }
-            return mask
-        }, 0)
-
-        setAllergyMask(newSelectedAllergies.length > 0 ? newAllergyMask : null)
-        setPage(1)
-        fetchResults()
-    }
-
-    const handleKitchenEquipmentToggle = (equipmentId: number) => {
-        const newSelectedKitchenEquipment = selectedKitchenEquipment.includes(equipmentId)
-            ? selectedKitchenEquipment.filter(id => id !== equipmentId)
-            : [...selectedKitchenEquipment, equipmentId]
-
-        setSelectedKitchenEquipment(newSelectedKitchenEquipment)
-
-        // Calculer le kitchen_equipment_mask
-        const newKitchenEquipmentMask = newSelectedKitchenEquipment.reduce((mask, equipmentId) => {
-            const equipment = kitchenEquipment.find(e => e.id === equipmentId)
-            if (equipment && equipment.bit_index !== null) {
-                const bitPosition = 1 << equipment.bit_index
-                return mask | bitPosition
-            }
-            return mask
-        }, 0)
-
-        setKitchenEquipmentMask(newSelectedKitchenEquipment.length > 0 ? newKitchenEquipmentMask : null)
-        setPage(1)
-        fetchResults()
-    }
-
-    const clearDietFilters = () => {
-        setSelectedDiets([])
-        setDietMask(null)
-        setPage(1)
-        fetchResults()
-    }
-
-    const clearAllergyFilters = () => {
-        setSelectedAllergies([])
-        setAllergyMask(null)
-        setPage(1)
-        fetchResults()
-    }
-
-    const clearKitchenEquipmentFilters = () => {
-        setSelectedKitchenEquipment([])
-        setKitchenEquipmentMask(null)
-        setPage(1)
-        fetchResults()
-    }
-
-    const clearAllFilters = () => {
-        clearDietFilters()
-        clearAllergyFilters()
-        clearKitchenEquipmentFilters()
-    }
-
-    const handleDeleteBatch = async (id: number) => {
         try {
-            await deleteBatch(id)
-            // Le store se charge déjà de rafraîchir les données
-        } catch {
-            alert('Erreur lors de la suppression du batch')
+            const response = await fetch('/api/recipes/analyze-allergies', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    batchSize: parseInt(batchSize.toString()),
+                    startFrom: parseInt(startFrom.toString())
+                })
+            })
+
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP: ${response.status}`)
+            }
+
+            const data = await response.json()
+            setResults(data)
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Une erreur est survenue')
+        } finally {
+            setLoading(false)
         }
     }
 
-    const handleClearOldEntries = async (daysOld: number) => {
+    const handleCompleteAnalysis = async () => {
+        setCompleteLoading(true)
+        setError(null)
+        setResults(null)
+
         try {
-            const deletedCount = await clearOldEntries(daysOld)
-            alert(`${deletedCount} entrées supprimées`)
-            setClearCacheDialogOpen(false)
-        } catch {
-            alert('Erreur lors de la suppression')
+            const response = await fetch('/api/recipes/analyze-allergies/complete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    batchSize: parseInt(batchSize.toString())
+                })
+            })
+
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP: ${response.status}`)
+            }
+
+            const data = await response.json()
+            setResults(data)
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Une erreur est survenue')
+        } finally {
+            setCompleteLoading(false)
         }
-    }
-
-    const formatTime = (timestamp: string | null) => {
-        if (!timestamp) return 'Jamais'
-        const date = new Date(timestamp)
-        const now = new Date()
-        const diffMs = now.getTime() - date.getTime()
-        const diffMins = Math.floor(diffMs / 60000)
-
-        if (diffMins < 1) return 'À l\'instant'
-        if (diffMins < 60) return `Il y a ${diffMins}min`
-
-        const diffHours = Math.floor(diffMins / 60)
-        if (diffHours < 24) return `Il y a ${diffHours}h`
-
-        const diffDays = Math.floor(diffHours / 24)
-        return `Il y a ${diffDays}j`
-    }
-
-    const formatDate = (timestamp: string) => {
-        return new Date(timestamp).toLocaleDateString('fr-FR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        })
-    }
-
-
-    const totalPages = Math.ceil(total / pageSize)
-
-    if (loading && !stats) {
-        return (
-            <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold font-christmas">Recipe Batch</h1>
-                        <p className="text-muted-foreground">
-                            Surveillance du cache des résultats de génération de recettes
-                        </p>
-                    </div>
-                </div>
-                <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                    <p className="text-muted-foreground mt-2">Chargement des données...</p>
-                </div>
-            </div>
-        )
     }
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold font-christmas">Recipe Batch</h1>
-                    <p className="text-muted-foreground">
-                        Surveillance du cache des résultats de génération de recettes
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <Badge variant="outline" className="flex items-center gap-2">
-                        <Activity className="h-4 w-4" />
-                        Dernière MAJ: {formatTime(lastRefresh.toISOString())}
-                    </Badge>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={fetchAllData}
-                        disabled={loading}
-                    >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                        Actualiser
-                    </Button>
-                </div>
+            <div>
+                <h1 className="text-3xl font-bold font-christmas">Analyse des Allergies</h1>
+                <p className="text-muted-foreground">
+                    Analyse automatique des allergies dans les recettes avec l'IA
+                </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Brain className="h-5 w-5" />
+                            Analyse par batch
+                        </CardTitle>
+                        <CardDescription>
+                            Analyse un batch spécifique de recettes
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="batchSize">Taille du batch</Label>
+                            <Input
+                                id="batchSize"
+                                type="number"
+                                value={batchSize}
+                                onChange={(e) => setBatchSize(parseInt(e.target.value) || 10)}
+                                min="1"
+                                max="50"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="startFrom">Commencer à partir de</Label>
+                            <Input
+                                id="startFrom"
+                                type="number"
+                                value={startFrom}
+                                onChange={(e) => setStartFrom(parseInt(e.target.value) || 0)}
+                                min="0"
+                            />
+                        </div>
+                        <Button
+                            onClick={handleBatchAnalysis}
+                            disabled={loading || completeLoading}
+                            className="w-full"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Analyse en cours...
+                                </>
+                            ) : (
+                                <>
+                                    <Brain className="mr-2 h-4 w-4" />
+                                    Analyser un batch
+                                </>
+                            )}
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5" />
+                            Analyse complète
+                        </CardTitle>
+                        <CardDescription>
+                            Analyse toutes les recettes automatiquement
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <Button
+                            onClick={handleCompleteAnalysis}
+                            disabled={loading || completeLoading}
+                            className="w-full"
+                        >
+                            {completeLoading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Analyse complète en cours...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Analyser toutes les recettes
+                                </>
+                            )}
+                        </Button>
+
+                        <p className="text-sm text-muted-foreground">
+                            <strong>Analyse par batch:</strong> Traite seulement un batch de recettes<br />
+                            <strong>Analyse complète:</strong> Traite toutes les recettes automatiquement
+                        </p>
+                    </CardContent>
+                </Card>
             </div>
 
             {error && (
                 <Card className="border-red-200 bg-red-50">
                     <CardContent className="pt-6">
-                        <div className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-red-600" />
-                            <span className="text-red-800">Erreur: {error}</span>
-                            <Button variant="outline" size="sm" onClick={clearError} className="ml-auto">
-                                Fermer
-                            </Button>
+                        <div className="flex items-center gap-2 text-red-600">
+                            <AlertCircle className="h-4 w-4" />
+                            <span className="font-medium">Erreur</span>
                         </div>
+                        <p className="text-red-600 mt-2">{error}</p>
                     </CardContent>
                 </Card>
             )}
 
-            {/* Statistics Overview */}
-            {stats && (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-lg">
-                                <Database className="h-5 w-5 text-blue-500" />
-                                Total Entrées
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">{stats.total.toLocaleString()}</div>
-                            <div className="text-sm text-muted-foreground">Résultats en cache</div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-lg">
-                                <Eye className="h-5 w-5 text-green-500" />
-                                Affichages
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">{stats.totalShown.toLocaleString()}</div>
-                            <div className="text-sm text-muted-foreground">Total montrés</div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-lg">
-                                <CheckCircle className="h-5 w-5 text-purple-500" />
-                                Sélections
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">{stats.totalPicked.toLocaleString()}</div>
-                            <div className="text-sm text-muted-foreground">Total sélectionnés</div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-lg">
-                                <TrendingUp className="h-5 w-5 text-orange-500" />
-                                Activité 24h
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">{stats.recentActivity}</div>
-                            <div className="text-sm text-muted-foreground">Utilisations récentes</div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
-
-            {/* Search and Controls */}
-            <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4 flex-1">
-                    <div className="relative max-w-sm">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input
-                            placeholder="Rechercher par ingrédients ou signature pool..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10"
-                        />
-                    </div>
-
-                    {/* Contrôles de tri */}
-                    <div className="flex gap-2 items-center">
-                        <Select value={sortBy} onValueChange={(value: 'created_at' | 'last_used_at' | 'shown_count' | 'picked_count') => setSortBy(value)}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Trier par..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="last_used_at">Dernière utilisation</SelectItem>
-                                <SelectItem value="created_at">Date de création</SelectItem>
-                                <SelectItem value="shown_count">Affichages</SelectItem>
-                                <SelectItem value="picked_count">Sélections</SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                            className="px-3"
-                        >
-                            {sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                        </Button>
-                    </div>
-
-                    {/* Filtre par régime */}
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" className="flex items-center gap-2">
-                                <Filter className="h-4 w-4" />
-                                Régimes
-                                {selectedDiets.length > 0 && (
-                                    <Badge variant="secondary" className="ml-1">
-                                        {selectedDiets.length}
-                                    </Badge>
-                                )}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80" align="start">
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h4 className="font-medium">Filtrer par régime alimentaire</h4>
-                                    {selectedDiets.length > 0 && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={clearDietFilters}
-                                            className="h-8 px-2 text-xs"
-                                        >
-                                            Effacer
-                                        </Button>
-                                    )}
-                                </div>
-                                <div className="space-y-2 max-h-60 overflow-y-auto">
-                                    {dietsLoading ? (
-                                        <div className="text-sm text-muted-foreground">
-                                            Chargement des régimes...
-                                        </div>
-                                    ) : (
-                                        diets?.map((diet) => (
-                                            <div key={diet.id} className="flex items-center space-x-2">
-                                                <Checkbox
-                                                    id={`diet-${diet.id}`}
-                                                    checked={selectedDiets.includes(diet.id)}
-                                                    onCheckedChange={() => handleDietToggle(diet.id)}
-                                                />
-                                                <label
-                                                    htmlFor={`diet-${diet.id}`}
-                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 cursor-pointer"
-                                                >
-                                                    <span>{diet.emoji}</span>
-                                                    {diet.title?.fr || diet.slug}
-                                                </label>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
+            {results && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                            Résultats de l'analyse
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-green-600">{results.processed}</div>
+                                <div className="text-sm text-muted-foreground">Réussies</div>
                             </div>
-                        </PopoverContent>
-                    </Popover>
-
-                    {/* Filtre par allergies */}
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" className="flex items-center gap-2">
-                                <Filter className="h-4 w-4" />
-                                Allergies
-                                {selectedAllergies.length > 0 && (
-                                    <Badge variant="secondary" className="ml-1">
-                                        {selectedAllergies.length}
-                                    </Badge>
-                                )}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80" align="start">
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h4 className="font-medium">Filtrer par allergies</h4>
-                                    {selectedAllergies.length > 0 && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={clearAllergyFilters}
-                                            className="h-8 px-2 text-xs"
-                                        >
-                                            Effacer
-                                        </Button>
-                                    )}
-                                </div>
-                                <div className="space-y-2 max-h-60 overflow-y-auto">
-                                    {allergiesLoading ? (
-                                        <div className="text-sm text-muted-foreground">
-                                            Chargement des allergies...
-                                        </div>
-                                    ) : (
-                                        allergies?.map((allergy) => (
-                                            <div key={allergy.id} className="flex items-center space-x-2">
-                                                <Checkbox
-                                                    id={`allergy-${allergy.id}`}
-                                                    checked={selectedAllergies.includes(allergy.id)}
-                                                    onCheckedChange={() => handleAllergyToggle(allergy.id)}
-                                                />
-                                                <label
-                                                    htmlFor={`allergy-${allergy.id}`}
-                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 cursor-pointer"
-                                                >
-                                                    <span>{allergy.emoji}</span>
-                                                    {allergy.name?.fr || allergy.slug}
-                                                </label>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-red-600">{results.failed}</div>
+                                <div className="text-sm text-muted-foreground">Échouées</div>
                             </div>
-                        </PopoverContent>
-                    </Popover>
-
-                    {/* Filtre par équipements de cuisine */}
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" className="flex items-center gap-2">
-                                <Filter className="h-4 w-4" />
-                                Équipements
-                                {selectedKitchenEquipment.length > 0 && (
-                                    <Badge variant="secondary" className="ml-1">
-                                        {selectedKitchenEquipment.length}
-                                    </Badge>
-                                )}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80" align="start">
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h4 className="font-medium">Filtrer par équipements de cuisine</h4>
-                                    {selectedKitchenEquipment.length > 0 && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={clearKitchenEquipmentFilters}
-                                            className="h-8 px-2 text-xs"
-                                        >
-                                            Effacer
-                                        </Button>
-                                    )}
-                                </div>
-                                <div className="space-y-2 max-h-60 overflow-y-auto">
-                                    {kitchenEquipmentLoading ? (
-                                        <div className="text-sm text-muted-foreground">
-                                            Chargement des équipements...
-                                        </div>
-                                    ) : (
-                                        kitchenEquipment?.map((equipment) => (
-                                            <div key={equipment.id} className="flex items-center space-x-2">
-                                                <Checkbox
-                                                    id={`equipment-${equipment.id}`}
-                                                    checked={selectedKitchenEquipment.includes(equipment.id)}
-                                                    onCheckedChange={() => handleKitchenEquipmentToggle(equipment.id)}
-                                                />
-                                                <label
-                                                    htmlFor={`equipment-${equipment.id}`}
-                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 cursor-pointer"
-                                                >
-                                                    <span>{equipment.emoji}</span>
-                                                    {equipment.name?.fr || equipment.slug}
-                                                </label>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-blue-600">{results.total}</div>
+                                <div className="text-sm text-muted-foreground">Total</div>
                             </div>
-                        </PopoverContent>
-                    </Popover>
-
-                    {/* Bouton pour effacer tous les filtres */}
-                    {(selectedDiets.length > 0 || selectedAllergies.length > 0 || selectedKitchenEquipment.length > 0) && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={clearAllFilters}
-                            className="text-xs"
-                        >
-                            Effacer tous les filtres
-                        </Button>
-                    )}
-                </div>
-
-                <AlertDialog open={clearCacheDialogOpen} onOpenChange={setClearCacheDialogOpen}>
-                    <AlertDialogTrigger asChild>
-                        <Button
-                            variant="outline"
-                            disabled={loading}
-                        >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Nettoyer ancien cache
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Nettoyer le cache ancien</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Sélectionnez la période de rétention pour nettoyer le cache.
-                                Les entrées plus anciennes que la période sélectionnée seront définitivement supprimées.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleClearOldEntries(7)}
-                                    className="flex flex-col items-center p-4 h-auto"
-                                >
-                                    <div className="font-semibold">7 jours</div>
-                                    <div className="text-xs text-muted-foreground">Cache récent</div>
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleClearOldEntries(14)}
-                                    className="flex flex-col items-center p-4 h-auto"
-                                >
-                                    <div className="font-semibold">14 jours</div>
-                                    <div className="text-xs text-muted-foreground">2 semaines</div>
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleClearOldEntries(30)}
-                                    className="flex flex-col items-center p-4 h-auto"
-                                >
-                                    <div className="font-semibold">30 jours</div>
-                                    <div className="text-xs text-muted-foreground">1 mois (par défaut)</div>
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleClearOldEntries(90)}
-                                    className="flex flex-col items-center p-4 h-auto"
-                                >
-                                    <div className="font-semibold">90 jours</div>
-                                    <div className="text-xs text-muted-foreground">3 mois</div>
-                                </Button>
-                            </div>
-                            <div className="border-t pt-4">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleClearOldEntries(0)}
-                                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-                                >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Purger TOUT le cache
-                                </Button>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-purple-600">{results.successRate}</div>
+                                <div className="text-sm text-muted-foreground">Taux de réussite</div>
                             </div>
                         </div>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Annuler</AlertDialogCancel>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </div>
 
-            {/* Results Table */}
-            <Card>
-                <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2">
-                        <Cpu className="h-5 w-5" />
-                        Résultats de génération ({total.toLocaleString()})
-                    </CardTitle>
-                    <CardDescription>
-                        Liste des résultats mis en cache avec leurs métriques
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {loading ? (
-                        <div className="text-center py-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                            <p className="text-muted-foreground mt-2">Chargement...</p>
-                        </div>
-                    ) : results.length === 0 ? (
-                        <div className="text-center py-8">
-                            <Database className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                            <h3 className="text-lg font-semibold mb-2">Aucun résultat trouvé</h3>
-                            <p className="text-muted-foreground">
-                                {searchTerm ? 'Aucun résultat ne correspond à votre recherche.' : 'Aucun résultat de génération en cache.'}
-                            </p>
-                        </div>
-                    ) : (
-                        <>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>ID</TableHead>
-                                        <TableHead>Créé</TableHead>
-                                        <TableHead>Dernière utilisation</TableHead>
-                                        <TableHead>Recettes</TableHead>
-                                        <TableHead>Régimes</TableHead>
-                                        <TableHead>Allergies</TableHead>
-                                        <TableHead>Équipements</TableHead>
-                                        <TableHead>Affichages</TableHead>
-                                        <TableHead>Sélections</TableHead>
-                                        <TableHead>Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {results.map((result) => (
-                                        <Fragment key={result.id}>
-                                            <TableRow>
-                                                <TableCell className="font-mono text-sm">
-                                                    #{result.id}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="text-sm">
-                                                        {formatDate(result.created_at)}
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {formatTime(result.created_at)}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="text-sm">
-                                                        {formatTime(result.last_used_at)}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant="secondary">
-                                                        {result.recipe_count}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <MaskDisplay
-                                                        mask={result.diets_mask}
-                                                        items={diets.map((diet) => ({
-                                                            id: diet.id,
-                                                            name: diet.title?.fr || diet.slug,
-                                                            emoji: diet.emoji
-                                                        }))}
-                                                        maxItems={2}
-                                                        className="text-xs"
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <MaskDisplay
-                                                        mask={result.allergies_mask}
-                                                        items={allergies.map(allergy => ({
-                                                            id: allergy.id,
-                                                            name: allergy.slug,
-                                                            emoji: allergy.emoji
-                                                        }))}
-                                                        maxItems={2}
-                                                        className="text-xs"
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <MaskDisplay
-                                                        mask={result.kitchen_equipment_mask}
-                                                        items={kitchenEquipment.map(equipment => ({
-                                                            id: equipment.id,
-                                                            name: equipment.emoji,
-                                                            emoji: equipment.emoji
-                                                        }))}
-                                                        maxItems={2}
-                                                        className="text-xs"
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <span className="text-sm">{result.shown_count}</span>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <span className="text-sm">{result.picked_count}</span>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-2">
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => setShowDetails(showDetails === result.id ? null : result.id)}
-                                                        >
-                                                            <Eye className="h-4 w-4" />
-                                                        </Button>
-                                                        <AlertDialog>
-                                                            <AlertDialogTrigger asChild>
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                                >
-                                                                    <X className="h-4 w-4" />
-                                                                </Button>
-                                                            </AlertDialogTrigger>
-                                                            <AlertDialogContent>
-                                                                <AlertDialogHeader>
-                                                                    <AlertDialogTitle>Supprimer le batch #{result.id}</AlertDialogTitle>
-                                                                    <AlertDialogDescription>
-                                                                        Êtes-vous sûr de vouloir supprimer ce batch de génération de recettes ?
-                                                                        Cette action est irréversible et supprimera définitivement toutes les données associées.
-                                                                    </AlertDialogDescription>
-                                                                </AlertDialogHeader>
-                                                                <AlertDialogFooter>
-                                                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                                    <AlertDialogAction
-                                                                        onClick={() => handleDeleteBatch(result.id)}
-                                                                        className="bg-red-600 hover:bg-red-700"
-                                                                    >
-                                                                        Supprimer
-                                                                    </AlertDialogAction>
-                                                                </AlertDialogFooter>
-                                                            </AlertDialogContent>
-                                                        </AlertDialog>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                            {showDetails === result.id && (
-                                                <TableRow>
-                                                    <TableCell colSpan={10} className="bg-muted/50">
-                                                        <div className="p-4 space-y-4">
-                                                            <h4 className="font-semibold">Détails du résultat #{result.id}</h4>
-
-                                                            <div className="grid gap-4 md:grid-cols-2">
-                                                                <div>
-                                                                    <h5 className="font-medium text-sm mb-2">Informations générales</h5>
-                                                                    <div className="space-y-1 text-sm">
-                                                                        <div><span className="font-medium">Appétit:</span> {result.appetite || 'N/A'}</div>
-                                                                        <div><span className="font-medium">Type de plat:</span> {result.dish_type}</div>
-                                                                        <div><span className="font-medium">Signature pool:</span> <code className="bg-muted px-1 rounded text-xs">{result.pool_signature}</code></div>
-                                                                        {result.exclusion_key && (
-                                                                            <div><span className="font-medium">Clé d&apos;exclusion:</span> <code className="bg-muted px-1 rounded text-xs">{result.exclusion_key}</code></div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                <div>
-                                                                    <h5 className="font-medium text-sm mb-2">Ingrédients générés ({result.ingredients.length})</h5>
-                                                                    <div className="flex flex-wrap gap-1">
-                                                                        {result.ingredients.map((ingredient: string, index: number) => (
-                                                                            <Badge key={index} variant="outline" className="text-xs">
-                                                                                {ingredient}
-                                                                            </Badge>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <div>
-                                                                <h5 className="font-medium text-sm mb-2">Recettes générées</h5>
-                                                                <div className="grid grid-cols-2 gap-3">
-                                                                    {result.result && Array.isArray(result.result) ? (
-                                                                        result.result.map((recipe: SessionRecipe, index: number) => (
-                                                                            <div key={index} className="border rounded-lg p-3 bg-gray-50">
-                                                                                <div className="font-medium text-sm mb-1">
-                                                                                    {recipe.title || `Recette ${index + 1}`}
-                                                                                </div>
-                                                                                <div className="text-xs text-gray-600 mb-2">
-                                                                                    {recipe.is_adapted && recipe.original_recipe_id ? (
-                                                                                        <span className="text-blue-600">Adaptée de la recette #{recipe.original_recipe_id}</span>
-                                                                                    ) : recipe.original_recipe_id && !recipe.is_adapted ? (
-                                                                                        <span className="text-purple-600">Recette originale #{recipe.original_recipe_id}</span>
-                                                                                    ) : (
-                                                                                        <span className="text-green-600">Nouvelle recette</span>
-                                                                                    )}
-                                                                                </div>
-                                                                                <div className="flex gap-2 mb-2">
-                                                                                    {recipe.meal_count && recipe.meal_count > 0 && (
-                                                                                        <Badge variant={recipe.is_adapted ? "secondary" : "default"} className="text-xs">
-                                                                                            {recipe.meal_count} repas
-                                                                                        </Badge>
-                                                                                    )}
-                                                                                    {recipe.remaining_meal_count && recipe.meal_count && recipe.remaining_meal_count < recipe.meal_count && recipe.remaining_meal_count > 0 && (
-                                                                                        <Badge variant="outline" className="text-xs">
-                                                                                            {recipe.remaining_meal_count} restants
-                                                                                        </Badge>
-                                                                                    )}
-                                                                                    {recipe.expiration_days && recipe.expiration_days > 0 && (
-                                                                                        <Badge variant="outline" className="text-xs">
-                                                                                            {recipe.expiration_days}j
-                                                                                        </Badge>
-                                                                                    )}
-                                                                                </div>
-                                                                                {recipe.ingredients && recipe.ingredients.length > 0 && (
-                                                                                    <div className="mt-2">
-                                                                                        <div className="text-xs font-medium text-gray-500 mb-1">Ingrédients:</div>
-                                                                                        <div className="flex flex-wrap gap-1">
-                                                                                            {recipe.ingredients.slice(0, 4).map((ingredient: string, ingIndex: number) => (
-                                                                                                <Badge key={ingIndex} variant="outline" className="text-xs">
-                                                                                                    {ingredient}
-                                                                                                </Badge>
-                                                                                            ))}
-                                                                                            {recipe.ingredients.length > 4 && (
-                                                                                                <Badge variant="secondary" className="text-xs">
-                                                                                                    +{recipe.ingredients.length - 4} autres
-                                                                                                </Badge>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        ))
-                                                                    ) : (
-                                                                        <div className="col-span-2 text-sm text-gray-500 italic">
-                                                                            {result.result ? 'Données de recettes non disponibles' : 'Aucune recette générée'}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </Fragment>
-                                    ))}
-                                </TableBody>
-                            </Table>
-
-                            {/* Pagination */}
-                            {totalPages > 1 && (
-                                <div className="flex items-center justify-between mt-4">
-                                    <p className="text-sm text-muted-foreground">
-                                        Page {page} sur {totalPages} ({total} résultats)
-                                    </p>
-                                    <div className="flex items-center space-x-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setPage(page - 1)}
-                                            disabled={page === 1}
-                                        >
-                                            Précédent
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setPage(page + 1)}
-                                            disabled={page >= totalPages}
-                                        >
-                                            Suivant
-                                        </Button>
-                                    </div>
-                                </div>
+                        <div className="text-sm text-muted-foreground">
+                            <p><strong>Message:</strong> {results.message}</p>
+                            {results.hasMore && (
+                                <p><strong>Prochain batch:</strong> Commencer à partir de {results.nextStart}</p>
                             )}
-                        </>
-                    )}
-                </CardContent>
-            </Card>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     )
 }

@@ -10,12 +10,8 @@ Le système de rôles utilise des **scopes** (permissions granulaires) pour cont
 - `cooking:read` - Lecture des ingrédients, recettes et pending ingredients
 - `cooking:write` - Modification/création d'ingrédients et recettes
 
-### Advice (Conseils)
-- `advice:read` - Lecture des articles, catégories et FAQ
-- `advice:write` - Modification/création d'articles, catégories et FAQ
-
 ### Admin (Administration)
-- `admin:read` - Lecture des données administratives (Recipe Batch)
+- `admin:read` - Lecture des données administratives (Analyse des allergies)
 - `admin:write` - Modification des données administratives
 
 ## Rôles prédéfinis

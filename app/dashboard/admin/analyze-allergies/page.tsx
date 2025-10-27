@@ -12,25 +12,7 @@ export default function AnalyzeAllergiesPage() {
     const [startFrom, setStartFrom] = useState(0)
     const [loading, setLoading] = useState(false)
     const [completeLoading, setCompleteLoading] = useState(false)
-    const [results, setResults] = useState<{
-        message: string
-        processed: number
-        failed: number
-        total: number
-        successRate: string
-        nextStart?: number
-        hasMore?: boolean
-        results?: Array<{
-            recipeId: number
-            title: string
-            incompatibleAllergies?: string[]
-            decodedAllergies?: string[]
-            allergyMask: number
-            count: number
-            decodedCount: number
-            error?: string
-        }>
-    } | null>(null)
+    const [results, setResults] = useState<any>(null)
     const [error, setError] = useState<string | null>(null)
 
     const handleBatchAnalysis = async () => {
@@ -101,7 +83,7 @@ export default function AnalyzeAllergiesPage() {
                 <div>
                     <h1 className="text-3xl font-bold">Analyse IA des Allergies</h1>
                     <p className="text-muted-foreground">
-                        Utilise l&apos;IA pour analyser les recettes et remplir automatiquement les allergies non compatibles
+                        Utilise l'IA pour analyser les recettes et remplir automatiquement les allergies non compatibles
                     </p>
                 </div>
             </div>
@@ -112,7 +94,7 @@ export default function AnalyzeAllergiesPage() {
                     <CardHeader>
                         <CardTitle>Configuration</CardTitle>
                         <CardDescription>
-                            Paramètres pour l&apos;analyse des recettes
+                            Paramètres pour l'analyse des recettes
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -141,7 +123,7 @@ export default function AnalyzeAllergiesPage() {
                                 min="0"
                             />
                             <p className="text-sm text-muted-foreground">
-                                Index de départ pour l&apos;analyse (0 = depuis le début)
+                                Index de départ pour l'analyse (0 = depuis le début)
                             </p>
                         </div>
                     </CardContent>
@@ -152,7 +134,7 @@ export default function AnalyzeAllergiesPage() {
                     <CardHeader>
                         <CardTitle>Actions</CardTitle>
                         <CardDescription>
-                            Lancer l&apos;analyse des allergies
+                            Lancer l'analyse des allergies
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -219,7 +201,7 @@ export default function AnalyzeAllergiesPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <CheckCircle className="h-5 w-5 text-green-600" />
-                            Résultats de l&apos;analyse
+                            Résultats de l'analyse
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -263,7 +245,7 @@ export default function AnalyzeAllergiesPage() {
                             <div className="space-y-2">
                                 <h4 className="font-medium">Détails des recettes traitées:</h4>
                                 <div className="max-h-60 overflow-y-auto space-y-1">
-                                    {results.results.map((result, index: number) => (
+                                    {results.results.map((result: any, index: number) => (
                                         <div key={index} className="flex items-center justify-between p-2 bg-muted rounded text-sm">
                                             <span className="font-medium">{result.title}</span>
                                             {result.error ? (

@@ -12,8 +12,8 @@ SET role_scopes = ARRAY[
     'cooking:read', 
     'cooking:write', 
     'advice:read', 
-    'advice:write', 
-    'admin:read', 
+    'advice:write',
+    'admin:read',
     'admin:write'
 ]
 WHERE is_admin = true AND (role_scopes IS NULL OR array_length(role_scopes, 1) IS NULL);

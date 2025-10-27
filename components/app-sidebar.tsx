@@ -117,7 +117,7 @@ export function AppSidebar() {
                                     <SidebarMenuButton asChild isActive={pathname === '/dashboard/admin'}>
                                         <Link href="/dashboard/admin" className="flex items-center gap-2">
                                             <Settings className="size-4" />
-                                            <span>Recipe Batch</span>
+                                            <span>Analyse des Allergies</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
@@ -125,6 +125,7 @@ export function AppSidebar() {
                         </SidebarGroupContent>
                     </SidebarGroup>
                 )}
+
             </SidebarContent>
             <SidebarFooter>
                 <div className="p-2 space-y-2">

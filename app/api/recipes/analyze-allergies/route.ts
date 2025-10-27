@@ -4,8 +4,6 @@ import { RecipeRepository } from '@/features/cooking/repositories/recipe-reposit
 import { AllergyRepository } from '@/features/cooking/repositories/allergy-repository'
 import { OpenaiIaService } from '@/lib/ia/openai-service'
 import { z } from 'zod'
-import { Recipe } from '@/features/cooking/types'
-import { Allergy } from '@/features/cooking/types/allergy'
 
 // Schéma Zod pour valider la réponse de l'IA
 const AllergyAnalysisSchema = z.object({
@@ -79,7 +77,7 @@ export async function POST(req: NextRequest) {
                     console.log(`Détails des allergies:`, incompatibleAllergies.map(a => `${a.id}: ${a.name.fr}`))
 
                     // Calculer le bitmask
-                    const allergyMask = calculateAllergyMask(incompatibleAllergies)
+                    const allergyMask = calculateAllergyMask(incompatibleAllergies, allergies)
 
                     console.log(`- Bitmask calculé: ${allergyMask}`)
                     console.log(`- Bitmask binaire: ${allergyMask.toString(2)}`)
@@ -146,7 +144,7 @@ export async function POST(req: NextRequest) {
     }
 }
 
-function buildAnalysisPrompt(recipe: Recipe, allergies: Allergy[]): string {
+function buildAnalysisPrompt(recipe: any, allergies: any[]): string {
     const allergyList = allergies.map(a => `${a.id}: ${a.name.fr}`).join(', ')
     const ingredients = recipe.ingredients_name?.join(', ') || 'Non spécifié'
 
@@ -174,7 +172,7 @@ function buildAnalysisPrompt(recipe: Recipe, allergies: Allergy[]): string {
 }
 
 
-function calculateAllergyMask(incompatibleAllergies: { bit_index: number }[]): number {
+function calculateAllergyMask(incompatibleAllergies: any[], allergies: any[]): number {
     let mask = 0
 
     incompatibleAllergies.forEach(allergy => {
