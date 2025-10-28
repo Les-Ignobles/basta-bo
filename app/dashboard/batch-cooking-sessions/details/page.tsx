@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
+import {
     Search,
     ChefHat,
     Clock,
@@ -102,14 +102,14 @@ export default function BatchCookingSessionDetailsPage() {
 
         setLoading(true)
         setError('')
-        
+
         try {
             const response = await fetch(`/api/batch-cooking-sessions/${sessionId}`)
-            
+
             if (!response.ok) {
                 throw new Error(`Session non trouvée (${response.status})`)
             }
-            
+
             const data = await response.json()
             setSession(data)
         } catch (err) {
@@ -143,7 +143,7 @@ export default function BatchCookingSessionDetailsPage() {
         const hours = Math.floor(seconds / 3600)
         const minutes = Math.floor((seconds % 3600) / 60)
         const secs = seconds % 60
-        
+
         if (hours > 0) {
             return `${hours}h ${minutes}min ${secs}s`
         } else if (minutes > 0) {
@@ -379,30 +379,30 @@ export default function BatchCookingSessionDetailsPage() {
                                         {session.cooking_steps
                                             .sort((a, b) => a.order - b.order)
                                             .map((step) => (
-                                            <div key={step.id} className="border rounded-lg p-4">
-                                                <div className="flex items-start justify-between mb-2">
-                                                    <h3 className="font-semibold">Étape {step.order}</h3>
-                                                    <Badge variant="outline">{step.action}</Badge>
-                                                </div>
-                                                <p className="text-sm mb-3">{step.text}</p>
-                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                                                    <div>
-                                                        <p className="font-medium text-muted-foreground">Temps étape</p>
-                                                        <p>{formatSeconds(step.step_time)}</p>
+                                                <div key={step.id} className="border rounded-lg p-4">
+                                                    <div className="flex items-start justify-between mb-2">
+                                                        <h3 className="font-semibold">Étape {step.order}</h3>
+                                                        <Badge variant="outline">{step.action}</Badge>
                                                     </div>
-                                                    {step.cooking_time && (
+                                                    <p className="text-sm mb-3">{step.text}</p>
+                                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                                                         <div>
-                                                            <p className="font-medium text-muted-foreground">Temps cuisson</p>
-                                                            <p>{formatSeconds(step.cooking_time)}</p>
+                                                            <p className="font-medium text-muted-foreground">Temps étape</p>
+                                                            <p>{formatSeconds(step.step_time)}</p>
                                                         </div>
-                                                    )}
-                                                    <div>
-                                                        <p className="font-medium text-muted-foreground">Ingrédients</p>
-                                                        <p>{step.ingredients.length}</p>
+                                                        {step.cooking_time && (
+                                                            <div>
+                                                                <p className="font-medium text-muted-foreground">Temps cuisson</p>
+                                                                <p>{formatSeconds(step.cooking_time)}</p>
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <p className="font-medium text-muted-foreground">Ingrédients</p>
+                                                            <p>{step.ingredients.length}</p>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -422,17 +422,17 @@ export default function BatchCookingSessionDetailsPage() {
                                         {session.assembly_steps
                                             .sort((a, b) => a.order - b.order)
                                             .map((step) => (
-                                            <div key={step.id} className="border rounded-lg p-4">
-                                                <div className="flex items-start justify-between mb-2">
-                                                    <h3 className="font-semibold">Étape {step.order}</h3>
-                                                    <Badge variant="outline">Recette #{step.original_recipe_id}</Badge>
+                                                <div key={step.id} className="border rounded-lg p-4">
+                                                    <div className="flex items-start justify-between mb-2">
+                                                        <h3 className="font-semibold">Étape {step.order}</h3>
+                                                        <Badge variant="outline">Recette #{step.original_recipe_id}</Badge>
+                                                    </div>
+                                                    <p className="text-sm mb-2">{step.text}</p>
+                                                    {step.desc && (
+                                                        <p className="text-sm text-muted-foreground">{step.desc}</p>
+                                                    )}
                                                 </div>
-                                                <p className="text-sm mb-2">{step.text}</p>
-                                                {step.desc && (
-                                                    <p className="text-sm text-muted-foreground">{step.desc}</p>
-                                                )}
-                                            </div>
-                                        ))}
+                                            ))}
                                     </div>
                                 </CardContent>
                             </Card>

@@ -1,8 +1,9 @@
 import { BaseRepository } from '@/lib/repositories/base-repository'
 import { BatchCookingSession, BatchCookingSessionForm, BatchCookingSessionFilters, BatchCookingSessionListResponse } from '@/features/cooking/types/batch-cooking-session'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSession> {
-    constructor(client: any) {
+    constructor(client: SupabaseClient) {
         super(client, 'batch_cooking_sessions')
     }
 
