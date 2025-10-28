@@ -24,14 +24,11 @@ export default function BatchCookingSessionsPage() {
         sessions,
         total,
         page,
-        pageSize,
         loading,
         error,
         filters,
         setPage,
-        setPageSize,
         setFilters,
-        clearFilters,
         fetchOriginalSessions,
         deleteSession,
         fetchChildrenByParentId
@@ -60,9 +57,9 @@ export default function BatchCookingSessionsPage() {
     // Mettre à jour les sessions quand les filtres changent
     useEffect(() => {
         fetchOriginalSessions()
-    }, [page, pageSize, filters, fetchOriginalSessions])
+    }, [page, filters, fetchOriginalSessions])
 
-    const totalPages = Math.max(1, Math.ceil(total / pageSize))
+    const totalPages = Math.max(1, Math.ceil(total / 50))
 
     const handleDeleteSession = (session: BatchCookingSession) => {
         setSessionToDelete(session)
@@ -238,7 +235,7 @@ export default function BatchCookingSessionsPage() {
                             <div className="flex items-center justify-between mt-4">
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm text-muted-foreground">
-                                        Affichage de {(page - 1) * pageSize + 1} à {Math.min(page * pageSize, total)} sur {total}
+                                        Affichage de {(page - 1) * 50 + 1} à {Math.min(page * 50, total)} sur {total}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">

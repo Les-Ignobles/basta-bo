@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
         // Supprimer les valeurs undefined
         const cleanFilters = Object.fromEntries(
-            Object.entries(filters).filter(([_, value]) => value !== undefined)
+            Object.entries(filters).filter(([, value]) => value !== undefined)
         )
 
         const result = await repo.findOriginalSessions(page, pageSize, cleanFilters)

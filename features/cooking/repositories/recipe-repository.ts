@@ -94,4 +94,74 @@ export class RecipeRepository extends BaseRepository<Recipe> {
             isFolklore
         })
     }
+
+    async findPageWithFilters({ search, page, pageSize, noImage, dishType, diets, kitchenEquipments, quantificationType, isVisible, isFolklore }: { search?: string; page: number; pageSize: number; noImage?: boolean; dishType?: number; diets?: number[]; kitchenEquipments?: number[]; quantificationType?: number; isVisible?: boolean; isFolklore?: boolean }): Promise<{ data: Recipe[]; total: number }> {
+        if ((diets && diets.length > 0) || (kitchenEquipments && kitchenEquipments.length > 0)) {
+            // Quand on a des filtres de régime ou d'ustensiles, on doit récupérer toutes les recettes d'abord
+            // sans appliquer les filtres de visibilité/folklore côté serveur
+            const allRecipes = await this.findPage({
+                search,
+                page: 1,
+                pageSize: 1000, // Récupérer un grand nombre
+                noImage,
+                dishType,
+                quantificationType
+                // Ne pas passer isVisible et isFolklore ici
+            })
+
+            // Filtrer par régime
+            let filteredRecipes = allRecipes.data
+            if (diets && diets.length > 0) {
+                filteredRecipes = filteredRecipes.filter((recipe: Recipe) => {
+                    if (!recipe.diet_mask || recipe.diet_mask === null) return false
+
+                    // Vérifier si la recette a TOUS les régimes sélectionnés (AND)
+                    return diets.every(dietId => {
+                        const bitPosition = 1 << (dietId - 1)
+                        return (recipe.diet_mask! & bitPosition) > 0
+                    })
+                })
+            }
+
+            // Filtrer par ustensiles de cuisine
+            if (kitchenEquipments && kitchenEquipments.length > 0) {
+                filteredRecipes = filteredRecipes.filter((recipe: Recipe) => {
+                    if (!recipe.kitchen_equipments_mask || recipe.kitchen_equipments_mask === null) return false
+
+                    // Vérifier si la recette a TOUS les ustensiles sélectionnés (AND)
+                    return kitchenEquipments.every(equipmentId => {
+                        const bitPosition = 1 << (equipmentId - 1)
+                        return (recipe.kitchen_equipments_mask! & bitPosition) > 0
+                    })
+                })
+            }
+
+            // Appliquer les filtres de visibilité/folklore côté client
+            if (isVisible !== undefined) {
+                filteredRecipes = filteredRecipes.filter(recipe => recipe.is_visible === isVisible)
+            }
+            if (isFolklore !== undefined) {
+                filteredRecipes = filteredRecipes.filter(recipe => recipe.is_folklore === isFolklore)
+            }
+
+            // Appliquer la pagination
+            const from = (page - 1) * pageSize
+            const to = from + pageSize
+            const paginatedRecipes = filteredRecipes.slice(from, to)
+
+            return { data: paginatedRecipes, total: filteredRecipes.length }
+        }
+
+        // Si pas de filtres de régime ou d'ustensiles, utiliser la méthode normale
+        return await this.findPage({
+            search,
+            page,
+            pageSize,
+            noImage,
+            dishType,
+            quantificationType,
+            isVisible,
+            isFolklore
+        })
+    }
 }

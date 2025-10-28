@@ -4,7 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, Brain, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Loader2, Brain, CheckCircle, AlertCircle } from 'lucide-react'
+
+type AnalysisResult = {
+    id: number
+    title: string
+    allergies: string[]
+    status: string
+}
 
 export default function AdminPage() {
     const [batchSize, setBatchSize] = useState(10)
@@ -19,7 +26,7 @@ export default function AdminPage() {
         successRate: string
         nextStart: number
         hasMore: boolean
-        results: any[]
+        results: AnalysisResult[]
     } | null>(null)
     const [error, setError] = useState<string | null>(null)
 
@@ -87,7 +94,7 @@ export default function AdminPage() {
             <div>
                 <h1 className="text-3xl font-bold font-christmas">Analyse des Allergies</h1>
                 <p className="text-muted-foreground">
-                    Analyse automatique des allergies dans les recettes avec l'IA
+                    Analyse automatique des allergies dans les recettes avec l&apos;IA
                 </p>
             </div>
 
@@ -198,7 +205,7 @@ export default function AdminPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <CheckCircle className="h-5 w-5 text-green-600" />
-                            Résultats de l'analyse
+                            Résultats de l&apos;analyse
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">

@@ -4,13 +4,14 @@ import { BatchCookingSessionRepository } from '@/features/cooking/repositories/b
 
 export async function PATCH(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params
         const repo = new BatchCookingSessionRepository(supabaseServer)
-        const id = parseInt(params.id)
+        const sessionId = parseInt(id)
 
-        const session = await repo.markAsCooked(id)
+        const session = await repo.markAsCooked(sessionId)
         return Response.json(session)
     } catch (error) {
         console.error('Erreur lors du marquage comme cuisiné:', error)

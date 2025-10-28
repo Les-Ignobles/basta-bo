@@ -51,6 +51,8 @@ export default function RecipesIndexPage() {
         dishType,
         selectedDiets,
         setSelectedDiets,
+        selectedKitchenEquipments,
+        setSelectedKitchenEquipments,
         quantificationType,
         setQuantificationType,
         isVisible,
@@ -189,6 +191,15 @@ export default function RecipesIndexPage() {
         fetchRecipes()
     }
 
+    const handleKitchenEquipmentToggle = (equipmentId: number) => {
+        const newSelectedEquipments = selectedKitchenEquipments.includes(equipmentId)
+            ? selectedKitchenEquipments.filter(id => id !== equipmentId)
+            : [...selectedKitchenEquipments, equipmentId]
+        setSelectedKitchenEquipments(newSelectedEquipments)
+        setPage(1)
+        fetchRecipes()
+    }
+
     return (
         <div className="space-y-4">
             <div className="sticky top-0 z-10 bg-background border-b py-4">
@@ -286,6 +297,52 @@ export default function RecipesIndexPage() {
                                         size="sm"
                                         onClick={() => {
                                             setSelectedDiets([])
+                                            setPage(1)
+                                            fetchRecipes()
+                                        }}
+                                        className="w-full"
+                                    >
+                                        Effacer les filtres
+                                    </Button>
+                                )}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="flex items-center gap-2">
+                                <Utensils className="h-4 w-4" />
+                                Ustensiles
+                                {selectedKitchenEquipments.length > 0 && (
+                                    <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+                                        {selectedKitchenEquipments.length}
+                                    </span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80">
+                            <div className="space-y-2">
+                                <h4 className="font-medium text-sm">Filtrer par ustensiles de cuisine</h4>
+                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    {kitchenEquipments.map((equipment) => (
+                                        <label key={equipment.id} className="flex items-center gap-2 text-sm">
+                                            <Checkbox
+                                                checked={selectedKitchenEquipments.includes(equipment.id)}
+                                                onCheckedChange={() => handleKitchenEquipmentToggle(equipment.id)}
+                                            />
+                                            <span className="flex items-center gap-2">
+                                                <span>{equipment.emoji}</span>
+                                                <span>{(equipment.name as { fr?: string })?.fr || String(equipment.name)}</span>
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
+                                {selectedKitchenEquipments.length > 0 && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            setSelectedKitchenEquipments([])
                                             setPage(1)
                                             fetchRecipes()
                                         }}

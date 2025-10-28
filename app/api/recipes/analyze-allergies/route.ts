@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
                     console.log(`Détails des allergies:`, incompatibleAllergies.map(a => `${a.id}: ${a.name.fr}`))
 
                     // Calculer le bitmask
-                    const allergyMask = calculateAllergyMask(incompatibleAllergies, allergies)
+                    const allergyMask = calculateAllergyMask(incompatibleAllergies)
 
                     console.log(`- Bitmask calculé: ${allergyMask}`)
                     console.log(`- Bitmask binaire: ${allergyMask.toString(2)}`)
@@ -144,7 +144,19 @@ export async function POST(req: NextRequest) {
     }
 }
 
-function buildAnalysisPrompt(recipe: any, allergies: any[]): string {
+type Recipe = {
+    id: number
+    title: string
+    ingredients_name: string[]
+}
+
+type Allergy = {
+    id: number
+    name: { fr: string }
+    bit_index: number
+}
+
+function buildAnalysisPrompt(recipe: Recipe, allergies: Allergy[]): string {
     const allergyList = allergies.map(a => `${a.id}: ${a.name.fr}`).join(', ')
     const ingredients = recipe.ingredients_name?.join(', ') || 'Non spécifié'
 
@@ -172,7 +184,7 @@ function buildAnalysisPrompt(recipe: any, allergies: any[]): string {
 }
 
 
-function calculateAllergyMask(incompatibleAllergies: any[], allergies: any[]): number {
+function calculateAllergyMask(incompatibleAllergies: Allergy[]): number {
     let mask = 0
 
     incompatibleAllergies.forEach(allergy => {

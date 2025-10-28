@@ -4,11 +4,12 @@ import { BatchCookingSessionRepository } from '@/features/cooking/repositories/b
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params
         const repo = new BatchCookingSessionRepository(supabaseServer)
-        const parentId = parseInt(params.id)
+        const parentId = parseInt(id)
 
         const children = await repo.findChildrenByParentId(parentId)
         return Response.json(children)

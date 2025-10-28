@@ -26,6 +26,8 @@ export async function GET(req: NextRequest) {
     const dishType = dishTypeParam ? Number(dishTypeParam) : undefined
     const dietsParam = searchParams.get('diets')
     const diets = dietsParam ? dietsParam.split(',').map(Number) : undefined
+    const kitchenEquipmentsParam = searchParams.get('kitchenEquipments')
+    const kitchenEquipments = kitchenEquipmentsParam ? kitchenEquipmentsParam.split(',').map(Number) : undefined
     const quantificationTypeParam = searchParams.get('quantificationType')
     const quantificationType = quantificationTypeParam ? Number(quantificationTypeParam) : undefined
     const isVisibleParam = searchParams.get('isVisible')
@@ -33,8 +35,8 @@ export async function GET(req: NextRequest) {
     const isFolkloreParam = searchParams.get('isFolklore')
     const isFolklore = isFolkloreParam ? isFolkloreParam === 'true' : undefined
 
-    const { data, total } = diets && diets.length > 0
-        ? await repo.findPageWithDiets({ search, page, pageSize, noImage, dishType, diets, quantificationType, isVisible, isFolklore })
+    const { data, total } = (diets && diets.length > 0) || (kitchenEquipments && kitchenEquipments.length > 0)
+        ? await repo.findPageWithFilters({ search, page, pageSize, noImage, dishType, diets, kitchenEquipments, quantificationType, isVisible, isFolklore })
         : await repo.findPage({ search, page, pageSize, noImage, dishType, quantificationType, isVisible, isFolklore })
     return Response.json({ data, total, page, pageSize })
 }

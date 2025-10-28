@@ -2,16 +2,12 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
     Search,
     ChefHat,
-    Clock,
-    Users,
-    Calendar,
     Utensils,
     Package,
     PlayCircle,
@@ -29,10 +25,45 @@ type SessionRecipe = {
     original_recipe_id: number | null
     quantification_type: string
     remaining_meal_count: number
-    meals: any[]
+    meals: SessionRecipeMeal[]
     title: string
-    conservation: any | null
-    warming: any | null
+    conservation: RecipeConservation | null
+    warming: RecipeWarming | null
+}
+
+type SessionRecipeMeal = {
+    eaten_at: Date | null
+    id: string
+    original_recipe_id: number
+}
+
+type RecipeConservation = {
+    recommendations: ConservationRecommendation[]
+    tip: RecipeTip
+}
+
+type ConservationRecommendation = {
+    category: string
+    text: string
+}
+
+type RecipeTip = {
+    category: string
+    title: string
+    description: string
+}
+
+type RecipeWarming = {
+    advice: string
+    equipment_recommendations: WarmingEquipmentRecommendation[]
+    tip: RecipeTip
+}
+
+type WarmingEquipmentRecommendation = {
+    equipment: string
+    title: string
+    description: string
+    is_recommended: boolean
 }
 
 type SessionCookingStep = {
@@ -41,7 +72,7 @@ type SessionCookingStep = {
     step_time: number
     id: string
     img: string
-    ingredients: any[]
+    ingredients: SessionIngredient[]
     order: number
     text: string
 }
@@ -159,7 +190,7 @@ export default function BatchCookingSessionDetailsPage() {
                 <div>
                     <h1 className="text-3xl font-bold font-christmas">Détails Session Batch Cooking</h1>
                     <p className="text-muted-foreground">
-                        Consultez les détails d'une session en entrant son ID
+                        Consultez les détails d&apos;une session en entrant son ID
                     </p>
                 </div>
             </div>
@@ -414,7 +445,7 @@ export default function BatchCookingSessionDetailsPage() {
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <Layers className="h-5 w-5" />
-                                        Étapes d'Assemblage ({session.assembly_steps.length})
+                                        Étapes d&apos;Assemblage ({session.assembly_steps.length})
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>

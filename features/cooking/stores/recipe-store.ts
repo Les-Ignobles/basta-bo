@@ -22,6 +22,7 @@ type RecipeState = {
     noImage: boolean
     dishType: DishType | 'all'
     selectedDiets: number[]
+    selectedKitchenEquipments: number[]
     quantificationType: QuantificationType | 'all'
     isVisible: boolean | null
     isFolklore: boolean | null
@@ -43,6 +44,7 @@ type RecipeState = {
     setNoImage: (b: boolean) => void
     setDishType: (d: DishType | 'all') => void
     setSelectedDiets: (diets: number[]) => void
+    setSelectedKitchenEquipments: (equipments: number[]) => void
     setQuantificationType: (q: QuantificationType | 'all') => void
     setIsVisible: (v: boolean | null) => void
     setIsFolklore: (f: boolean | null) => void
@@ -69,13 +71,14 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     noImage: false,
     dishType: 'all',
     selectedDiets: [],
+    selectedKitchenEquipments: [],
     quantificationType: 'all',
     isVisible: null,
     isFolklore: null,
     async fetchRecipes() {
         set({ loading: true, error: undefined })
         try {
-            const { page, pageSize, search, noImage, dishType, selectedDiets, quantificationType, isVisible, isFolklore } = get()
+            const { page, pageSize, search, noImage, dishType, selectedDiets, selectedKitchenEquipments, quantificationType, isVisible, isFolklore } = get()
 
             // Protection contre les requêtes avec page=1 non désirées
             if (page === 1 && typeof window !== 'undefined') {
@@ -92,6 +95,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
             if (noImage) params.set('noImage', 'true')
             if (dishType !== 'all') params.set('dishType', String(dishType))
             if (selectedDiets.length > 0) params.set('diets', selectedDiets.join(','))
+            if (selectedKitchenEquipments.length > 0) params.set('kitchenEquipments', selectedKitchenEquipments.join(','))
             if (quantificationType !== 'all') params.set('quantificationType', String(quantificationType))
             if (isVisible !== null) params.set('isVisible', String(isVisible))
             if (isFolklore !== null) params.set('isFolklore', String(isFolklore))
@@ -359,6 +363,9 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     },
     setSelectedDiets(diets) {
         set({ selectedDiets: diets })
+    },
+    setSelectedKitchenEquipments(equipments) {
+        set({ selectedKitchenEquipments: equipments })
     },
     setQuantificationType(quantificationType) {
         set({ quantificationType })
