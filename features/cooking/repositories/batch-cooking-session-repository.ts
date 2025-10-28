@@ -131,16 +131,10 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
         return data || []
     }
 
-    async create(formData: BatchCookingSessionForm): Promise<BatchCookingSession> {
+    async create(payload: Omit<BatchCookingSession, 'id'>): Promise<BatchCookingSession> {
         const { data, error } = await this.client
             .from(this.table)
-            .insert({
-                meal_count: formData.meal_count,
-                people_count: formData.people_count,
-                seed: formData.seed,
-                algo_version: formData.algo_version,
-                is_original: true
-            })
+            .insert(payload)
             .select()
             .single()
 
@@ -151,10 +145,10 @@ export class BatchCookingSessionRepository extends BaseRepository<BatchCookingSe
         return data
     }
 
-    async update(id: number, formData: Partial<BatchCookingSessionForm>): Promise<BatchCookingSession> {
+    async update(id: number, payload: Partial<BatchCookingSession>): Promise<BatchCookingSession> {
         const { data, error } = await this.client
             .from(this.table)
-            .update(formData)
+            .update(payload)
             .eq('id', id)
             .select()
             .single()
