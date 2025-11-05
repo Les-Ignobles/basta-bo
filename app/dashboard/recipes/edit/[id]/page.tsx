@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { RecipeForm } from '@/features/cooking/components/recipe-form'
-import type { RecipeFormValues, Recipe } from '@/features/cooking/types'
+import type { RecipeFormValues, Recipe, Ingredient } from '@/features/cooking/types'
 import { useRecipeStore } from '@/features/cooking/stores/recipe-store'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 
@@ -16,6 +16,7 @@ export default function EditRecipePage() {
     const { fetchKitchenEquipments, fetchDiets, fetchAllergies, updateRecipe, kitchenEquipments, diets, allergies } = useRecipeStore()
 
     const [recipe, setRecipe] = useState<Recipe | null>(null)
+    const [ingredients, setIngredients] = useState<Ingredient[]>([])
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
 
@@ -26,17 +27,25 @@ export default function EditRecipePage() {
     }, [fetchKitchenEquipments, fetchDiets, fetchAllergies])
 
     useEffect(() => {
-        async function fetchRecipe() {
+        async function fetchRecipeData() {
             try {
-                const response = await fetch(`/api/recipes?id=${recipeId}`)
-                if (response.ok) {
-                    const data = await response.json()
-                    setRecipe(data.data)
+                // Charger la recette et les ingrédients en parallèle
+                const [recipeResponse, ingredientsResponse] = await Promise.all([
+                    fetch(`/api/recipes?id=${recipeId}`),
+                    fetch(`/api/recipes/${recipeId}/ingredients`)
+                ])
+
+                if (recipeResponse.ok && ingredientsResponse.ok) {
+                    const recipeData = await recipeResponse.json()
+                    const ingredientsData = await ingredientsResponse.json()
+
+                    setRecipe(recipeData.data)
+                    setIngredients(ingredientsData.data || [])
                 } else {
                     router.push('/dashboard/recipes')
                 }
             } catch (error) {
-                console.error('Failed to fetch recipe:', error)
+                console.error('Failed to fetch recipe data:', error)
                 router.push('/dashboard/recipes')
             } finally {
                 setLoading(false)
@@ -44,7 +53,7 @@ export default function EditRecipePage() {
         }
 
         if (recipeId) {
-            fetchRecipe()
+            fetchRecipeData()
         }
     }, [recipeId, router])
 
@@ -54,6 +63,7 @@ export default function EditRecipePage() {
             await updateRecipe(recipeId, {
                 title: values.title,
                 ingredients_name: values.ingredients_name,
+                ingredient_ids: values.ingredient_ids,
                 ingredients_quantities: values.ingredients_quantities ?? null,
                 img_path: values.img_path ?? null,
                 seasonality_mask: values.seasonality_mask ?? null,
@@ -138,7 +148,11 @@ export default function EditRecipePage() {
             <div className="bg-white rounded-lg border p-6">
                 <RecipeForm
                     onSubmit={handleSubmit}
-                    defaultValues={recipe}
+                    defaultValues={{
+                        ...recipe,
+                        ingredient_ids: ingredients.map(i => i.id)
+                    }}
+                    defaultIngredients={ingredients}
                     kitchenEquipments={kitchenEquipments}
                     diets={diets}
                     allergies={allergies}

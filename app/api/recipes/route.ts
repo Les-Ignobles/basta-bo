@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { supabaseServer } from '@/lib/supabase/server-client'
 import { RecipeRepository } from '@/features/cooking/repositories/recipe-repository'
+import { IngredientRecipePivotRepository } from '@/features/cooking/repositories/ingredient-recipe-pivot-repository'
 
 export async function GET(req: NextRequest) {
     const repo = new RecipeRepository(supabaseServer)
@@ -43,16 +44,37 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     const payload = await req.json()
+    const { ingredient_ids, ...recipeData } = payload
+
     const repo = new RecipeRepository(supabaseServer)
-    const created = await repo.create(payload)
+    const pivotRepo = new IngredientRecipePivotRepository(supabaseServer)
+
+    // Créer la recette (sans ingredient_ids qui n'existe pas dans la table recipes)
+    const created = await repo.create(recipeData)
+
+    // Créer les relations ingrédients-recette dans la table pivot
+    if (ingredient_ids && ingredient_ids.length > 0) {
+        await pivotRepo.syncRecipeIngredients(created.id, ingredient_ids)
+    }
+
     return Response.json({ data: created })
 }
 
 export async function PUT(req: NextRequest) {
     const payload = await req.json()
-    const { id, ...rest } = payload
+    const { id, ingredient_ids, ...recipeData } = payload
+
     const repo = new RecipeRepository(supabaseServer)
-    const updated = await repo.update(Number(id), rest)
+    const pivotRepo = new IngredientRecipePivotRepository(supabaseServer)
+
+    // Mettre à jour la recette (sans ingredient_ids qui n'existe pas dans la table recipes)
+    const updated = await repo.update(Number(id), recipeData)
+
+    // Mettre à jour les relations ingrédients-recette dans la table pivot
+    if (ingredient_ids !== undefined) {
+        await pivotRepo.syncRecipeIngredients(Number(id), ingredient_ids)
+    }
+
     return Response.json({ data: updated })
 }
 

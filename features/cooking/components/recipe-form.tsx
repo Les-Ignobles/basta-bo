@@ -8,7 +8,7 @@ import { ImageUpload } from '@/components/image-upload'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Check, ChevronsUpDown, PlusCircle } from 'lucide-react'
+import { Check, ChevronsUpDown, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { RecipeFormValues, KitchenEquipment, Ingredient } from '@/features/cooking/types'
 import { DishType, DISH_TYPE_LABELS, QuantificationType, QUANTIFICATION_TYPE_LABELS } from '@/features/cooking/types'
@@ -20,6 +20,7 @@ export type { RecipeFormValues }
 
 type Props = {
     defaultValues?: Partial<RecipeFormValues>
+    defaultIngredients?: Ingredient[]
     onSubmit: (values: RecipeFormValues) => Promise<void> | void
     submittingLabel?: string
     kitchenEquipments: KitchenEquipment[]
@@ -44,10 +45,11 @@ const QUANTIFICATION_TYPES = [
     { value: QuantificationType.PER_UNIT, label: QUANTIFICATION_TYPE_LABELS[QuantificationType.PER_UNIT] }
 ]
 
-export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets, allergies, formId }: Props) {
+export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets, allergies, formId }: Props) {
     const [values, setValues] = useState<RecipeFormValues>({
         title: '',
         ingredients_name: [],
+        ingredient_ids: [],
         ingredients_quantities: '',
         img_path: '',
         seasonality_mask: null,
@@ -70,6 +72,8 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
     const [ingredientOpen, setIngredientOpen] = useState(false)
     const [searchResults, setSearchResults] = useState<Ingredient[]>([])
     const [searching, setSearching] = useState(false)
+    const [selectedIngredients, setSelectedIngredients] = useState<Ingredient[]>([])
+    const [syncingIngredients, setSyncingIngredients] = useState(false)
 
     const { searchIngredients } = useCookingStore()
 
@@ -159,6 +163,39 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
         }
     }, [allergies, selectedAllergies.length])
 
+    // Initialiser selectedIngredients depuis defaultIngredients (mode édition)
+    useEffect(() => {
+        if (defaultIngredients && defaultIngredients.length > 0) {
+            setSelectedIngredients(defaultIngredients)
+        }
+    }, [defaultIngredients])
+
+    // Fonction helper pour synchroniser les ingrédients via l'API (mode édition uniquement)
+    async function syncIngredientsToAPI(ingredientIds: number[], ingredientNames: string[]) {
+        const recipeId = defaultValues?.id
+        if (!recipeId) return // Mode création, pas de sync immédiat
+
+        setSyncingIngredients(true)
+        try {
+            const response = await fetch(`/api/recipes/${recipeId}/ingredients`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ingredient_ids: ingredientIds,
+                    ingredients_name: ingredientNames
+                })
+            })
+            if (!response.ok) {
+                throw new Error('Failed to sync ingredients')
+            }
+        } catch (error) {
+            console.error('Failed to sync ingredients:', error)
+            // On pourrait afficher un toast d'erreur ici
+        } finally {
+            setSyncingIngredients(false)
+        }
+    }
+
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
         setLoading(true)
@@ -211,23 +248,44 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
         }
     }
 
-    function addIngredient(ingredientName?: string) {
-        const name = ingredientName || ingredientInput.trim()
-        if (name && !values.ingredients_name.includes(name)) {
+    async function addIngredient(ingredient: Ingredient) {
+        // Vérifier que l'ingrédient n'est pas déjà sélectionné
+        if (!selectedIngredients.find(i => i.id === ingredient.id)) {
+            const newSelectedIngredients = [...selectedIngredients, ingredient]
+            setSelectedIngredients(newSelectedIngredients)
+
+            const newIngredientIds = newSelectedIngredients.map(i => i.id)
+            const newIngredientNames = newSelectedIngredients.map(i => i.name.fr)
+
             setValues(prev => ({
                 ...prev,
-                ingredients_name: [...prev.ingredients_name, name]
+                ingredients_name: newIngredientNames,
+                ingredient_ids: newIngredientIds
             }))
+
             setIngredientInput('')
             setIngredientOpen(false)
+
+            // Synchroniser avec l'API en mode édition
+            await syncIngredientsToAPI(newIngredientIds, newIngredientNames)
         }
     }
 
-    function removeIngredient(index: number) {
+    async function removeIngredient(index: number) {
+        const newSelectedIngredients = selectedIngredients.filter((_, i) => i !== index)
+        setSelectedIngredients(newSelectedIngredients)
+
+        const newIngredientIds = newSelectedIngredients.map(i => i.id)
+        const newIngredientNames = newSelectedIngredients.map(i => i.name.fr)
+
         setValues(prev => ({
             ...prev,
-            ingredients_name: prev.ingredients_name.filter((_, i) => i !== index)
+            ingredients_name: newIngredientNames,
+            ingredient_ids: newIngredientIds
         }))
+
+        // Synchroniser avec l'API en mode édition
+        await syncIngredientsToAPI(newIngredientIds, newIngredientNames)
     }
 
     function toggleMonth(index: number) {
@@ -338,7 +396,12 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
 
             {/* Section Ingrédients */}
             <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-foreground border-b pb-2">Ingrédients</h3>
+                <h3 className="text-lg font-semibold text-foreground border-b pb-2 flex items-center gap-2">
+                    Ingrédients
+                    {syncingIngredients && (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                </h3>
                 <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">
                         Liste des ingrédients
@@ -369,57 +432,35 @@ export function RecipeForm({ defaultValues, onSubmit, submittingLabel = 'Enregis
                                                 searchResults.length === 0 && ingredientInput ? "Aucun ingrédient trouvé." :
                                                     "Tapez pour rechercher des ingrédients..."}
                                         </CommandEmpty>
-                                        {(() => {
-                                            return (
-                                                <>
-                                                    {/* Option pour ajouter le texte saisi */}
-                                                    {ingredientInput.trim() && !values.ingredients_name.includes(ingredientInput.trim()) && (
-                                                        <CommandGroup heading="Ajouter">
-                                                            <CommandItem
-                                                                value={ingredientInput}
-                                                                onSelect={() => addIngredient(ingredientInput.trim())}
-                                                            >
-                                                                <PlusCircle className="mr-2 h-4 w-4" />
-                                                                "{ingredientInput.trim()}"
-                                                            </CommandItem>
-                                                        </CommandGroup>
-                                                    )}
-
-                                                    {/* Suggestions d'ingrédients existants */}
-                                                    {searchResults.length > 0 && (
-                                                        <CommandGroup heading="Suggestions">
-                                                            {searchResults.map((ingredient) => (
-                                                                <CommandItem
-                                                                    key={ingredient.id}
-                                                                    value={ingredient.name.fr}
-                                                                    onSelect={() => addIngredient(ingredient.name.fr)}
-                                                                >
-                                                                    <Check
-                                                                        className={cn(
-                                                                            "mr-2 h-4 w-4",
-                                                                            values.ingredients_name.includes(ingredient.name.fr) ? "opacity-100" : "opacity-0"
-                                                                        )}
-                                                                    />
-                                                                    {ingredient.name.fr}
-                                                                </CommandItem>
-                                                            ))}
-                                                        </CommandGroup>
-                                                    )}
-                                                </>
-                                            )
-                                        })()}
+                                        {/* Suggestions d'ingrédients existants uniquement */}
+                                        {searchResults.length > 0 && (
+                                            <CommandGroup heading="Ingrédients disponibles">
+                                                {searchResults.map((ingredient) => (
+                                                    <CommandItem
+                                                        key={ingredient.id}
+                                                        value={ingredient.name.fr}
+                                                        onSelect={() => addIngredient(ingredient)}
+                                                    >
+                                                        <Check
+                                                            className={cn(
+                                                                "mr-2 h-4 w-4",
+                                                                selectedIngredients.find(i => i.id === ingredient.id) ? "opacity-100" : "opacity-0"
+                                                            )}
+                                                        />
+                                                        {ingredient.name.fr}
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        )}
                                     </CommandList>
                                 </Command>
                             </PopoverContent>
                         </Popover>
-                        <Button type="button" onClick={() => addIngredient()} size="sm" className="shrink-0">
-                            Ajouter
-                        </Button>
                     </div>
                     <div className="flex flex-wrap gap-2 mt-2">
-                        {values.ingredients_name.map((ingredient, index) => (
-                            <div key={index} className="flex items-center gap-1 bg-muted px-2 py-1 rounded text-sm">
-                                <span>{ingredient}</span>
+                        {selectedIngredients.map((ingredient, index) => (
+                            <div key={ingredient.id} className="flex items-center gap-1 bg-muted px-2 py-1 rounded text-sm">
+                                <span>{ingredient.name.fr}</span>
                                 <button
                                     type="button"
                                     onClick={() => removeIngredient(index)}

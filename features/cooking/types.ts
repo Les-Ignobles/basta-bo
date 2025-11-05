@@ -70,6 +70,7 @@ export type RecipeFormValues = {
     id?: number
     title: string
     ingredients_name: string[]
+    ingredient_ids?: number[]  // IDs des ingrédients pour la table pivot (ne sera pas stocké dans recipes)
     ingredients_quantities?: string | null
     img_path?: string | null
     seasonality_mask?: number | null
@@ -97,5 +98,12 @@ export type PendingIngredientFormValues = {
     category_id: number | null
     img_path?: string | null
     is_basic: boolean
+}
+
+export type IngredientRecipePivot = {
+    id: number
+    ingredient_id: number
+    recipe_id: number
+    created_at: string
 }
 
