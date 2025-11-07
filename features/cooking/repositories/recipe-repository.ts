@@ -164,4 +164,46 @@ export class RecipeRepository extends BaseRepository<Recipe> {
             isFolklore
         })
     }
+
+    async findAdjacentRecipes(
+        currentId: number,
+        filters?: {
+            search?: string
+            noImage?: boolean
+            dishType?: number
+            diets?: number[]
+            kitchenEquipments?: number[]
+            quantificationType?: number
+            isVisible?: boolean
+            isFolklore?: boolean
+        }
+    ): Promise<{ previous: number | null; next: number | null }> {
+        // Réutiliser la logique de filtrage existante en récupérant toutes les recettes
+        // Cela évite la duplication et garantit la cohérence avec la pagination
+        const { data: allRecipes } = await this.findPageWithFilters({
+            search: filters?.search,
+            page: 1,
+            pageSize: 10000, // Récupérer toutes les recettes (limite raisonnable)
+            noImage: filters?.noImage,
+            dishType: filters?.dishType,
+            diets: filters?.diets,
+            kitchenEquipments: filters?.kitchenEquipments,
+            quantificationType: filters?.quantificationType,
+            isVisible: filters?.isVisible,
+            isFolklore: filters?.isFolklore
+        })
+
+        // Les recettes sont déjà triées par titre (ordre alphabétique) par findPageWithFilters
+        const currentIndex = allRecipes.findIndex(r => r.id === currentId)
+
+        // Si la recette actuelle n'est pas dans la liste filtrée, pas de navigation
+        if (currentIndex === -1) {
+            return { previous: null, next: null }
+        }
+
+        return {
+            previous: currentIndex > 0 ? allRecipes[currentIndex - 1].id : null,
+            next: currentIndex < allRecipes.length - 1 ? allRecipes[currentIndex + 1].id : null
+        }
+    }
 }

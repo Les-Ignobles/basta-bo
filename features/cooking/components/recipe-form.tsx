@@ -99,6 +99,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submit
     }, [ingredientInput, searchIngredients])
 
     // Update form values when defaultValues change (for edit mode)
+    // On utilise JSON.stringify pour comparer le contenu réel, pas juste la référence
     useEffect(() => {
         if (defaultValues) {
             setValues({
@@ -116,11 +117,13 @@ export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submit
                 is_visible: defaultValues.is_visible !== undefined ? defaultValues.is_visible : true,
             } as RecipeFormValues)
         }
-    }, [defaultValues])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [JSON.stringify(defaultValues)])
 
     // Initialize masks from default values
+    // On utilise JSON.stringify pour comparer le contenu réel
     useEffect(() => {
-        if (defaultValues?.seasonality_mask) {
+        if (defaultValues?.seasonality_mask !== undefined) {
             const months = []
             for (let i = 0; i < 12; i++) {
                 months.push((defaultValues.seasonality_mask & (1 << i)) !== 0)
@@ -128,27 +131,28 @@ export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submit
             setSelectedMonths(months)
         }
 
-        if (defaultValues?.kitchen_equipments_mask) {
+        if (defaultValues?.kitchen_equipments_mask !== undefined) {
             const equipments = kitchenEquipments.map(eq =>
                 eq.bit_index !== null ? (defaultValues.kitchen_equipments_mask! & (1 << eq.bit_index)) !== 0 : false
             )
             setSelectedEquipments(equipments)
         }
 
-        if (defaultValues?.diet_mask && diets) {
+        if (defaultValues?.diet_mask !== undefined && diets) {
             const dietSelections = diets.map(diet =>
                 (defaultValues.diet_mask! & (1 << diet.bit_index)) !== 0
             )
             setSelectedDiets(dietSelections)
         }
 
-        if (defaultValues?.allergy_mask && allergies) {
+        if (defaultValues?.allergy_mask !== undefined && allergies) {
             const allergySelections = allergies.map(allergy =>
                 (defaultValues.allergy_mask! & (1 << allergy.bit_index)) !== 0
             )
             setSelectedAllergies(allergySelections)
         }
-    }, [defaultValues, kitchenEquipments, diets, allergies])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [JSON.stringify(defaultValues), kitchenEquipments, diets, allergies])
 
     // Mettre à jour selectedDiets quand diets change
     useEffect(() => {
@@ -165,11 +169,13 @@ export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submit
     }, [allergies, selectedAllergies.length])
 
     // Initialiser selectedIngredients depuis defaultIngredients (mode édition)
+    // On utilise JSON.stringify pour comparer le contenu réel
     useEffect(() => {
         if (defaultIngredients && defaultIngredients.length > 0) {
             setSelectedIngredients(defaultIngredients)
         }
-    }, [defaultIngredients])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [JSON.stringify(defaultIngredients)])
 
     // Fonction helper pour synchroniser les ingrédients via l'API (mode édition uniquement)
     async function syncIngredientsToAPI(ingredientIds: number[], ingredientNames: string[]) {

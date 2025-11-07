@@ -470,9 +470,21 @@ export default function RecipesIndexPage() {
                 onSelectRecipe={handleSelectRecipe}
                 onSelectAll={handleSelectAll}
                 onEdit={(recipe) => {
-                    const params = new URLSearchParams(searchParams.toString())
-                    params.set('page', page.toString())
-                    router.push(`/dashboard/recipes/edit/${recipe.id}?returnPage=${page}`)
+                    // Construire l'URL avec tous les filtres actifs pour la navigation contextuelle
+                    const params = new URLSearchParams()
+                    params.set('returnPage', page.toString())
+
+                    // Ajouter les filtres actifs
+                    if (searchInput) params.set('search', searchInput)
+                    if (noImage) params.set('noImage', 'true')
+                    if (dishType !== undefined && dishType !== null) params.set('dishType', dishType.toString())
+                    if (selectedDiets.length > 0) params.set('diets', selectedDiets.join(','))
+                    if (selectedKitchenEquipments.length > 0) params.set('kitchenEquipments', selectedKitchenEquipments.join(','))
+                    if (quantificationType !== undefined && quantificationType !== null) params.set('quantificationType', quantificationType.toString())
+                    if (isVisible !== undefined && isVisible !== null) params.set('isVisible', isVisible.toString())
+                    if (isFolklore !== undefined && isFolklore !== null) params.set('isFolklore', isFolklore.toString())
+
+                    router.push(`/dashboard/recipes/edit/${recipe.id}?${params.toString()}`)
                 }}
                 onDuplicate={handleDuplicateRecipe}
                 onDelete={handleDeleteRecipe}

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { RecipeForm } from '@/features/cooking/components/recipe-form'
 import type { RecipeFormValues, Recipe, Ingredient } from '@/features/cooking/types'
 import { useRecipeStore } from '@/features/cooking/stores/recipe-store'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function EditRecipePage() {
     const router = useRouter()
@@ -19,6 +19,7 @@ export default function EditRecipePage() {
     const [ingredients, setIngredients] = useState<Ingredient[]>([])
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
+    const [navigation, setNavigation] = useState<{ previous: number | null; next: number | null } | null>(null)
 
     useEffect(() => {
         fetchKitchenEquipments()
@@ -29,10 +30,35 @@ export default function EditRecipePage() {
     useEffect(() => {
         async function fetchRecipeData() {
             try {
-                // Charger la recette et les ingrédients en parallèle
-                const [recipeResponse, ingredientsResponse] = await Promise.all([
+                // Construire les paramètres de filtrage depuis l'URL pour la navigation contextuelle
+                const navParams = new URLSearchParams()
+                const search = searchParams.get('search')
+                const noImage = searchParams.get('noImage')
+                const dishType = searchParams.get('dishType')
+                const diets = searchParams.get('diets')
+                const kitchenEquipments = searchParams.get('kitchenEquipments')
+                const quantificationType = searchParams.get('quantificationType')
+                const isVisible = searchParams.get('isVisible')
+                const isFolklore = searchParams.get('isFolklore')
+
+                if (search) navParams.set('search', search)
+                if (noImage) navParams.set('noImage', noImage)
+                if (dishType) navParams.set('dishType', dishType)
+                if (diets) navParams.set('diets', diets)
+                if (kitchenEquipments) navParams.set('kitchenEquipments', kitchenEquipments)
+                if (quantificationType) navParams.set('quantificationType', quantificationType)
+                if (isVisible) navParams.set('isVisible', isVisible)
+                if (isFolklore) navParams.set('isFolklore', isFolklore)
+
+                const navigationUrl = navParams.toString()
+                    ? `/api/recipes/${recipeId}/navigation?${navParams.toString()}`
+                    : `/api/recipes/${recipeId}/navigation`
+
+                // Charger la recette, les ingrédients et la navigation en parallèle
+                const [recipeResponse, ingredientsResponse, navigationResponse] = await Promise.all([
                     fetch(`/api/recipes?id=${recipeId}`),
-                    fetch(`/api/recipes/${recipeId}/ingredients`)
+                    fetch(`/api/recipes/${recipeId}/ingredients`),
+                    fetch(navigationUrl)
                 ])
 
                 if (recipeResponse.ok && ingredientsResponse.ok) {
@@ -41,6 +67,11 @@ export default function EditRecipePage() {
 
                     setRecipe(recipeData.data)
                     setIngredients(ingredientsData.data || [])
+
+                    if (navigationResponse.ok) {
+                        const navigationData = await navigationResponse.json()
+                        setNavigation(navigationData.data)
+                    }
                 } else {
                     router.push('/dashboard/recipes')
                 }
@@ -55,7 +86,7 @@ export default function EditRecipePage() {
         if (recipeId) {
             fetchRecipeData()
         }
-    }, [recipeId, router])
+    }, [recipeId, router, searchParams])
 
     async function handleSubmit(values: RecipeFormValues) {
         setSubmitting(true)
@@ -76,9 +107,20 @@ export default function EditRecipePage() {
                 is_folklore: values.is_folklore,
                 is_visible: values.is_visible,
             })
-            // Retourner à la page spécifiée ou à la page 1 par défaut
-            const targetPage = returnPage ? `?page=${returnPage}` : ''
-            router.push(`/dashboard/recipes${targetPage}`)
+
+            // Recharger les données de la recette pour mettre à jour l'affichage
+            // Le RecipeForm écoutera automatiquement les changements de defaultValues
+            const [recipeResponse, ingredientsResponse] = await Promise.all([
+                fetch(`/api/recipes?id=${recipeId}`),
+                fetch(`/api/recipes/${recipeId}/ingredients`)
+            ])
+
+            if (recipeResponse.ok && ingredientsResponse.ok) {
+                const recipeData = await recipeResponse.json()
+                const ingredientsData = await ingredientsResponse.json()
+                setRecipe(recipeData.data)
+                setIngredients(ingredientsData.data || [])
+            }
         } finally {
             setSubmitting(false)
         }
@@ -132,6 +174,38 @@ export default function EditRecipePage() {
                             <ArrowLeft className="h-4 w-4" />
                             Retour
                         </Button>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    if (navigation?.previous) {
+                                        // Préserver tous les paramètres de filtrage pour la navigation
+                                        router.push(`/dashboard/recipes/edit/${navigation.previous}?${searchParams.toString()}`)
+                                    }
+                                }}
+                                disabled={!navigation?.previous}
+                                className="flex items-center gap-1"
+                                title="Recette précédente"
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    if (navigation?.next) {
+                                        // Préserver tous les paramètres de filtrage pour la navigation
+                                        router.push(`/dashboard/recipes/edit/${navigation.next}?${searchParams.toString()}`)
+                                    }
+                                }}
+                                disabled={!navigation?.next}
+                                className="flex items-center gap-1"
+                                title="Recette suivante"
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
                         <h1 className="text-2xl font-semibold font-christmas">Modifier la recette</h1>
                     </div>
                     <Button
