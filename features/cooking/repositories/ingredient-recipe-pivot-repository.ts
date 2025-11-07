@@ -1,5 +1,5 @@
 import { BaseRepository } from '@/lib/repositories/base-repository'
-import type { IngredientRecipePivot, Ingredient } from '@/features/cooking/types'
+import type { IngredientRecipePivot, Ingredient, Recipe } from '@/features/cooking/types'
 
 export class IngredientRecipePivotRepository extends BaseRepository<IngredientRecipePivot> {
     constructor(client: any) {
@@ -26,6 +26,18 @@ export class IngredientRecipePivotRepository extends BaseRepository<IngredientRe
 
         // Extraire les objets ingredients depuis les résultats
         return (data ?? []).map((item: any) => item.ingredients).filter(Boolean) as Ingredient[]
+    }
+
+    async findRecipesForIngredient(ingredientId: number): Promise<Recipe[]> {
+        const { data, error } = await this.client
+            .from(this.table)
+            .select('recipe_id, recipes(*)')
+            .eq('ingredient_id', ingredientId)
+
+        if (error) throw error
+
+        // Extraire les objets recipes depuis les résultats
+        return (data ?? []).map((item: any) => item.recipes).filter(Boolean) as Recipe[]
     }
 
     async deleteByRecipeId(recipeId: number): Promise<void> {

@@ -8,6 +8,7 @@ import { ImageUpload } from '@/components/image-upload'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Check, ChevronsUpDown, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { RecipeFormValues, KitchenEquipment, Ingredient } from '@/features/cooking/types'
@@ -306,273 +307,304 @@ export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submit
 
     return (
         <form id={formId} onSubmit={handleSubmit} className="space-y-6">
+            <Tabs defaultValue="info" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="info">Informations</TabsTrigger>
+                    <TabsTrigger value="ingredients">Ingrédients</TabsTrigger>
+                    <TabsTrigger value="preparation">Préparation</TabsTrigger>
+                    <TabsTrigger value="criteria">Critères</TabsTrigger>
+                </TabsList>
 
-            {/* Section Informations générales */}
-            <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-foreground border-b pb-2">Informations générales</h3>
-
-                {/* Options en haut */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                        <label className="flex items-center gap-2 text-sm">
-                            <Checkbox
-                                checked={values.is_folklore}
-                                onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_folklore: Boolean(checked) }))}
-                            />
-                            <span>Recette folklore</span>
-                        </label>
-                        <label className="flex items-center gap-2 text-sm">
-                            <Checkbox
-                                checked={values.is_visible}
-                                onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_visible: Boolean(checked) }))}
-                            />
-                            <span>Visible</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="space-y-1">
-                        <div className="text-xs text-muted-foreground">Titre</div>
-                        <Input
-                            value={values.title}
-                            onChange={(e) => setValues(prev => ({ ...prev, title: e.target.value }))}
-                            placeholder="Titre de la recette"
-                            required
-                        />
-                    </div>
-
-                    <div className="space-y-1">
-                        <div className="text-xs text-muted-foreground">Type de plat</div>
-                        <Select
-                            value={values.dish_type.toString()}
-                            onValueChange={(value) => setValues(prev => ({ ...prev, dish_type: parseInt(value) as DishType }))}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Sélectionner un type de plat" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {DISH_TYPES.map((dishType) => (
-                                    <SelectItem key={dishType.value} value={dishType.value.toString()}>
-                                        {dishType.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-1">
-                        <div className="text-xs text-muted-foreground">Type de quantification</div>
-                        <Select
-                            value={values.quantification_type.toString()}
-                            onValueChange={(value) => setValues(prev => ({ ...prev, quantification_type: parseInt(value) as QuantificationType }))}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Sélectionner un type de quantification" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {QUANTIFICATION_TYPES.map((quantificationType) => (
-                                    <SelectItem key={quantificationType.value} value={quantificationType.value.toString()}>
-                                        {quantificationType.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-1">
-                        <div className="text-xs text-muted-foreground">Image</div>
-                        <ImageUpload
-                            value={values.img_path ?? undefined}
-                            onChange={(url) => setValues(prev => ({ ...prev, img_path: url }))}
-                            bucket="recipes"
-                            ingredientName={values.title}
-                            defaultSize={800}
-                            allowSizeSelection={true}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Section Ingrédients */}
-            <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-foreground border-b pb-2 flex items-center gap-2">
-                    Ingrédients
-                    {syncingIngredients && (
-                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    )}
-                </h3>
-                <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">
-                        Liste des ingrédients
-                    </div>
-                    <div className="flex gap-2 w-full">
-                        <Popover open={ingredientOpen} onOpenChange={setIngredientOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={ingredientOpen}
-                                    className="flex-1 justify-between"
-                                >
-                                    {ingredientInput || "Ajouter un nouvel ingrédient..."}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-full p-0">
-                                <Command>
-                                    <CommandInput
-                                        placeholder="Taper le nom d'un ingrédient..."
-                                        value={ingredientInput}
-                                        onValueChange={setIngredientInput}
-                                    />
-                                    <CommandList>
-                                        <CommandEmpty>
-                                            {searching ? "Recherche en cours..." :
-                                                searchResults.length === 0 && ingredientInput ? "Aucun ingrédient trouvé." :
-                                                    "Tapez pour rechercher des ingrédients..."}
-                                        </CommandEmpty>
-                                        {/* Suggestions d'ingrédients existants uniquement */}
-                                        {searchResults.length > 0 && (
-                                            <CommandGroup heading="Ingrédients disponibles">
-                                                {searchResults.map((ingredient) => (
-                                                    <CommandItem
-                                                        key={ingredient.id}
-                                                        value={ingredient.name.fr}
-                                                        onSelect={() => addIngredient(ingredient)}
-                                                    >
-                                                        <Check
-                                                            className={cn(
-                                                                "mr-2 h-4 w-4",
-                                                                selectedIngredients.find(i => i.id === ingredient.id) ? "opacity-100" : "opacity-0"
-                                                            )}
-                                                        />
-                                                        {ingredient.name.fr}
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        )}
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                        {selectedIngredients.map((ingredient, index) => (
-                            <div key={ingredient.id} className="flex items-center gap-1 bg-muted px-2 py-1 rounded text-sm">
-                                <span>{ingredient.name.fr}</span>
-                                <button
-                                    type="button"
-                                    onClick={() => removeIngredient(index)}
-                                    className="text-muted-foreground hover:text-foreground"
-                                >
-                                    ×
-                                </button>
+                {/* Tab 1: Informations générales */}
+                <TabsContent value="info" className="space-y-6 mt-6">
+                    {/* Section Titre et Image */}
+                    <div className="space-y-4">
+                        <h3 className="text-base font-semibold text-foreground">Informations principales</h3>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">Titre de la recette *</label>
+                                <Input
+                                    value={values.title}
+                                    onChange={(e) => setValues(prev => ({ ...prev, title: e.target.value }))}
+                                    placeholder="Ex: Tarte aux pommes"
+                                    required
+                                    className="text-base"
+                                />
                             </div>
-                        ))}
-                    </div>
-                </div>
 
-                <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Quantités des ingrédients</div>
-                    <Textarea
-                        value={values.ingredients_quantities ?? ''}
-                        onChange={(e) => setValues(prev => ({ ...prev, ingredients_quantities: e.target.value }))}
-                        placeholder="Quantités des ingrédients"
-                        rows={3}
-                    />
-                </div>
-            </div>
-
-            {/* Section Instructions */}
-            <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-foreground border-b pb-2">Instructions</h3>
-                <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Instructions de préparation</div>
-                    <Textarea
-                        value={values.instructions ?? ''}
-                        onChange={(e) => setValues(prev => ({ ...prev, instructions: e.target.value }))}
-                        placeholder="Instructions de la recette"
-                        rows={4}
-                    />
-                </div>
-            </div>
-
-
-            {/* Section Critères */}
-            <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-foreground border-b pb-2">Critères de sélection</h3>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Saisonnalité */}
-                    <div className="space-y-2">
-                        <div className="text-xs text-muted-foreground">Saisonnalité</div>
-                        <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                            {MONTHS.map((month, index) => (
-                                <label key={index} className="flex items-center gap-2 text-sm">
-                                    <Checkbox
-                                        checked={selectedMonths[index]}
-                                        onCheckedChange={() => toggleMonth(index)}
-                                    />
-                                    <span>{month}</span>
-                                </label>
-                            ))}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">Image de la recette</label>
+                                <ImageUpload
+                                    value={values.img_path ?? undefined}
+                                    onChange={(url) => setValues(prev => ({ ...prev, img_path: url }))}
+                                    bucket="recipes"
+                                    ingredientName={values.title}
+                                    defaultSize={800}
+                                    allowSizeSelection={true}
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    {/* Équipements de cuisine */}
-                    <div className="space-y-2">
-                        <div className="text-xs text-muted-foreground">Équipements de cuisine</div>
-                        <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
-                            {kitchenEquipments.map((equipment, index) => (
-                                <label key={equipment.id} className="flex items-center gap-2 text-sm">
-                                    <Checkbox
-                                        checked={selectedEquipments[index]}
-                                        onCheckedChange={() => toggleEquipment(index)}
-                                    />
-                                    <span>{equipment.emoji} {equipment.name.fr}</span>
-                                </label>
-                            ))}
+                    {/* Section Classification */}
+                    <div className="space-y-4">
+                        <h3 className="text-base font-semibold text-foreground">Classification</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">Type de plat *</label>
+                                <Select
+                                    value={values.dish_type.toString()}
+                                    onValueChange={(value) => setValues(prev => ({ ...prev, dish_type: parseInt(value) as DishType }))}
+                                >
+                                    <SelectTrigger className="text-base">
+                                        <SelectValue placeholder="Sélectionner un type de plat" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {DISH_TYPES.map((dishType) => (
+                                            <SelectItem key={dishType.value} value={dishType.value.toString()}>
+                                                {dishType.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">Entrée, plat principal ou dessert</p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">Type de quantification *</label>
+                                <Select
+                                    value={values.quantification_type.toString()}
+                                    onValueChange={(value) => setValues(prev => ({ ...prev, quantification_type: parseInt(value) as QuantificationType }))}
+                                >
+                                    <SelectTrigger className="text-base">
+                                        <SelectValue placeholder="Sélectionner un type de quantification" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {QUANTIFICATION_TYPES.map((quantificationType) => (
+                                            <SelectItem key={quantificationType.value} value={quantificationType.value.toString()}>
+                                                {quantificationType.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">Comment les portions sont calculées</p>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Régimes alimentaires */}
-                    <div className="space-y-2">
-                        <div className="text-xs text-muted-foreground">Régimes alimentaires</div>
-                        <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
-                            {diets?.map((diet, index) => (
-                                <label key={diet.id} className="flex items-center gap-2 text-sm">
-                                    <Checkbox
-                                        checked={selectedDiets[index] || false}
-                                        onCheckedChange={() => toggleDiet(index)}
-                                    />
-                                    <span>{diet.emoji} {diet.title.fr}</span>
-                                </label>
-                            )) || (
-                                    <div className="text-sm text-muted-foreground">Chargement des régimes...</div>
-                                )}
+                    {/* Section Options */}
+                    <div className="space-y-4">
+                        <h3 className="text-base font-semibold text-foreground">Options de publication</h3>
+                        <div className="flex flex-col gap-4 border rounded-lg p-4 bg-muted/30">
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <Checkbox
+                                    checked={values.is_visible}
+                                    onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_visible: Boolean(checked) }))}
+                                />
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium">Visible sur l'application</span>
+                                    <span className="text-xs text-muted-foreground">La recette sera accessible aux utilisateurs</span>
+                                </div>
+                            </label>
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <Checkbox
+                                    checked={values.is_folklore}
+                                    onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_folklore: Boolean(checked) }))}
+                                />
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium">Recette folklore</span>
+                                    <span className="text-xs text-muted-foreground">Marque cette recette comme traditionnelle ou régionale</span>
+                                </div>
+                            </label>
                         </div>
                     </div>
+                </TabsContent>
 
-                    {/* Allergies */}
-                    <div className="space-y-2">
-                        <div className="text-xs text-muted-foreground">Allergies non compatibles</div>
-                        <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
-                            {allergies?.map((allergy, index) => (
-                                <label key={allergy.id} className="flex items-center gap-2 text-sm">
-                                    <Checkbox
-                                        checked={selectedAllergies[index] || false}
-                                        onCheckedChange={() => toggleAllergy(index)}
-                                    />
-                                    <span>{allergy.emoji} {allergy.name.fr}</span>
-                                </label>
-                            )) || (
-                                    <div className="text-sm text-muted-foreground">Chargement des allergies...</div>
-                                )}
+                {/* Tab 2: Ingrédients */}
+                <TabsContent value="ingredients" className="space-y-4 mt-6">
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-semibold text-foreground">Liste des ingrédients</h3>
+                            {syncingIngredients && (
+                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                            )}
+                        </div>
+                        <div className="space-y-1">
+                            <div className="text-xs text-muted-foreground">
+                                Sélectionner les ingrédients
+                            </div>
+                            <div className="flex gap-2 w-full">
+                                <Popover open={ingredientOpen} onOpenChange={setIngredientOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={ingredientOpen}
+                                            className="flex-1 justify-between"
+                                        >
+                                            {ingredientInput || "Ajouter un nouvel ingrédient..."}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-full p-0">
+                                        <Command>
+                                            <CommandInput
+                                                placeholder="Taper le nom d'un ingrédient..."
+                                                value={ingredientInput}
+                                                onValueChange={setIngredientInput}
+                                            />
+                                            <CommandList>
+                                                <CommandEmpty>
+                                                    {searching ? "Recherche en cours..." :
+                                                        searchResults.length === 0 && ingredientInput ? "Aucun ingrédient trouvé." :
+                                                            "Tapez pour rechercher des ingrédients..."}
+                                                </CommandEmpty>
+                                                {searchResults.length > 0 && (
+                                                    <CommandGroup heading="Ingrédients disponibles">
+                                                        {searchResults.map((ingredient) => (
+                                                            <CommandItem
+                                                                key={ingredient.id}
+                                                                value={ingredient.name.fr}
+                                                                onSelect={() => addIngredient(ingredient)}
+                                                            >
+                                                                <Check
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        selectedIngredients.find(i => i.id === ingredient.id) ? "opacity-100" : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {ingredient.name.fr}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                )}
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                {selectedIngredients.map((ingredient, index) => (
+                                    <div key={ingredient.id} className="flex items-center gap-1 bg-muted px-2 py-1 rounded text-sm">
+                                        <span>{ingredient.name.fr}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeIngredient(index)}
+                                            className="text-muted-foreground hover:text-foreground"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <div className="text-xs text-muted-foreground">Quantités des ingrédients</div>
+                            <Textarea
+                                value={values.ingredients_quantities ?? ''}
+                                onChange={(e) => setValues(prev => ({ ...prev, ingredients_quantities: e.target.value }))}
+                                placeholder="Quantités des ingrédients"
+                                rows={6}
+                            />
                         </div>
                     </div>
-                </div>
-            </div>
+                </TabsContent>
 
+                {/* Tab 3: Préparation */}
+                <TabsContent value="preparation" className="space-y-4 mt-6">
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-foreground">Instructions de préparation</h3>
+                        <div className="space-y-1">
+                            <div className="text-xs text-muted-foreground">
+                                Décrivez les étapes de préparation de la recette
+                            </div>
+                            <Textarea
+                                value={values.instructions ?? ''}
+                                onChange={(e) => setValues(prev => ({ ...prev, instructions: e.target.value }))}
+                                placeholder="Instructions de la recette"
+                                rows={12}
+                            />
+                        </div>
+                    </div>
+                </TabsContent>
+
+                {/* Tab 4: Critères de sélection */}
+                <TabsContent value="criteria" className="space-y-4 mt-6">
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-foreground">Critères de sélection</h3>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Saisonnalité */}
+                            <div className="space-y-2">
+                                <div className="text-sm font-medium">Saisonnalité</div>
+                                <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto border rounded-md p-3">
+                                    {MONTHS.map((month, index) => (
+                                        <label key={index} className="flex items-center gap-2 text-sm">
+                                            <Checkbox
+                                                checked={selectedMonths[index]}
+                                                onCheckedChange={() => toggleMonth(index)}
+                                            />
+                                            <span>{month}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Équipements de cuisine */}
+                            <div className="space-y-2">
+                                <div className="text-sm font-medium">Équipements de cuisine</div>
+                                <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto border rounded-md p-3">
+                                    {kitchenEquipments.map((equipment, index) => (
+                                        <label key={equipment.id} className="flex items-center gap-2 text-sm">
+                                            <Checkbox
+                                                checked={selectedEquipments[index]}
+                                                onCheckedChange={() => toggleEquipment(index)}
+                                            />
+                                            <span>{equipment.emoji} {equipment.name.fr}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Régimes alimentaires */}
+                            <div className="space-y-2">
+                                <div className="text-sm font-medium">Régimes alimentaires</div>
+                                <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto border rounded-md p-3">
+                                    {diets?.map((diet, index) => (
+                                        <label key={diet.id} className="flex items-center gap-2 text-sm">
+                                            <Checkbox
+                                                checked={selectedDiets[index] || false}
+                                                onCheckedChange={() => toggleDiet(index)}
+                                            />
+                                            <span>{diet.emoji} {diet.title.fr}</span>
+                                        </label>
+                                    )) || (
+                                            <div className="text-sm text-muted-foreground">Chargement des régimes...</div>
+                                        )}
+                                </div>
+                            </div>
+
+                            {/* Allergies */}
+                            <div className="space-y-2">
+                                <div className="text-sm font-medium">Allergies non compatibles</div>
+                                <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto border rounded-md p-3">
+                                    {allergies?.map((allergy, index) => (
+                                        <label key={allergy.id} className="flex items-center gap-2 text-sm">
+                                            <Checkbox
+                                                checked={selectedAllergies[index] || false}
+                                                onCheckedChange={() => toggleAllergy(index)}
+                                            />
+                                            <span>{allergy.emoji} {allergy.name.fr}</span>
+                                        </label>
+                                    )) || (
+                                            <div className="text-sm text-muted-foreground">Chargement des allergies...</div>
+                                        )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </TabsContent>
+            </Tabs>
         </form>
     )
 }

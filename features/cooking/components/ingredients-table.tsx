@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { MoreHorizontal, Loader2 } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
+import { useRouter } from 'next/navigation'
 import type { Ingredient, IngredientCategory } from '@/features/cooking/types'
 
 type Props = {
@@ -14,6 +15,8 @@ type Props = {
 }
 
 export function IngredientsTable({ ingredients, categories, loading = false, onEdit, onDelete }: Props) {
+    const router = useRouter()
+
     const categoryLabel = (categoryId: number | null) => {
         if (!categoryId) return '-'
         const c = categories.find((x) => Number(x.id) === Number(categoryId))
@@ -72,7 +75,7 @@ export function IngredientsTable({ ingredients, categories, loading = false, onE
                                 <TableRow
                                     key={ing.id}
                                     className="cursor-pointer hover:bg-muted/50"
-                                    onClick={() => onEdit?.(ing)}
+                                    onClick={() => router.push(`/dashboard/ingredients/${ing.id}`)}
                                 >
                                     <TableCell>{ing.id}</TableCell>
                                     <TableCell>{ing.name?.fr ?? ''}</TableCell>
@@ -110,6 +113,7 @@ export function IngredientsTable({ ingredients, categories, loading = false, onE
                                                 </button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/ingredients/${ing.id}`); }}>Voir les détails</DropdownMenuItem>
                                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(ing); }}>Éditer</DropdownMenuItem>
                                                 <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete?.(ing); }}>Supprimer</DropdownMenuItem>
                                             </DropdownMenuContent>
