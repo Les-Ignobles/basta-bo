@@ -18,24 +18,36 @@ export async function POST(request: NextRequest) {
     }
 
     // URL du backend Firebase (à configurer dans .env.local)
-    const firebaseBackendUrl = process.env.FIREBASE_BACKEND_URL || '';
+    const firebaseBackendUrl = process.env.FIREBASE_BACKEND_URL;
+
+    if (!firebaseBackendUrl) {
+      console.error(
+        '[Firebase Backend URL Missing]',
+        'FIREBASE_BACKEND_URL not set in environment variables'
+      );
+      return NextResponse.json(
+        {
+          error:
+            'Firebase backend URL not configured. Please restart the dev server.',
+        },
+        { status: 500 }
+      );
+    }
 
     // Appel à l'API Firebase
-    const res = await fetch(
-      `${firebaseBackendUrl}/v1/cooking/ingredients/search`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name,
-          category_id,
-          is_test_mode: is_test_mode ?? false,
-          namespace_name,
-        }),
-      }
-    );
+    const url = `${firebaseBackendUrl}/v1/cooking/ingredients/search`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name,
+        category_id,
+        is_test_mode: is_test_mode ?? false,
+        namespace_name,
+      }),
+    });
 
     if (!res.ok) {
       const errorText = await res.text();

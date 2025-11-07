@@ -44,7 +44,7 @@ export function FamilySuggestions({
       }
 
       const data = await res.json()
-      const ingredients = data.ingredients || []
+      const ingredients = data.data?.ingredients || []
 
       // Filtrer les ingrédients déjà dans la famille et la famille elle-même
       const filtered = ingredients.filter(
