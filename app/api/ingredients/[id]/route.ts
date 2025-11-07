@@ -3,8 +3,9 @@ import { supabaseServer } from '@/lib/supabase/server-client'
 import { IngredientRepository } from '@/features/cooking/repositories/ingredient-repository'
 import { IngredientRecipePivotRepository } from '@/features/cooking/repositories/ingredient-recipe-pivot-repository'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-    const ingredientId = Number(params.id)
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params
+    const ingredientId = Number(id)
 
     if (isNaN(ingredientId)) {
         return Response.json({ error: 'Invalid ingredient ID' }, { status: 400 })

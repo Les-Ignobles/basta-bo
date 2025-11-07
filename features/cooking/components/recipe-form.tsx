@@ -123,7 +123,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submit
     // Initialize masks from default values
     // On utilise JSON.stringify pour comparer le contenu réel
     useEffect(() => {
-        if (defaultValues?.seasonality_mask !== undefined) {
+        if (defaultValues?.seasonality_mask !== undefined && defaultValues.seasonality_mask !== null) {
             const months = []
             for (let i = 0; i < 12; i++) {
                 months.push((defaultValues.seasonality_mask & (1 << i)) !== 0)

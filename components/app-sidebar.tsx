@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings, BookOpen, FolderOpen, HelpCircle, ChefHat } from "lucide-react"
+import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings, BookOpen, FolderOpen, HelpCircle, ChefHat, Link2, Layers } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/components/auth-provider"
@@ -126,6 +126,22 @@ export function AppSidebar() {
                                         <Link href="/dashboard/admin" className="flex items-center gap-2">
                                             <Settings className="size-4" />
                                             <span>Analyse des Allergies</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/ingredient-relations'}>
+                                        <Link href="/dashboard/ingredient-relations" className="flex items-center gap-2">
+                                            <Link2 className="size-4" />
+                                            <span>Relations Ingrédients</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/ingredient-search-namespaces'}>
+                                        <Link href="/dashboard/ingredient-search-namespaces" className="flex items-center gap-2">
+                                            <Layers className="size-4" />
+                                            <span>Search Namespaces</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>

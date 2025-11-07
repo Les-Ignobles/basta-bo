@@ -49,8 +49,8 @@ export default function IngredientDetailPage() {
                 const categoriesRes = await fetch('/api/ingredient-categories')
                 const categoriesData = await categoriesRes.json()
                 setCategories(categoriesData.data ?? [])
-            } catch (err: any) {
-                setError(err.message ?? 'Erreur de chargement')
+            } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : 'Erreur de chargement')
             } finally {
                 setLoading(false)
             }
@@ -126,14 +126,14 @@ export default function IngredientDetailPage() {
                 </Button>
                 <Button onClick={() => setEditDialogOpen(true)}>
                     <Pencil className="h-4 w-4 mr-2" />
-                    Éditer l'ingrédient
+                    Éditer l&apos;ingrédient
                 </Button>
             </div>
 
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
                 <DialogContent className="sm:max-w-[800px] max-w-[95vw] w-full">
                     <DialogHeader>
-                        <DialogTitle className="font-christmas">Modifier l'ingrédient</DialogTitle>
+                        <DialogTitle className="font-christmas">Modifier l&apos;ingrédient</DialogTitle>
                     </DialogHeader>
                     <IngredientForm
                         onSubmit={handleSubmit}
