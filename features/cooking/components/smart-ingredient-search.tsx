@@ -68,7 +68,7 @@ export function SmartIngredientSearch({
       }
 
       const data = await res.json()
-      const ingredients = data.ingredients || []
+      const ingredients = data.data?.ingredients || []
 
       // Filtrer l'ingrédient exclu
       const filtered = excludeId
