@@ -314,14 +314,12 @@ export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submit
     return (
         <form id={formId} onSubmit={handleSubmit} className="space-y-6">
             <Tabs defaultValue="info" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="info">Informations</TabsTrigger>
-                    <TabsTrigger value="ingredients">Ingrédients</TabsTrigger>
-                    <TabsTrigger value="preparation">Préparation</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="info">Informations & Préparation</TabsTrigger>
                     <TabsTrigger value="criteria">Critères</TabsTrigger>
                 </TabsList>
 
-                {/* Tab 1: Informations générales */}
+                {/* Tab 1: Informations générales, Ingrédients & Préparation */}
                 <TabsContent value="info" className="space-y-6 mt-6">
                     {/* Section Titre et Image */}
                     <div className="space-y-4">
@@ -424,118 +422,122 @@ export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submit
                             </label>
                         </div>
                     </div>
-                </TabsContent>
 
-                {/* Tab 2: Ingrédients */}
-                <TabsContent value="ingredients" className="space-y-4 mt-6">
+                    {/* Section Ingrédients & Préparation côte à côte */}
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <h3 className="text-lg font-semibold text-foreground">Liste des ingrédients</h3>
-                            {syncingIngredients && (
-                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                            )}
-                        </div>
-                        <div className="space-y-1">
-                            <div className="text-xs text-muted-foreground">
-                                Sélectionner les ingrédients
-                            </div>
-                            <div className="flex gap-2 w-full">
-                                <Popover open={ingredientOpen} onOpenChange={setIngredientOpen}>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            role="combobox"
-                                            aria-expanded={ingredientOpen}
-                                            className="flex-1 justify-between"
-                                        >
-                                            {ingredientInput || "Ajouter un nouvel ingrédient..."}
-                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-full p-0">
-                                        <Command>
-                                            <CommandInput
-                                                placeholder="Taper le nom d'un ingrédient..."
-                                                value={ingredientInput}
-                                                onValueChange={setIngredientInput}
-                                            />
-                                            <CommandList>
-                                                <CommandEmpty>
-                                                    {searching ? "Recherche en cours..." :
-                                                        searchResults.length === 0 && ingredientInput ? "Aucun ingrédient trouvé." :
-                                                            "Tapez pour rechercher des ingrédients..."}
-                                                </CommandEmpty>
-                                                {searchResults.length > 0 && (
-                                                    <CommandGroup heading="Ingrédients disponibles">
-                                                        {searchResults.map((ingredient) => (
-                                                            <CommandItem
-                                                                key={ingredient.id}
-                                                                value={ingredient.name.fr}
-                                                                onSelect={() => addIngredient(ingredient)}
-                                                            >
-                                                                <Check
-                                                                    className={cn(
-                                                                        "mr-2 h-4 w-4",
-                                                                        selectedIngredients.find(i => i.id === ingredient.id) ? "opacity-100" : "opacity-0"
-                                                                    )}
-                                                                />
-                                                                {ingredient.name.fr}
-                                                            </CommandItem>
-                                                        ))}
-                                                    </CommandGroup>
-                                                )}
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                {selectedIngredients.map((ingredient, index) => (
-                                    <div key={ingredient.id} className="flex items-center gap-1 bg-muted px-2 py-1 rounded text-sm">
-                                        <span>{ingredient.name.fr}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => removeIngredient(index)}
-                                            className="text-muted-foreground hover:text-foreground"
-                                        >
-                                            ×
-                                        </button>
+                        <h3 className="text-base font-semibold text-foreground">Ingrédients & Préparation</h3>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Colonne Ingrédients */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <h4 className="text-sm font-medium text-foreground">Liste des ingrédients</h4>
+                                    {syncingIngredients && (
+                                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                    )}
+                                </div>
+                                <div className="space-y-1">
+                                    <div className="text-xs text-muted-foreground">
+                                        Sélectionner les ingrédients
                                     </div>
-                                ))}
-                            </div>
-                        </div>
+                                    <div className="flex gap-2 w-full">
+                                        <Popover open={ingredientOpen} onOpenChange={setIngredientOpen}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={ingredientOpen}
+                                                    className="flex-1 justify-between"
+                                                >
+                                                    {ingredientInput || "Ajouter un nouvel ingrédient..."}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-full p-0">
+                                                <Command>
+                                                    <CommandInput
+                                                        placeholder="Taper le nom d'un ingrédient..."
+                                                        value={ingredientInput}
+                                                        onValueChange={setIngredientInput}
+                                                    />
+                                                    <CommandList>
+                                                        <CommandEmpty>
+                                                            {searching ? "Recherche en cours..." :
+                                                                searchResults.length === 0 && ingredientInput ? "Aucun ingrédient trouvé." :
+                                                                    "Tapez pour rechercher des ingrédients..."}
+                                                        </CommandEmpty>
+                                                        {searchResults.length > 0 && (
+                                                            <CommandGroup heading="Ingrédients disponibles">
+                                                                {searchResults.map((ingredient) => (
+                                                                    <CommandItem
+                                                                        key={ingredient.id}
+                                                                        value={ingredient.name.fr}
+                                                                        onSelect={() => addIngredient(ingredient)}
+                                                                    >
+                                                                        <Check
+                                                                            className={cn(
+                                                                                "mr-2 h-4 w-4",
+                                                                                selectedIngredients.find(i => i.id === ingredient.id) ? "opacity-100" : "opacity-0"
+                                                                            )}
+                                                                        />
+                                                                        {ingredient.name.fr}
+                                                                    </CommandItem>
+                                                                ))}
+                                                            </CommandGroup>
+                                                        )}
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {selectedIngredients.map((ingredient, index) => (
+                                            <div key={ingredient.id} className="flex items-center gap-1 bg-muted px-2 py-1 rounded text-sm">
+                                                <span>{ingredient.name.fr}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeIngredient(index)}
+                                                    className="text-muted-foreground hover:text-foreground"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
 
-                        <div className="space-y-1">
-                            <div className="text-xs text-muted-foreground">Quantités des ingrédients</div>
-                            <Textarea
-                                value={values.ingredients_quantities ?? ''}
-                                onChange={(e) => setValues(prev => ({ ...prev, ingredients_quantities: e.target.value }))}
-                                placeholder="Quantités des ingrédients"
-                                rows={6}
-                            />
+                                <div className="space-y-1">
+                                    <div className="text-xs text-muted-foreground">Quantités des ingrédients</div>
+                                    <Textarea
+                                        value={values.ingredients_quantities ?? ''}
+                                        onChange={(e) => setValues(prev => ({ ...prev, ingredients_quantities: e.target.value }))}
+                                        placeholder="Quantités des ingrédients"
+                                        rows={12}
+                                        className="resize-none"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Colonne Préparation */}
+                            <div className="space-y-4">
+                                <h4 className="text-sm font-medium text-foreground">Instructions de préparation</h4>
+                                <div className="space-y-1">
+                                    <div className="text-xs text-muted-foreground">
+                                        Décrivez les étapes de préparation de la recette
+                                    </div>
+                                    <Textarea
+                                        value={values.instructions ?? ''}
+                                        onChange={(e) => setValues(prev => ({ ...prev, instructions: e.target.value }))}
+                                        placeholder="Instructions de la recette"
+                                        rows={20}
+                                        className="resize-none"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </TabsContent>
 
-                {/* Tab 3: Préparation */}
-                <TabsContent value="preparation" className="space-y-4 mt-6">
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-foreground">Instructions de préparation</h3>
-                        <div className="space-y-1">
-                            <div className="text-xs text-muted-foreground">
-                                Décrivez les étapes de préparation de la recette
-                            </div>
-                            <Textarea
-                                value={values.instructions ?? ''}
-                                onChange={(e) => setValues(prev => ({ ...prev, instructions: e.target.value }))}
-                                placeholder="Instructions de la recette"
-                                rows={12}
-                            />
-                        </div>
-                    </div>
-                </TabsContent>
-
-                {/* Tab 4: Critères de sélection */}
+                {/* Tab 2: Critères de sélection */}
                 <TabsContent value="criteria" className="space-y-4 mt-6">
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold text-foreground">Critères de sélection</h3>
