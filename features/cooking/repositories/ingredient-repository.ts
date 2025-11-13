@@ -130,6 +130,39 @@ export class IngredientRepository extends BaseRepository<Ingredient> {
 
         return { data: filteredData, total: actualTotal }
     }
+
+    async findAdjacentIngredients(
+        currentId: number,
+        filters?: {
+            search?: string
+            noImage?: boolean
+            categories?: number[]
+            translationFilter?: 'incomplete' | 'complete'
+        }
+    ): Promise<{ previous: number | null; next: number | null }> {
+        // Réutiliser la logique de filtrage existante en récupérant tous les ingrédients
+        const { data: allIngredients } = await this.findPage({
+            search: filters?.search,
+            page: 1,
+            pageSize: 10000, // Récupérer tous les ingrédients (limite raisonnable)
+            noImage: filters?.noImage,
+            categories: filters?.categories,
+            translationFilter: filters?.translationFilter
+        })
+
+        // Les ingrédients sont déjà triés par nom (ordre alphabétique) par findPage
+        const currentIndex = allIngredients.findIndex(i => i.id === currentId)
+
+        // Si l'ingrédient actuel n'est pas dans la liste filtrée, pas de navigation
+        if (currentIndex === -1) {
+            return { previous: null, next: null }
+        }
+
+        return {
+            previous: currentIndex > 0 ? allIngredients[currentIndex - 1].id : null,
+            next: currentIndex < allIngredients.length - 1 ? allIngredients[currentIndex + 1].id : null
+        }
+    }
 }
 
 

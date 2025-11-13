@@ -5,17 +5,40 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
 import type { Ingredient, IngredientCategory } from '@/features/cooking/types'
+import type { ReadonlyURLSearchParams } from 'next/navigation'
 
 type Props = {
     ingredients: Ingredient[]
     categories: IngredientCategory[]
     loading?: boolean
+    currentPage?: number
+    searchParams?: ReadonlyURLSearchParams
     onEdit?: (ingredient: Ingredient) => void
     onDelete?: (ingredient: Ingredient) => void
 }
 
-export function IngredientsTable({ ingredients, categories, loading = false, onEdit, onDelete }: Props) {
+export function IngredientsTable({ ingredients, categories, loading = false, currentPage, searchParams, onEdit, onDelete }: Props) {
     const router = useRouter()
+
+    const buildIngredientUrl = (ingredientId: number) => {
+        const params = new URLSearchParams()
+        if (currentPage) params.set('returnPage', currentPage.toString())
+
+        // Préserver les filtres de recherche
+        if (searchParams) {
+            const search = searchParams.get('search')
+            const noImage = searchParams.get('noImage')
+            const categories = searchParams.get('categories')
+            const translationFilter = searchParams.get('translationFilter')
+
+            if (search) params.set('search', search)
+            if (noImage) params.set('noImage', noImage)
+            if (categories) params.set('categories', categories)
+            if (translationFilter) params.set('translationFilter', translationFilter)
+        }
+
+        return `/dashboard/ingredients/${ingredientId}?${params.toString()}`
+    }
 
     const categoryLabel = (categoryId: number | null) => {
         if (!categoryId) return '-'
@@ -75,7 +98,7 @@ export function IngredientsTable({ ingredients, categories, loading = false, onE
                                 <TableRow
                                     key={ing.id}
                                     className="cursor-pointer hover:bg-muted/50"
-                                    onClick={() => router.push(`/dashboard/ingredients/${ing.id}`)}
+                                    onClick={() => router.push(buildIngredientUrl(ing.id))}
                                 >
                                     <TableCell>{ing.id}</TableCell>
                                     <TableCell>{ing.name?.fr ?? ''}</TableCell>
@@ -113,7 +136,7 @@ export function IngredientsTable({ ingredients, categories, loading = false, onE
                                                 </button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/ingredients/${ing.id}`); }}>Voir les détails</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(buildIngredientUrl(ing.id)); }}>Voir les détails</DropdownMenuItem>
                                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(ing); }}>Éditer</DropdownMenuItem>
                                                 <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete?.(ing); }}>Supprimer</DropdownMenuItem>
                                             </DropdownMenuContent>

@@ -1,5 +1,6 @@
 "use client"
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
@@ -12,12 +13,25 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ChevronDown, Filter, ChefHat } from 'lucide-react'
 
 export default function IngredientsIndexPage() {
+    const router = useRouter()
+    const searchParams = useSearchParams()
     const [open, setOpen] = useState(false)
     const { fetchIngredients, fetchCategories, ingredients, categories, createIngredient, updateIngredient, loading, editingIngredient, setSearch, setPage, page, pageSize, total, setNoImage, noImage, selectedCategories, setSelectedCategories, translationFilter, setTranslationFilter, setEditingIngredient } = useCookingStore()
 
     useEffect(() => {
         fetchCategories()
     }, [fetchCategories])
+
+    // Synchroniser la page avec l'URL
+    useEffect(() => {
+        const pageParam = searchParams.get('page')
+        if (pageParam && !isNaN(Number(pageParam))) {
+            const pageNumber = Number(pageParam)
+            if (pageNumber !== page) {
+                setPage(pageNumber)
+            }
+        }
+    }, [searchParams, page, setPage])
 
     useEffect(() => {
         fetchIngredients()
@@ -64,6 +78,14 @@ export default function IngredientsIndexPage() {
             })
         }
         setOpen(false)
+    }
+
+    // Fonction pour mettre à jour l'URL avec la page actuelle
+    const updateUrlWithPage = (newPage: number) => {
+        if (newPage === page) return
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('page', newPage.toString())
+        router.push(`/dashboard/ingredients?${params.toString()}`, { scroll: false })
     }
 
     return (
@@ -202,13 +224,13 @@ export default function IngredientsIndexPage() {
                     </label>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                    <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                    <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => updateUrlWithPage(page - 1)}>
                         Précédent
                     </Button>
                     <span className="text-muted-foreground">
                         Page {page} / {totalPages}
                     </span>
-                    <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+                    <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => updateUrlWithPage(page + 1)}>
                         Suivant
                     </Button>
                 </div>
@@ -217,6 +239,8 @@ export default function IngredientsIndexPage() {
                 ingredients={ingredients}
                 categories={categories}
                 loading={loading}
+                currentPage={page}
+                searchParams={searchParams}
                 onEdit={(ing) => {
                     setEditingIngredient(ing)
                     setOpen(true)

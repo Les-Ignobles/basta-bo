@@ -1,11 +1,11 @@
 "use client"
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { ArrowLeft, ChefHat, Loader2, Pencil } from 'lucide-react'
+import { ArrowLeft, ChefHat, Loader2, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Ingredient, Recipe, IngredientCategory } from '@/features/cooking/types'
 import { DISH_TYPE_LABELS } from '@/features/cooking/types'
 import { IngredientForm, type IngredientFormValues } from '@/features/cooking/components/ingredient-form'
@@ -14,7 +14,9 @@ import { useCookingStore } from '@/features/cooking/store'
 export default function IngredientDetailPage() {
     const params = useParams()
     const router = useRouter()
+    const searchParams = useSearchParams()
     const ingredientId = Number(params.id)
+    const returnPage = searchParams.get('returnPage')
 
     const [ingredient, setIngredient] = useState<Ingredient | null>(null)
     const [recipes, setRecipes] = useState<Recipe[]>([])
@@ -22,6 +24,7 @@ export default function IngredientDetailPage() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [editDialogOpen, setEditDialogOpen] = useState(false)
+    const [navigation, setNavigation] = useState<{ previous: number | null; next: number | null } | null>(null)
 
     const { updateIngredient } = useCookingStore()
 
@@ -36,19 +39,44 @@ export default function IngredientDetailPage() {
             try {
                 setLoading(true)
 
-                // Fetch ingredient and recipes
-                const ingredientRes = await fetch(`/api/ingredients/${ingredientId}`)
+                // Construire les paramètres de filtrage depuis l'URL pour la navigation contextuelle
+                const navParams = new URLSearchParams()
+                const search = searchParams.get('search')
+                const noImage = searchParams.get('noImage')
+                const categories = searchParams.get('categories')
+                const translationFilter = searchParams.get('translationFilter')
+
+                if (search) navParams.set('search', search)
+                if (noImage) navParams.set('noImage', noImage)
+                if (categories) navParams.set('categories', categories)
+                if (translationFilter) navParams.set('translationFilter', translationFilter)
+
+                const navigationUrl = navParams.toString()
+                    ? `/api/ingredients/${ingredientId}/navigation?${navParams.toString()}`
+                    : `/api/ingredients/${ingredientId}/navigation`
+
+                // Fetch ingredient, recipes, categories and navigation in parallel
+                const [ingredientRes, categoriesRes, navigationRes] = await Promise.all([
+                    fetch(`/api/ingredients/${ingredientId}`),
+                    fetch('/api/ingredient-categories'),
+                    fetch(navigationUrl)
+                ])
+
                 if (!ingredientRes.ok) {
                     throw new Error('Ingrédient introuvable')
                 }
+
                 const ingredientData = await ingredientRes.json()
                 setIngredient(ingredientData.data.ingredient)
                 setRecipes(ingredientData.data.recipes)
 
-                // Fetch categories
-                const categoriesRes = await fetch('/api/ingredient-categories')
                 const categoriesData = await categoriesRes.json()
                 setCategories(categoriesData.data ?? [])
+
+                if (navigationRes.ok) {
+                    const navigationData = await navigationRes.json()
+                    setNavigation(navigationData.data)
+                }
             } catch (err: unknown) {
                 setError(err instanceof Error ? err.message : 'Erreur de chargement')
             } finally {
@@ -57,7 +85,7 @@ export default function IngredientDetailPage() {
         }
 
         fetchData()
-    }, [ingredientId])
+    }, [ingredientId, searchParams])
 
     const getCategoryLabel = (categoryId: number | null) => {
         if (!categoryId) return 'Aucune catégorie'
@@ -102,7 +130,10 @@ export default function IngredientDetailPage() {
     if (error || !ingredient) {
         return (
             <div className="space-y-4">
-                <Button variant="ghost" onClick={() => router.push('/dashboard/ingredients')}>
+                <Button variant="ghost" onClick={() => {
+                    const targetPage = returnPage ? `?page=${returnPage}` : ''
+                    router.push(`/dashboard/ingredients${targetPage}`)
+                }}>
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Retour aux ingrédients
                 </Button>
@@ -120,10 +151,45 @@ export default function IngredientDetailPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <Button variant="ghost" onClick={() => router.push('/dashboard/ingredients')}>
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Retour aux ingrédients
-                </Button>
+                <div className="flex items-center gap-4">
+                    <Button variant="outline" size="sm" onClick={() => {
+                        const targetPage = returnPage ? `?page=${returnPage}` : ''
+                        router.push(`/dashboard/ingredients${targetPage}`)
+                    }}>
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Retour
+                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                if (navigation?.previous) {
+                                    // Préserver tous les paramètres de filtrage pour la navigation
+                                    router.push(`/dashboard/ingredients/${navigation.previous}?${searchParams.toString()}`)
+                                }
+                            }}
+                            disabled={!navigation?.previous}
+                            title="Ingrédient précédent"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                if (navigation?.next) {
+                                    // Préserver tous les paramètres de filtrage pour la navigation
+                                    router.push(`/dashboard/ingredients/${navigation.next}?${searchParams.toString()}`)
+                                }
+                            }}
+                            disabled={!navigation?.next}
+                            title="Ingrédient suivant"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
                 <Button onClick={() => setEditDialogOpen(true)}>
                     <Pencil className="h-4 w-4 mr-2" />
                     Éditer l&apos;ingrédient
