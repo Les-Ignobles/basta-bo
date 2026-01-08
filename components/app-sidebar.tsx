@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings, BookOpen, FolderOpen, HelpCircle, ChefHat, Link2, Layers } from "lucide-react"
+import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings, BookOpen, FolderOpen, HelpCircle, ChefHat, Link2, Layers, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/components/auth-provider"
@@ -74,6 +74,14 @@ export function AppSidebar() {
                                         <Link href="/dashboard/batch-cooking-sessions/details" className="flex items-center gap-2">
                                             <ChefHat className="size-4" />
                                             <span>Détails Session</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/batch-cooking-session-reviews'}>
+                                        <Link href="/dashboard/batch-cooking-session-reviews" className="flex items-center gap-2">
+                                            <MessageSquare className="size-4" />
+                                            <span>Reviews Sessions</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
