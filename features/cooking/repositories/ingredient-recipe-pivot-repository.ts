@@ -1,5 +1,5 @@
 import { BaseRepository } from '@/lib/repositories/base-repository'
-import type { IngredientRecipePivot, Ingredient, Recipe } from '@/features/cooking/types'
+import type { IngredientRecipePivot, Ingredient, Recipe, StructuredIngredient } from '@/features/cooking/types'
 
 export class IngredientRecipePivotRepository extends BaseRepository<IngredientRecipePivot> {
     constructor(client: any) {
@@ -69,9 +69,39 @@ export class IngredientRecipePivotRepository extends BaseRepository<IngredientRe
         if (ingredientIds.length > 0) {
             const pivots = ingredientIds.map(ingredientId => ({
                 recipe_id: recipeId,
-                ingredient_id: ingredientId
+                ingredient_id: ingredientId,
+                quantity: null,
+                unit: null,
+                is_optional: false
             }))
             await this.createBatch(pivots)
         }
+    }
+
+    async syncRecipeStructuredIngredients(recipeId: number, structuredIngredients: StructuredIngredient[]): Promise<void> {
+        // Supprimer les anciennes relations
+        await this.deleteByRecipeId(recipeId)
+
+        // Créer les nouvelles relations avec données structurées
+        if (structuredIngredients.length > 0) {
+            const pivots = structuredIngredients.map(si => ({
+                recipe_id: recipeId,
+                ingredient_id: si.ingredient_id,
+                quantity: si.quantity,
+                unit: si.unit,
+                is_optional: si.is_optional
+            }))
+            await this.createBatch(pivots)
+        }
+    }
+
+    async findStructuredIngredientsByRecipeId(recipeId: number): Promise<(IngredientRecipePivot & { ingredient: Ingredient })[]> {
+        const { data, error } = await this.client
+            .from(this.table)
+            .select('*, ingredient:ingredients(*)')
+            .eq('recipe_id', recipeId)
+
+        if (error) throw error
+        return (data ?? []) as (IngredientRecipePivot & { ingredient: Ingredient })[]
     }
 }

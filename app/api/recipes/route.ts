@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { supabaseServer } from '@/lib/supabase/server-client'
 import { RecipeRepository } from '@/features/cooking/repositories/recipe-repository'
 import { IngredientRecipePivotRepository } from '@/features/cooking/repositories/ingredient-recipe-pivot-repository'
+import type { StructuredIngredient } from '@/features/cooking/types'
 
 export async function GET(req: NextRequest) {
     const repo = new RecipeRepository(supabaseServer)
@@ -62,16 +63,20 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
     const payload = await req.json()
-    const { id, ingredient_ids, ...recipeData } = payload
+    const { id, ingredient_ids, structured_ingredients, ...recipeData } = payload
 
     const repo = new RecipeRepository(supabaseServer)
     const pivotRepo = new IngredientRecipePivotRepository(supabaseServer)
 
-    // Mettre à jour la recette (sans ingredient_ids qui n'existe pas dans la table recipes)
+    // Mettre à jour la recette (sans ingredient_ids et structured_ingredients qui n'existent pas dans la table recipes)
     const updated = await repo.update(Number(id), recipeData)
 
     // Mettre à jour les relations ingrédients-recette dans la table pivot
-    if (ingredient_ids !== undefined) {
+    if (structured_ingredients && Array.isArray(structured_ingredients) && structured_ingredients.length > 0) {
+        // Utiliser les données structurées si disponibles
+        await pivotRepo.syncRecipeStructuredIngredients(Number(id), structured_ingredients as StructuredIngredient[])
+    } else if (ingredient_ids !== undefined) {
+        // Sinon utiliser la liste simple d'IDs
         await pivotRepo.syncRecipeIngredients(Number(id), ingredient_ids)
     }
 

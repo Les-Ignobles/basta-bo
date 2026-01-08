@@ -22,6 +22,52 @@ export const QUANTIFICATION_TYPE_LABELS = {
     [QuantificationType.PER_UNIT]: 'Par unité'
 } as const
 
+// Unités de mesure pour les ingrédients structurés
+export enum IngredientUnit {
+    // Unités de mesure précises
+    GRAM = 'g',
+    KILOGRAM = 'kg',
+    MILLILITER = 'ml',
+    LITER = 'l',
+
+    // Unités de volume
+    TABLESPOON = 'càs',
+    TEASPOON = 'càc',
+    CUP = 'cup',
+
+    // Unités dénombrables
+    PIECE = 'pièce',
+    SLICE = 'tranche',
+    LEAF = 'feuille',
+    CLOVE = 'gousse',
+
+    // Unités approximatives
+    HANDFUL = 'poignée',
+    PINCH = 'pincée',
+    BUNCH = 'bouquet',
+    BUNDLE = 'botte',
+    SPRIG = 'brin',
+}
+
+export const INGREDIENT_UNIT_LABELS: Record<IngredientUnit, string> = {
+    [IngredientUnit.GRAM]: 'Gramme (g)',
+    [IngredientUnit.KILOGRAM]: 'Kilogramme (kg)',
+    [IngredientUnit.MILLILITER]: 'Millilitre (ml)',
+    [IngredientUnit.LITER]: 'Litre (l)',
+    [IngredientUnit.TABLESPOON]: 'Cuillère à soupe (càs)',
+    [IngredientUnit.TEASPOON]: 'Cuillère à café (càc)',
+    [IngredientUnit.CUP]: 'Tasse (cup)',
+    [IngredientUnit.PIECE]: 'Pièce',
+    [IngredientUnit.SLICE]: 'Tranche',
+    [IngredientUnit.LEAF]: 'Feuille',
+    [IngredientUnit.CLOVE]: 'Gousse',
+    [IngredientUnit.HANDFUL]: 'Poignée',
+    [IngredientUnit.PINCH]: 'Pincée',
+    [IngredientUnit.BUNCH]: 'Bouquet',
+    [IngredientUnit.BUNDLE]: 'Botte',
+    [IngredientUnit.SPRIG]: 'Brin',
+}
+
 export type Ingredient = {
     id: number
     created_at: string
@@ -45,7 +91,7 @@ export type Recipe = {
     created_at: string
     title: string
     ingredients_name: string[]
-    ingredients_quantities: string | null
+    ingredients_quantities: string | null  // Ancien champ textuel (conservé pour comparaison)
     img_path: string | null
     seasonality_mask: number | null
     kitchen_equipments_mask: number | null
@@ -56,6 +102,7 @@ export type Recipe = {
     quantification_type: QuantificationType
     is_folklore: boolean
     is_visible: boolean
+    base_servings: number | null  // Nombre de portions de base pour le calcul des quantités
 }
 
 export type KitchenEquipment = {
@@ -71,7 +118,8 @@ export type RecipeFormValues = {
     title: string
     ingredients_name: string[]
     ingredient_ids?: number[]  // IDs des ingrédients pour la table pivot (ne sera pas stocké dans recipes)
-    ingredients_quantities?: string | null
+    ingredients_quantities?: string | null  // Ancien champ textuel (conservé pour comparaison)
+    structured_ingredients?: StructuredIngredient[]  // Nouveaux ingrédients structurés (quantity, unit, is_optional)
     img_path?: string | null
     seasonality_mask?: number | null
     kitchen_equipments_mask?: number | null
@@ -82,6 +130,7 @@ export type RecipeFormValues = {
     quantification_type: QuantificationType
     is_folklore: boolean
     is_visible: boolean
+    base_servings?: number | null  // Nombre de portions de base
 }
 
 export type PendingIngredient = {
@@ -105,5 +154,15 @@ export type IngredientRecipePivot = {
     ingredient_id: number
     recipe_id: number
     created_at: string
+    quantity: number | null
+    unit: IngredientUnit | null
+    is_optional: boolean
+}
+
+export type StructuredIngredient = {
+    ingredient_id: number
+    quantity: number | null
+    unit: IngredientUnit | null
+    is_optional: boolean
 }
 

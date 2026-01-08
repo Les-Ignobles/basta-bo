@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Check, ChevronsUpDown, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { RecipeFormValues, KitchenEquipment, Ingredient } from '@/features/cooking/types'
-import { DishType, DISH_TYPE_LABELS, QuantificationType, QUANTIFICATION_TYPE_LABELS } from '@/features/cooking/types'
+import type { RecipeFormValues, KitchenEquipment, Ingredient, StructuredIngredient, IngredientRecipePivot } from '@/features/cooking/types'
+import { DishType, DISH_TYPE_LABELS, QuantificationType, QUANTIFICATION_TYPE_LABELS, IngredientUnit, INGREDIENT_UNIT_LABELS } from '@/features/cooking/types'
 import type { Diet } from '@/features/cooking/types/diet'
 import type { Allergy } from '@/features/cooking/types/allergy'
 import { useCookingStore } from '@/features/cooking/store'
@@ -22,6 +22,7 @@ export type { RecipeFormValues }
 type Props = {
     defaultValues?: Partial<RecipeFormValues>
     defaultIngredients?: Ingredient[]
+    defaultStructuredIngredients?: (IngredientRecipePivot & { ingredient: Ingredient })[]
     onSubmit: (values: RecipeFormValues) => Promise<void> | void
     submittingLabel?: string
     kitchenEquipments: KitchenEquipment[]
@@ -46,12 +47,13 @@ const QUANTIFICATION_TYPES = [
     { value: QuantificationType.PER_UNIT, label: QUANTIFICATION_TYPE_LABELS[QuantificationType.PER_UNIT] }
 ]
 
-export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets, allergies, formId }: Props) {
+export function RecipeForm({ defaultValues, defaultIngredients, defaultStructuredIngredients, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets, allergies, formId }: Props) {
     const [values, setValues] = useState<RecipeFormValues>({
         title: '',
         ingredients_name: [],
         ingredient_ids: [],
         ingredients_quantities: '',
+        structured_ingredients: [],
         img_path: '',
         seasonality_mask: null,
         kitchen_equipments_mask: null,
@@ -62,6 +64,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submit
         quantification_type: QuantificationType.PER_PERSON, // Par défaut "par personne"
         is_folklore: false, // Par défaut false
         is_visible: true, // Par défaut true
+        base_servings: null, // Nombre de portions de base
         ...defaultValues,
     } as RecipeFormValues)
     const [loading, setLoading] = useState(false)
@@ -106,6 +109,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submit
                 title: defaultValues.title || '',
                 ingredients_name: defaultValues.ingredients_name || [],
                 ingredients_quantities: defaultValues.ingredients_quantities || '',
+                structured_ingredients: defaultValues.structured_ingredients || [],
                 img_path: defaultValues.img_path || '',
                 seasonality_mask: defaultValues.seasonality_mask || null,
                 kitchen_equipments_mask: defaultValues.kitchen_equipments_mask || null,
@@ -115,10 +119,25 @@ export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submit
                 quantification_type: defaultValues.quantification_type || QuantificationType.PER_PERSON,
                 is_folklore: defaultValues.is_folklore || false,
                 is_visible: defaultValues.is_visible !== undefined ? defaultValues.is_visible : true,
+                base_servings: defaultValues.base_servings ?? null,
             } as RecipeFormValues)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [JSON.stringify(defaultValues)])
+
+    // Initialiser les ingrédients structurés depuis defaultStructuredIngredients (mode édition)
+    useEffect(() => {
+        if (defaultStructuredIngredients && defaultStructuredIngredients.length > 0) {
+            const structuredIngredients: StructuredIngredient[] = defaultStructuredIngredients.map(si => ({
+                ingredient_id: si.ingredient_id,
+                quantity: si.quantity,
+                unit: si.unit,
+                is_optional: si.is_optional
+            }))
+            setValues(prev => ({ ...prev, structured_ingredients: structuredIngredients }))
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [JSON.stringify(defaultStructuredIngredients)])
 
     // Initialize masks from default values
     // On utilise JSON.stringify pour comparer le contenu réel
@@ -311,6 +330,31 @@ export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submit
         setSelectedAllergies(prev => prev.map((selected, i) => i === index ? !selected : selected))
     }
 
+    function updateStructuredIngredient(ingredientId: number, field: keyof StructuredIngredient, value: any) {
+        setValues(prev => {
+            const structured = prev.structured_ingredients || []
+            const existingIndex = structured.findIndex(si => si.ingredient_id === ingredientId)
+
+            if (existingIndex >= 0) {
+                const updated = [...structured]
+                updated[existingIndex] = { ...updated[existingIndex], [field]: value }
+                return { ...prev, structured_ingredients: updated }
+            } else {
+                return {
+                    ...prev,
+                    structured_ingredients: [
+                        ...structured,
+                        { ingredient_id: ingredientId, quantity: null, unit: null, is_optional: false, [field]: value }
+                    ]
+                }
+            }
+        })
+    }
+
+    function getStructuredIngredient(ingredientId: number): StructuredIngredient | undefined {
+        return values.structured_ingredients?.find(si => si.ingredient_id === ingredientId)
+    }
+
     return (
         <form id={formId} onSubmit={handleSubmit} className="space-y-6">
             <Tabs defaultValue="info" className="w-full">
@@ -353,7 +397,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submit
                     {/* Section Classification */}
                     <div className="space-y-4">
                         <h3 className="text-base font-semibold text-foreground">Classification</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-foreground">Type de plat *</label>
                                 <Select
@@ -393,6 +437,22 @@ export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submit
                                 </Select>
                                 <p className="text-xs text-muted-foreground">Comment les portions sont calculées</p>
                             </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">Portions de base</label>
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    value={values.base_servings ?? ''}
+                                    onChange={(e) => setValues(prev => ({
+                                        ...prev,
+                                        base_servings: e.target.value ? parseInt(e.target.value, 10) : null
+                                    }))}
+                                    placeholder="Ex: 4"
+                                    className="text-base"
+                                />
+                                <p className="text-xs text-muted-foreground">Nombre de personnes pour les quantités de base</p>
+                            </div>
                         </div>
                     </div>
 
@@ -423,116 +483,215 @@ export function RecipeForm({ defaultValues, defaultIngredients, onSubmit, submit
                         </div>
                     </div>
 
-                    {/* Section Ingrédients & Préparation côte à côte */}
+                    {/* Section Ingrédients */}
                     <div className="space-y-4">
-                        <h3 className="text-base font-semibold text-foreground">Ingrédients & Préparation</h3>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* Colonne Ingrédients */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                    <h4 className="text-sm font-medium text-foreground">Liste des ingrédients</h4>
-                                    {syncingIngredients && (
-                                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                    )}
-                                </div>
-                                <div className="space-y-1">
-                                    <div className="text-xs text-muted-foreground">
-                                        Sélectionner les ingrédients
-                                    </div>
-                                    <div className="flex gap-2 w-full">
-                                        <Popover open={ingredientOpen} onOpenChange={setIngredientOpen}>
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    role="combobox"
-                                                    aria-expanded={ingredientOpen}
-                                                    className="flex-1 justify-between"
-                                                >
-                                                    {ingredientInput || "Ajouter un nouvel ingrédient..."}
-                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-full p-0">
-                                                <Command>
-                                                    <CommandInput
-                                                        placeholder="Taper le nom d'un ingrédient..."
-                                                        value={ingredientInput}
-                                                        onValueChange={setIngredientInput}
-                                                    />
-                                                    <CommandList>
-                                                        <CommandEmpty>
-                                                            {searching ? "Recherche en cours..." :
-                                                                searchResults.length === 0 && ingredientInput ? "Aucun ingrédient trouvé." :
-                                                                    "Tapez pour rechercher des ingrédients..."}
-                                                        </CommandEmpty>
-                                                        {searchResults.length > 0 && (
-                                                            <CommandGroup heading="Ingrédients disponibles">
-                                                                {searchResults.map((ingredient) => (
-                                                                    <CommandItem
-                                                                        key={ingredient.id}
-                                                                        value={ingredient.name.fr}
-                                                                        onSelect={() => addIngredient(ingredient)}
-                                                                    >
-                                                                        <Check
-                                                                            className={cn(
-                                                                                "mr-2 h-4 w-4",
-                                                                                selectedIngredients.find(i => i.id === ingredient.id) ? "opacity-100" : "opacity-0"
-                                                                            )}
-                                                                        />
-                                                                        {ingredient.name.fr}
-                                                                    </CommandItem>
-                                                                ))}
-                                                            </CommandGroup>
-                                                        )}
-                                                    </CommandList>
-                                                </Command>
-                                            </PopoverContent>
-                                        </Popover>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 mt-2">
-                                        {selectedIngredients.map((ingredient, index) => (
-                                            <div key={ingredient.id} className="flex items-center gap-1 bg-muted px-2 py-1 rounded text-sm">
-                                                <span>{ingredient.name.fr}</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeIngredient(index)}
-                                                    className="text-muted-foreground hover:text-foreground"
-                                                >
-                                                    ×
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-base font-semibold text-foreground">Ingrédients</h3>
+                            {syncingIngredients && (
+                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                            )}
+                        </div>
 
-                                <div className="space-y-1">
-                                    <div className="text-xs text-muted-foreground">Quantités des ingrédients</div>
+                        {/* Sélection d'ingrédients */}
+                        <div className="space-y-1">
+                            <div className="text-xs text-muted-foreground">
+                                Sélectionner les ingrédients
+                            </div>
+                            <div className="flex gap-2 w-full max-w-md">
+                                <Popover open={ingredientOpen} onOpenChange={setIngredientOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={ingredientOpen}
+                                            className="flex-1 justify-between"
+                                        >
+                                            {ingredientInput || "Ajouter un nouvel ingrédient..."}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-full p-0">
+                                        <Command>
+                                            <CommandInput
+                                                placeholder="Taper le nom d'un ingrédient..."
+                                                value={ingredientInput}
+                                                onValueChange={setIngredientInput}
+                                            />
+                                            <CommandList>
+                                                <CommandEmpty>
+                                                    {searching ? "Recherche en cours..." :
+                                                        searchResults.length === 0 && ingredientInput ? "Aucun ingrédient trouvé." :
+                                                            "Tapez pour rechercher des ingrédients..."}
+                                                </CommandEmpty>
+                                                {searchResults.length > 0 && (
+                                                    <CommandGroup heading="Ingrédients disponibles">
+                                                        {searchResults.map((ingredient) => (
+                                                            <CommandItem
+                                                                key={ingredient.id}
+                                                                value={ingredient.name.fr}
+                                                                onSelect={() => addIngredient(ingredient)}
+                                                            >
+                                                                <Check
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        selectedIngredients.find(i => i.id === ingredient.id) ? "opacity-100" : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {ingredient.name.fr}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                )}
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        </div>
+
+                        {/* Comparaison côte à côte : Texte original vs Structuré */}
+                        {selectedIngredients.length > 0 && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* Colonne gauche : Quantités textuelles (original) */}
+                                <div className="space-y-2">
+                                    <div className="text-xs text-muted-foreground font-medium">
+                                        Quantités textuelles (ancien format)
+                                    </div>
                                     <Textarea
                                         value={values.ingredients_quantities ?? ''}
                                         onChange={(e) => setValues(prev => ({ ...prev, ingredients_quantities: e.target.value }))}
-                                        placeholder="Quantités des ingrédients"
-                                        rows={12}
-                                        className="resize-none"
+                                        placeholder="Quantités des ingrédients (format texte)"
+                                        rows={16}
+                                        className="resize-none bg-muted/30 text-muted-foreground text-sm"
                                     />
                                 </div>
-                            </div>
 
-                            {/* Colonne Préparation */}
-                            <div className="space-y-4">
-                                <h4 className="text-sm font-medium text-foreground">Instructions de préparation</h4>
-                                <div className="space-y-1">
-                                    <div className="text-xs text-muted-foreground">
-                                        Décrivez les étapes de préparation de la recette
+                                {/* Colonne droite : Quantités structurées (migration) */}
+                                <div className="space-y-2">
+                                    <div className="text-xs text-muted-foreground font-medium">
+                                        Quantités structurées (normalisées)
                                     </div>
-                                    <Textarea
-                                        value={values.instructions ?? ''}
-                                        onChange={(e) => setValues(prev => ({ ...prev, instructions: e.target.value }))}
-                                        placeholder="Instructions de la recette"
-                                        rows={20}
-                                        className="resize-none"
-                                    />
+                                    <div className="border rounded-md overflow-hidden">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-muted/50">
+                                                <tr>
+                                                    <th className="text-left p-2 font-medium">Ingrédient</th>
+                                                    <th className="text-left p-2 font-medium w-20">Qté</th>
+                                                    <th className="text-left p-2 font-medium w-32">Unité</th>
+                                                    <th className="text-center p-2 font-medium w-14">Opt.</th>
+                                                    <th className="w-8"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {[...selectedIngredients]
+                                                    .sort((a, b) => a.name.fr.localeCompare(b.name.fr, 'fr'))
+                                                    .map((ingredient) => {
+                                                    const structured = getStructuredIngredient(ingredient.id)
+                                                    const originalIndex = selectedIngredients.findIndex(i => i.id === ingredient.id)
+                                                    return (
+                                                        <tr key={ingredient.id} className="border-t">
+                                                            <td className="p-2">
+                                                                <span className="truncate block max-w-[180px]" title={ingredient.name.fr}>
+                                                                    {ingredient.name.fr}
+                                                                </span>
+                                                            </td>
+                                                            <td className="p-1">
+                                                                <Input
+                                                                    type="number"
+                                                                    step="any"
+                                                                    min="0"
+                                                                    value={structured?.quantity ?? ''}
+                                                                    onChange={(e) => updateStructuredIngredient(
+                                                                        ingredient.id,
+                                                                        'quantity',
+                                                                        e.target.value ? parseFloat(e.target.value) : null
+                                                                    )}
+                                                                    className="h-8 text-sm w-full"
+                                                                    placeholder="-"
+                                                                />
+                                                            </td>
+                                                            <td className="p-1">
+                                                                <Select
+                                                                    value={structured?.unit ?? 'none'}
+                                                                    onValueChange={(value) => updateStructuredIngredient(
+                                                                        ingredient.id,
+                                                                        'unit',
+                                                                        value === 'none' ? null : value as IngredientUnit
+                                                                    )}
+                                                                >
+                                                                    <SelectTrigger className="h-8 text-sm">
+                                                                        <SelectValue placeholder="-" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="none">-</SelectItem>
+                                                                        {Object.entries(INGREDIENT_UNIT_LABELS).map(([unit, label]) => (
+                                                                            <SelectItem key={unit} value={unit}>
+                                                                                {label}
+                                                                            </SelectItem>
+                                                                        ))}
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            </td>
+                                                            <td className="p-1 text-center">
+                                                                <Checkbox
+                                                                    checked={structured?.is_optional ?? false}
+                                                                    onCheckedChange={(checked) => updateStructuredIngredient(
+                                                                        ingredient.id,
+                                                                        'is_optional',
+                                                                        Boolean(checked)
+                                                                    )}
+                                                                />
+                                                            </td>
+                                                            <td className="p-1">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeIngredient(originalIndex)}
+                                                                    className="text-muted-foreground hover:text-destructive"
+                                                                >
+                                                                    ×
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
+                        )}
+
+                        {/* Afficher le textarea seul si pas d'ingrédients sélectionnés */}
+                        {selectedIngredients.length === 0 && (
+                            <div className="space-y-1">
+                                <div className="text-xs text-muted-foreground">
+                                    Quantités des ingrédients (sélectionnez des ingrédients pour voir la comparaison)
+                                </div>
+                                <Textarea
+                                    value={values.ingredients_quantities ?? ''}
+                                    onChange={(e) => setValues(prev => ({ ...prev, ingredients_quantities: e.target.value }))}
+                                    placeholder="Quantités des ingrédients"
+                                    rows={8}
+                                    className="resize-none bg-muted/30 text-muted-foreground"
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Section Préparation (en dessous) */}
+                    <div className="space-y-4">
+                        <h3 className="text-base font-semibold text-foreground">Instructions de préparation</h3>
+                        <div className="space-y-1">
+                            <div className="text-xs text-muted-foreground">
+                                Décrivez les étapes de préparation de la recette
+                            </div>
+                            <Textarea
+                                value={values.instructions ?? ''}
+                                onChange={(e) => setValues(prev => ({ ...prev, instructions: e.target.value }))}
+                                placeholder="Instructions de la recette"
+                                rows={12}
+                                className="resize-none"
+                            />
                         </div>
                     </div>
                 </TabsContent>
