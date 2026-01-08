@@ -47,7 +47,7 @@ export async function PATCH(
         }
 
         // Mettre à jour les champs dans la table recipes
-        const recipeUpdate: Record<string, any> = {}
+        const recipeUpdate: Record<string, string[] | number | null> = {}
         if (ingredients_name !== undefined) {
             recipeUpdate.ingredients_name = ingredients_name
         }
