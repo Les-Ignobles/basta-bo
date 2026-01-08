@@ -197,7 +197,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
     }, [JSON.stringify(defaultIngredients)])
 
     // Fonction helper pour synchroniser les ingrédients via l'API (mode édition uniquement)
-    async function syncIngredientsToAPI(ingredientIds: number[], ingredientNames: string[]) {
+    async function syncIngredientsToAPI(ingredientIds: number[], ingredientNames: string[], structuredIngredients?: StructuredIngredient[]) {
         const recipeId = defaultValues?.id
         if (!recipeId) return // Mode création, pas de sync immédiat
 
@@ -208,7 +208,8 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ingredient_ids: ingredientIds,
-                    ingredients_name: ingredientNames
+                    ingredients_name: ingredientNames,
+                    structured_ingredients: structuredIngredients
                 })
             })
             if (!response.ok) {
@@ -283,35 +284,51 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
             const newIngredientIds = newSelectedIngredients.map(i => i.id)
             const newIngredientNames = newSelectedIngredients.map(i => i.name.fr)
 
+            // Ajouter un nouvel ingrédient structuré avec valeurs par défaut
+            const newStructuredIngredient: StructuredIngredient = {
+                ingredient_id: ingredient.id,
+                quantity: null,
+                unit: null,
+                is_optional: false
+            }
+            const newStructuredIngredients = [...(values.structured_ingredients || []), newStructuredIngredient]
+
             setValues(prev => ({
                 ...prev,
                 ingredients_name: newIngredientNames,
-                ingredient_ids: newIngredientIds
+                ingredient_ids: newIngredientIds,
+                structured_ingredients: newStructuredIngredients
             }))
 
             setIngredientInput('')
             setIngredientOpen(false)
 
-            // Synchroniser avec l'API en mode édition
-            await syncIngredientsToAPI(newIngredientIds, newIngredientNames)
+            // Synchroniser avec l'API en mode édition (avec les données structurées)
+            await syncIngredientsToAPI(newIngredientIds, newIngredientNames, newStructuredIngredients)
         }
     }
 
     async function removeIngredient(index: number) {
+        const removedIngredient = selectedIngredients[index]
         const newSelectedIngredients = selectedIngredients.filter((_, i) => i !== index)
         setSelectedIngredients(newSelectedIngredients)
 
         const newIngredientIds = newSelectedIngredients.map(i => i.id)
         const newIngredientNames = newSelectedIngredients.map(i => i.name.fr)
 
+        // Filtrer aussi les structured_ingredients pour retirer l'ingrédient supprimé
+        const newStructuredIngredients = (values.structured_ingredients || [])
+            .filter(si => si.ingredient_id !== removedIngredient.id)
+
         setValues(prev => ({
             ...prev,
             ingredients_name: newIngredientNames,
-            ingredient_ids: newIngredientIds
+            ingredient_ids: newIngredientIds,
+            structured_ingredients: newStructuredIngredients
         }))
 
-        // Synchroniser avec l'API en mode édition
-        await syncIngredientsToAPI(newIngredientIds, newIngredientNames)
+        // Synchroniser avec l'API en mode édition (avec les données structurées)
+        await syncIngredientsToAPI(newIngredientIds, newIngredientNames, newStructuredIngredients)
     }
 
     function toggleMonth(index: number) {
@@ -330,7 +347,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
         setSelectedAllergies(prev => prev.map((selected, i) => i === index ? !selected : selected))
     }
 
-    function updateStructuredIngredient(ingredientId: number, field: keyof StructuredIngredient, value: any) {
+    function updateStructuredIngredient(ingredientId: number, field: keyof StructuredIngredient, value: number | IngredientUnit | boolean | null) {
         setValues(prev => {
             const structured = prev.structured_ingredients || []
             const existingIndex = structured.findIndex(si => si.ingredient_id === ingredientId)
@@ -466,7 +483,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                     onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_visible: Boolean(checked) }))}
                                 />
                                 <div className="flex flex-col">
-                                    <span className="text-sm font-medium">Visible sur l'application</span>
+                                    <span className="text-sm font-medium">Visible sur l&apos;application</span>
                                     <span className="text-xs text-muted-foreground">La recette sera accessible aux utilisateurs</span>
                                 </div>
                             </label>

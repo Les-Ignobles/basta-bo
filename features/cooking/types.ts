@@ -28,6 +28,7 @@ export enum IngredientUnit {
     GRAM = 'g',
     KILOGRAM = 'kg',
     MILLILITER = 'ml',
+    CENTILITER = 'cl',
     LITER = 'l',
 
     // Unités de volume
@@ -53,6 +54,7 @@ export const INGREDIENT_UNIT_LABELS: Record<IngredientUnit, string> = {
     [IngredientUnit.GRAM]: 'Gramme (g)',
     [IngredientUnit.KILOGRAM]: 'Kilogramme (kg)',
     [IngredientUnit.MILLILITER]: 'Millilitre (ml)',
+    [IngredientUnit.CENTILITER]: 'Centilitre (cl)',
     [IngredientUnit.LITER]: 'Litre (l)',
     [IngredientUnit.TABLESPOON]: 'Cuillère à soupe (càs)',
     [IngredientUnit.TEASPOON]: 'Cuillère à café (càc)',
