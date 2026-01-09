@@ -592,6 +592,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                         <table className="w-full text-sm">
                                             <thead className="bg-muted/50">
                                                 <tr>
+                                                    <th className="w-10"></th>
                                                     <th className="text-left p-2 font-medium">Ingrédient</th>
                                                     <th className="text-left p-2 font-medium w-20">Qté</th>
                                                     <th className="text-left p-2 font-medium w-32">Unité</th>
@@ -607,8 +608,21 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                                     const originalIndex = selectedIngredients.findIndex(i => i.id === ingredient.id)
                                                     return (
                                                         <tr key={ingredient.id} className="border-t">
+                                                            <td className="p-1 pl-2">
+                                                                {ingredient.img_path ? (
+                                                                    <img
+                                                                        src={ingredient.img_path}
+                                                                        alt={ingredient.name.fr}
+                                                                        className="w-8 h-8 rounded object-cover"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="w-8 h-8 rounded bg-muted flex items-center justify-center text-muted-foreground text-xs">
+                                                                        ?
+                                                                    </div>
+                                                                )}
+                                                            </td>
                                                             <td className="p-2">
-                                                                <span className="truncate block max-w-[180px]" title={ingredient.name.fr}>
+                                                                <span className="truncate block max-w-[150px]" title={ingredient.name.fr}>
                                                                     {ingredient.name.fr}
                                                                 </span>
                                                             </td>
