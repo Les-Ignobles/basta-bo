@@ -27,7 +27,10 @@ export class BatchCookingSessionReviewRepository extends BaseRepository<BatchCoo
                     id,
                     meal_count,
                     people_count,
-                    recipes
+                    recipes,
+                    cooking_steps,
+                    assembly_steps,
+                    ingredients
                 )
             `, { count: 'exact' })
             .order('created_at', { ascending: false })
