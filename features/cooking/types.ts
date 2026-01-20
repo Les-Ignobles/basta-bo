@@ -105,6 +105,11 @@ export type Recipe = {
     is_folklore: boolean
     is_visible: boolean
     base_servings: number | null  // Nombre de portions de base pour le calcul des quantités
+    // Valeurs nutritionnelles par portion
+    calories_per_serving: number | null
+    proteins_per_serving: number | null
+    fats_per_serving: number | null
+    carbs_per_serving: number | null
 }
 
 export type KitchenEquipment = {
@@ -133,6 +138,11 @@ export type RecipeFormValues = {
     is_folklore: boolean
     is_visible: boolean
     base_servings?: number | null  // Nombre de portions de base
+    // Valeurs nutritionnelles par portion
+    calories_per_serving?: number | null
+    proteins_per_serving?: number | null
+    fats_per_serving?: number | null
+    carbs_per_serving?: number | null
 }
 
 export type PendingIngredient = {

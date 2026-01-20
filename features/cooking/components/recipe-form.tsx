@@ -65,6 +65,11 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
         is_folklore: false, // Par défaut false
         is_visible: true, // Par défaut true
         base_servings: null, // Nombre de portions de base
+        // Valeurs nutritionnelles
+        calories_per_serving: null,
+        proteins_per_serving: null,
+        fats_per_serving: null,
+        carbs_per_serving: null,
         ...defaultValues,
     } as RecipeFormValues)
     const [loading, setLoading] = useState(false)
@@ -120,6 +125,11 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                 is_folklore: defaultValues.is_folklore || false,
                 is_visible: defaultValues.is_visible !== undefined ? defaultValues.is_visible : true,
                 base_servings: defaultValues.base_servings ?? null,
+                // Valeurs nutritionnelles
+                calories_per_serving: defaultValues.calories_per_serving ?? null,
+                proteins_per_serving: defaultValues.proteins_per_serving ?? null,
+                fats_per_serving: defaultValues.fats_per_serving ?? null,
+                carbs_per_serving: defaultValues.carbs_per_serving ?? null,
             } as RecipeFormValues)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -471,6 +481,73 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                 <p className="text-xs text-muted-foreground">Nombre de personnes pour les quantités de base</p>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Section Valeurs nutritionnelles */}
+                    <div className="space-y-4">
+                        <h3 className="text-base font-semibold text-foreground">Valeurs nutritionnelles (par portion)</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">Calories (kcal)</label>
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    value={values.calories_per_serving ?? ''}
+                                    onChange={(e) => setValues(prev => ({
+                                        ...prev,
+                                        calories_per_serving: e.target.value ? parseInt(e.target.value, 10) : null
+                                    }))}
+                                    placeholder="Ex: 450"
+                                    className="text-base"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">Protéines (g)</label>
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    value={values.proteins_per_serving ?? ''}
+                                    onChange={(e) => setValues(prev => ({
+                                        ...prev,
+                                        proteins_per_serving: e.target.value ? parseFloat(e.target.value) : null
+                                    }))}
+                                    placeholder="Ex: 25.5"
+                                    className="text-base"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">Lipides (g)</label>
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    value={values.fats_per_serving ?? ''}
+                                    onChange={(e) => setValues(prev => ({
+                                        ...prev,
+                                        fats_per_serving: e.target.value ? parseFloat(e.target.value) : null
+                                    }))}
+                                    placeholder="Ex: 18.2"
+                                    className="text-base"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-foreground">Glucides (g)</label>
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    value={values.carbs_per_serving ?? ''}
+                                    onChange={(e) => setValues(prev => ({
+                                        ...prev,
+                                        carbs_per_serving: e.target.value ? parseFloat(e.target.value) : null
+                                    }))}
+                                    placeholder="Ex: 42.0"
+                                    className="text-base"
+                                />
+                            </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Valeurs pour une portion standard (basées sur le nombre de portions de base)</p>
                     </div>
 
                     {/* Section Options */}

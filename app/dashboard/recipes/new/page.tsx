@@ -50,6 +50,12 @@ export default function NewRecipePage() {
                 quantification_type: values.quantification_type,
                 is_folklore: values.is_folklore,
                 is_visible: values.is_visible,
+                base_servings: values.base_servings ?? null,
+                // Valeurs nutritionnelles
+                calories_per_serving: values.calories_per_serving ?? null,
+                proteins_per_serving: values.proteins_per_serving ?? null,
+                fats_per_serving: values.fats_per_serving ?? null,
+                carbs_per_serving: values.carbs_per_serving ?? null,
             })
             // Retourner à la page spécifiée ou à la page 1 par défaut
             const targetPage = returnPage ? `?page=${returnPage}` : ''
