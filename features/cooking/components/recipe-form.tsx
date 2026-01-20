@@ -15,6 +15,7 @@ import type { RecipeFormValues, KitchenEquipment, Ingredient, StructuredIngredie
 import { DishType, DISH_TYPE_LABELS, QuantificationType, QUANTIFICATION_TYPE_LABELS, IngredientUnit, INGREDIENT_UNIT_LABELS } from '@/features/cooking/types'
 import type { Diet } from '@/features/cooking/types/diet'
 import type { Allergy } from '@/features/cooking/types/allergy'
+import type { RecipeCategory } from '@/features/cooking/types/recipe-category'
 import { useCookingStore } from '@/features/cooking/store'
 
 export type { RecipeFormValues }
@@ -28,6 +29,9 @@ type Props = {
     kitchenEquipments: KitchenEquipment[]
     diets: Diet[]
     allergies: Allergy[]
+    recipeCategories?: RecipeCategory[]
+    defaultCategoryIds?: number[]
+    onCategoriesChange?: (categoryIds: number[]) => void
     formId?: string
 }
 
@@ -47,7 +51,7 @@ const QUANTIFICATION_TYPES = [
     { value: QuantificationType.PER_UNIT, label: QUANTIFICATION_TYPE_LABELS[QuantificationType.PER_UNIT] }
 ]
 
-export function RecipeForm({ defaultValues, defaultIngredients, defaultStructuredIngredients, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets, allergies, formId }: Props) {
+export function RecipeForm({ defaultValues, defaultIngredients, defaultStructuredIngredients, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets, allergies, recipeCategories, defaultCategoryIds, onCategoriesChange, formId }: Props) {
     const [values, setValues] = useState<RecipeFormValues>({
         title: '',
         ingredients_name: [],
@@ -83,8 +87,16 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
     const [searching, setSearching] = useState(false)
     const [selectedIngredients, setSelectedIngredients] = useState<Ingredient[]>([])
     const [syncingIngredients, setSyncingIngredients] = useState(false)
+    const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>(defaultCategoryIds || [])
 
     const { searchIngredients } = useCookingStore()
+
+    // Initialize categories from defaultCategoryIds
+    useEffect(() => {
+        if (defaultCategoryIds) {
+            setSelectedCategoryIds(defaultCategoryIds)
+        }
+    }, [defaultCategoryIds])
 
     // Recherche d'ingrédients avec debounce
     useEffect(() => {
@@ -355,6 +367,16 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
 
     function toggleAllergy(index: number) {
         setSelectedAllergies(prev => prev.map((selected, i) => i === index ? !selected : selected))
+    }
+
+    function toggleCategory(categoryId: number) {
+        setSelectedCategoryIds(prev => {
+            const newIds = prev.includes(categoryId)
+                ? prev.filter(id => id !== categoryId)
+                : [...prev, categoryId]
+            onCategoriesChange?.(newIds)
+            return newIds
+        })
     }
 
     function updateStructuredIngredient(ingredientId: number, field: keyof StructuredIngredient, value: number | IngredientUnit | boolean | null) {
@@ -876,6 +898,29 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                         )}
                                 </div>
                             </div>
+
+                            {/* Catégories de recettes */}
+                            {recipeCategories && recipeCategories.length > 0 && (
+                                <div className="space-y-2">
+                                    <div className="text-sm font-medium">Catégories de recettes</div>
+                                    <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto border rounded-md p-3">
+                                        {recipeCategories.map((category) => (
+                                            <label key={category.id} className="flex items-center gap-2 text-sm">
+                                                <Checkbox
+                                                    checked={selectedCategoryIds.includes(category.id)}
+                                                    onCheckedChange={() => toggleCategory(category.id)}
+                                                />
+                                                <span
+                                                    className="flex items-center gap-2"
+                                                    style={{ color: category.color }}
+                                                >
+                                                    {category.emoji} {category.name.fr}
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </TabsContent>

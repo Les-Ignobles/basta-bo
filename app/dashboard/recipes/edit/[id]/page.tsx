@@ -4,6 +4,7 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { RecipeForm } from '@/features/cooking/components/recipe-form'
 import type { RecipeFormValues, Recipe, Ingredient, IngredientRecipePivot } from '@/features/cooking/types'
+import type { RecipeCategory } from '@/features/cooking/types/recipe-category'
 import { useRecipeStore } from '@/features/cooking/stores/recipe-store'
 import { ArrowLeft, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -18,6 +19,8 @@ export default function EditRecipePage() {
     const [recipe, setRecipe] = useState<Recipe | null>(null)
     const [ingredients, setIngredients] = useState<Ingredient[]>([])
     const [structuredIngredients, setStructuredIngredients] = useState<(IngredientRecipePivot & { ingredient: Ingredient })[]>([])
+    const [recipeCategories, setRecipeCategories] = useState<RecipeCategory[]>([])
+    const [recipeCategoryIds, setRecipeCategoryIds] = useState<number[]>([])
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
     const [navigation, setNavigation] = useState<{ previous: number | null; next: number | null } | null>(null)
@@ -55,11 +58,13 @@ export default function EditRecipePage() {
                     ? `/api/recipes/${recipeId}/navigation?${navParams.toString()}`
                     : `/api/recipes/${recipeId}/navigation`
 
-                // Charger la recette, les ingrédients et la navigation en parallèle
-                const [recipeResponse, ingredientsResponse, navigationResponse] = await Promise.all([
+                // Charger la recette, les ingrédients, catégories et navigation en parallèle
+                const [recipeResponse, ingredientsResponse, navigationResponse, categoriesResponse, recipeCategoriesResponse] = await Promise.all([
                     fetch(`/api/recipes?id=${recipeId}`),
                     fetch(`/api/recipes/${recipeId}/ingredients`),
-                    fetch(navigationUrl)
+                    fetch(navigationUrl),
+                    fetch('/api/recipe-categories'),
+                    fetch(`/api/recipes/${recipeId}/categories`)
                 ])
 
                 if (recipeResponse.ok && ingredientsResponse.ok) {
@@ -73,6 +78,16 @@ export default function EditRecipePage() {
                     if (navigationResponse.ok) {
                         const navigationData = await navigationResponse.json()
                         setNavigation(navigationData.data)
+                    }
+
+                    if (categoriesResponse.ok) {
+                        const categoriesData = await categoriesResponse.json()
+                        setRecipeCategories(categoriesData.data || [])
+                    }
+
+                    if (recipeCategoriesResponse.ok) {
+                        const recipeCategoriesData = await recipeCategoriesResponse.json()
+                        setRecipeCategoryIds(recipeCategoriesData.data || [])
                     }
                 } else {
                     router.push('/dashboard/recipes')
@@ -89,6 +104,19 @@ export default function EditRecipePage() {
             fetchRecipeData()
         }
     }, [recipeId, router, searchParams])
+
+    async function handleCategoriesChange(categoryIds: number[]) {
+        try {
+            await fetch(`/api/recipes/${recipeId}/categories`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ categoryIds })
+            })
+            setRecipeCategoryIds(categoryIds)
+        } catch (error) {
+            console.error('Failed to update recipe categories:', error)
+        }
+    }
 
     async function handleSubmit(values: RecipeFormValues) {
         setSubmitting(true)
@@ -241,6 +269,9 @@ export default function EditRecipePage() {
                     kitchenEquipments={kitchenEquipments}
                     diets={diets}
                     allergies={allergies}
+                    recipeCategories={recipeCategories}
+                    defaultCategoryIds={recipeCategoryIds}
+                    onCategoriesChange={handleCategoriesChange}
                     submittingLabel="Mise à jour..."
                     formId="recipe-form"
                 />

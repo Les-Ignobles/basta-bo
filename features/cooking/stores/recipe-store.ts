@@ -30,7 +30,7 @@ type RecipeState = {
     fetchKitchenEquipments: () => Promise<void>
     fetchDiets: () => Promise<void>
     fetchAllergies: () => Promise<void>
-    createRecipe: (payload: Omit<RecipeFormValues, 'id'>) => Promise<void>
+    createRecipe: (payload: Omit<RecipeFormValues, 'id'>) => Promise<Recipe | null>
     updateRecipe: (id: number, payload: Partial<RecipeFormValues>) => Promise<void>
     deleteRecipe: (id: number) => Promise<void>
     bulkDeleteRecipes: (ids: number[]) => Promise<void>
@@ -159,14 +159,17 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     async createRecipe(payload) {
         set({ loading: true })
         try {
-            await fetch('/api/recipes', {
+            const response = await fetch('/api/recipes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             })
+            const { data } = await response.json()
             get().fetchRecipes() // Refresh list
+            return data as Recipe
         } catch (error) {
             console.error('Failed to create recipe:', error)
+            return null
         } finally {
             set({ loading: false })
         }

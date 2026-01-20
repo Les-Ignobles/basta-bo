@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { RecipeForm } from '@/features/cooking/components/recipe-form'
 import type { RecipeFormValues } from '@/features/cooking/types'
+import type { RecipeCategory } from '@/features/cooking/types/recipe-category'
 import { useRecipeStore } from '@/features/cooking/stores/recipe-store'
 import { ArrowLeft } from 'lucide-react'
 
@@ -14,11 +15,19 @@ export default function NewRecipePage() {
     const { fetchKitchenEquipments, fetchDiets, fetchAllergies, createRecipe, kitchenEquipments, diets, allergies } = useRecipeStore()
     const [duplicatedRecipe, setDuplicatedRecipe] = useState<RecipeFormValues | null>(null)
     const [loading, setLoading] = useState(false)
+    const [recipeCategories, setRecipeCategories] = useState<RecipeCategory[]>([])
+    const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([])
 
     useEffect(() => {
         fetchKitchenEquipments()
         fetchDiets()
         fetchAllergies()
+
+        // Charger les catégories de recettes
+        fetch('/api/recipe-categories')
+            .then(res => res.json())
+            .then(data => setRecipeCategories(data.data || []))
+            .catch(err => console.error('Failed to fetch recipe categories:', err))
 
         // Vérifier s'il y a une recette dupliquée dans sessionStorage
         const stored = sessionStorage.getItem('duplicatedRecipe')
@@ -36,7 +45,7 @@ export default function NewRecipePage() {
     async function handleSubmit(values: RecipeFormValues) {
         setLoading(true)
         try {
-            await createRecipe({
+            const newRecipe = await createRecipe({
                 title: values.title,
                 ingredients_name: values.ingredients_name,
                 ingredients_quantities: values.ingredients_quantities ?? null,
@@ -57,6 +66,16 @@ export default function NewRecipePage() {
                 fats_per_serving: values.fats_per_serving ?? null,
                 carbs_per_serving: values.carbs_per_serving ?? null,
             })
+
+            // Sauvegarder les catégories si la recette a été créée et des catégories sont sélectionnées
+            if (newRecipe?.id && selectedCategoryIds.length > 0) {
+                await fetch(`/api/recipes/${newRecipe.id}/categories`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ categoryIds: selectedCategoryIds })
+                })
+            }
+
             // Retourner à la page spécifiée ou à la page 1 par défaut
             const targetPage = returnPage ? `?page=${returnPage}` : ''
             router.push(`/dashboard/recipes${targetPage}`)
@@ -103,6 +122,9 @@ export default function NewRecipePage() {
                     kitchenEquipments={kitchenEquipments}
                     diets={diets}
                     allergies={allergies}
+                    recipeCategories={recipeCategories}
+                    defaultCategoryIds={selectedCategoryIds}
+                    onCategoriesChange={setSelectedCategoryIds}
                     submittingLabel="Création..."
                     formId="recipe-form"
                 />
