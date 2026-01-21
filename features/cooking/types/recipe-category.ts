@@ -34,3 +34,15 @@ export interface RecipeOrderItem {
     img_path: string | null
     position: number
 }
+
+/**
+ * Drag state for category drag & drop between zones
+ */
+export type DragZone = 'chip' | 'section'
+
+export interface DragState {
+    activeId: string | null
+    activeCategory: RecipeCategory | null
+    sourceZone: DragZone | null
+    overZone: DragZone | null
+}

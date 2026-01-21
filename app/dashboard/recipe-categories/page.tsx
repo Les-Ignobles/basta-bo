@@ -1,12 +1,12 @@
 "use client"
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { RecipeCategoryForm } from '@/features/cooking/components/recipe-category-form'
-import type { RecipeCategory, RecipeCategoryFormValues } from '@/features/cooking/types/recipe-category'
-import { Pencil, Trash2, Pin, Tags, ListOrdered, GripVertical, Rows3, LayoutGrid } from 'lucide-react'
+import type { RecipeCategory, RecipeCategoryFormValues, DragZone } from '@/features/cooking/types/recipe-category'
+import { Pencil, Trash2, Pin, Tags, ListOrdered, GripVertical, Rows3, LayoutGrid, Plus, X } from 'lucide-react'
 import Link from 'next/link'
 import {
     AlertDialog,
@@ -26,6 +26,10 @@ import {
     useSensor,
     useSensors,
     DragEndEvent,
+    DragStartEvent,
+    DragOverEvent,
+    useDroppable,
+    DragOverlay,
 } from '@dnd-kit/core'
 import {
     arrayMove,
@@ -36,16 +40,66 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
-// Sortable Chip Item
+// Helper functions for drag IDs
+function getZoneFromId(id: string | number): DragZone | null {
+    const idStr = String(id)
+    if (idStr.startsWith('chip-')) return 'chip'
+    if (idStr.startsWith('section-')) return 'section'
+    return null
+}
+
+// Droppable Zone Wrapper
+function DroppableZone({
+    id,
+    children,
+    isOver,
+    className = '',
+}: {
+    id: string
+    children: React.ReactNode
+    isOver?: boolean
+    className?: string
+}) {
+    const { setNodeRef, isOver: dropIsOver } = useDroppable({ id })
+    const highlighted = isOver ?? dropIsOver
+
+    return (
+        <div
+            ref={setNodeRef}
+            className={`${className} ${highlighted ? 'ring-2 ring-primary ring-offset-2 bg-primary/5' : ''} transition-all duration-200 rounded-lg`}
+        >
+            {children}
+        </div>
+    )
+}
+
+// Sortable Chip Item with remove action
 function SortableChipItem({
     category,
     onEdit,
-    disabled
+    onRemove,
+    onDuplicateToSection,
+    disabled,
+    isDragOverlay = false,
 }: {
     category: RecipeCategory
     onEdit: (category: RecipeCategory) => void
+    onRemove?: (category: RecipeCategory) => void
+    onDuplicateToSection?: (category: RecipeCategory) => void
     disabled?: boolean
+    isDragOverlay?: boolean
 }) {
     const {
         attributes,
@@ -56,20 +110,23 @@ function SortableChipItem({
         isDragging,
     } = useSortable({ id: `chip-${category.id}`, disabled })
 
-    const style = {
+    const style = isDragOverlay ? {} : {
         transform: CSS.Transform.toString(transform),
         transition,
     }
 
+    const canDuplicate = onDuplicateToSection && !category.display_as_section
+
     return (
         <div
-            ref={setNodeRef}
+            ref={!isDragOverlay ? setNodeRef : undefined}
             style={style}
             className={`relative flex flex-col items-center justify-center p-4 rounded-xl border-2 min-w-[120px] cursor-pointer group ${
-                isDragging ? 'opacity-50 shadow-lg z-50' : ''
-            } ${disabled ? 'opacity-60' : ''}`}
-            onClick={() => onEdit(category)}
+                isDragging && !isDragOverlay ? 'opacity-30' : ''
+            } ${isDragOverlay ? 'shadow-lg ring-2 ring-primary' : ''} ${disabled ? 'opacity-60' : ''} bg-background`}
+            onClick={() => !isDragOverlay && onEdit(category)}
         >
+            {/* Drag handle */}
             <button
                 type="button"
                 className={`absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity touch-none ${disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
@@ -79,6 +136,41 @@ function SortableChipItem({
             >
                 <GripVertical className="h-4 w-4 text-muted-foreground" />
             </button>
+
+            {/* Remove button */}
+            {onRemove && !isDragOverlay && (
+                <button
+                    type="button"
+                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded"
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        onRemove(category)
+                    }}
+                    title="Retirer des chips"
+                >
+                    <X className="h-3 w-3 text-destructive" />
+                </button>
+            )}
+
+            {/* Duplicate action menu */}
+            {canDuplicate && !isDragOverlay && (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            type="button"
+                            className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded text-xs"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <Plus className="h-3 w-3" />
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => onDuplicateToSection?.(category)}>
+                            Ajouter aussi comme section
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )}
 
             <div
                 className="w-16 h-16 rounded-lg flex items-center justify-center text-3xl mb-2"
@@ -92,15 +184,21 @@ function SortableChipItem({
     )
 }
 
-// Sortable Section Item
+// Sortable Section Item with remove action
 function SortableSectionItem({
     category,
     onEdit,
-    disabled
+    onRemove,
+    onDuplicateToChip,
+    disabled,
+    isDragOverlay = false,
 }: {
     category: RecipeCategory
     onEdit: (category: RecipeCategory) => void
+    onRemove?: (category: RecipeCategory) => void
+    onDuplicateToChip?: (category: RecipeCategory) => void
     disabled?: boolean
+    isDragOverlay?: boolean
 }) {
     const {
         attributes,
@@ -111,19 +209,21 @@ function SortableSectionItem({
         isDragging,
     } = useSortable({ id: `section-${category.id}`, disabled })
 
-    const style = {
+    const style = isDragOverlay ? {} : {
         transform: CSS.Transform.toString(transform),
         transition,
     }
 
+    const canDuplicate = onDuplicateToChip && !category.display_as_chip
+
     return (
         <div
-            ref={setNodeRef}
+            ref={!isDragOverlay ? setNodeRef : undefined}
             style={style}
-            className={`flex items-center gap-3 p-4 bg-background border rounded-lg cursor-pointer group ${
-                isDragging ? 'opacity-50 shadow-lg z-50' : ''
-            } ${disabled ? 'opacity-60' : ''}`}
-            onClick={() => onEdit(category)}
+            className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer group ${
+                isDragging && !isDragOverlay ? 'opacity-30' : ''
+            } ${isDragOverlay ? 'shadow-lg ring-2 ring-primary' : ''} ${disabled ? 'opacity-60' : ''} bg-background`}
+            onClick={() => !isDragOverlay && onEdit(category)}
         >
             <button
                 type="button"
@@ -160,6 +260,26 @@ function SortableSectionItem({
                         Tag
                     </Badge>
                 )}
+                {category.display_as_chip && (
+                    <Badge variant="outline" className="text-xs">Chip</Badge>
+                )}
+
+                {/* Duplicate action */}
+                {canDuplicate && !isDragOverlay && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onDuplicateToChip?.(category)
+                        }}
+                        title="Ajouter aussi comme chip"
+                    >
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                )}
+
                 <Link
                     href={`/dashboard/recipe-categories/${category.id}/order`}
                     onClick={(e) => e.stopPropagation()}
@@ -168,8 +288,94 @@ function SortableSectionItem({
                         <ListOrdered className="h-4 w-4" />
                     </Button>
                 </Link>
+
+                {/* Remove button */}
+                {onRemove && !isDragOverlay && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onRemove(category)
+                        }}
+                        title="Retirer des sections"
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                )}
             </div>
         </div>
+    )
+}
+
+// Add Category Popover
+function AddCategoryPopover({
+    zone,
+    availableCategories,
+    onSelect,
+    disabled,
+}: {
+    zone: 'chip' | 'section'
+    availableCategories: RecipeCategory[]
+    onSelect: (category: RecipeCategory) => void
+    disabled?: boolean
+}) {
+    const [open, setOpen] = useState(false)
+
+    const handleSelect = (category: RecipeCategory) => {
+        onSelect(category)
+        setOpen(false)
+    }
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <button
+                    type="button"
+                    disabled={disabled}
+                    className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed min-w-[120px] ${
+                        zone === 'chip' ? 'min-h-[140px]' : 'h-full'
+                    } hover:border-primary hover:bg-primary/5 transition-colors ${
+                        disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    }`}
+                >
+                    <Plus className="h-8 w-8 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground mt-2">Ajouter</span>
+                </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-2" align="start">
+                <div className="space-y-1">
+                    <p className="text-sm font-medium px-2 py-1">
+                        Ajouter comme {zone === 'chip' ? 'chip' : 'section'}
+                    </p>
+                    {availableCategories.length === 0 ? (
+                        <p className="text-sm text-muted-foreground px-2 py-4 text-center">
+                            Toutes les catégories sont déjà affichées
+                        </p>
+                    ) : (
+                        <div className="max-h-[200px] overflow-y-auto">
+                            {availableCategories.map((category) => (
+                                <button
+                                    key={category.id}
+                                    type="button"
+                                    className="w-full flex items-center gap-2 px-2 py-2 hover:bg-muted rounded-md transition-colors text-left"
+                                    onClick={() => handleSelect(category)}
+                                >
+                                    <span
+                                        className="w-8 h-8 rounded flex items-center justify-center text-lg"
+                                        style={{ backgroundColor: category.color + '20' }}
+                                    >
+                                        {category.emoji}
+                                    </span>
+                                    <span className="text-sm">{category.name.fr}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </PopoverContent>
+        </Popover>
     )
 }
 
@@ -259,6 +465,10 @@ export default function RecipeCategoriesPage() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [categoryToDelete, setCategoryToDelete] = useState<RecipeCategory | null>(null)
 
+    // Drag state
+    const [activeId, setActiveId] = useState<string | null>(null)
+    const [overZone, setOverZone] = useState<DragZone | null>(null)
+
     const fetchCategories = async () => {
         try {
             setLoading(true)
@@ -277,13 +487,17 @@ export default function RecipeCategoriesPage() {
     }, [])
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
     )
 
-    // Filter categories
+    // Computed categories
     const chipCategories = categories
         .filter(c => c.display_as_chip)
         .sort((a, b) => a.chip_order - b.chip_order)
@@ -292,72 +506,301 @@ export default function RecipeCategoriesPage() {
         .filter(c => c.display_as_section)
         .sort((a, b) => a.section_order - b.section_order)
 
-    const handleChipDragEnd = async (event: DragEndEvent) => {
-        const { active, over } = event
-        if (!over || active.id === over.id) return
+    const availableForChips = categories
+        .filter(c => !c.display_as_chip)
+        .sort((a, b) => a.name.fr.localeCompare(b.name.fr))
 
-        const oldIndex = chipCategories.findIndex(c => `chip-${c.id}` === active.id)
-        const newIndex = chipCategories.findIndex(c => `chip-${c.id}` === over.id)
+    const availableForSections = categories
+        .filter(c => !c.display_as_section)
+        .sort((a, b) => a.name.fr.localeCompare(b.name.fr))
 
-        const reordered = arrayMove(chipCategories, oldIndex, newIndex)
+    // Get active category for drag overlay
+    const activeCategory = activeId
+        ? categories.find(c => `chip-${c.id}` === activeId || `section-${c.id}` === activeId)
+        : null
+    const sourceZone = activeId ? getZoneFromId(activeId) : null
 
-        // Update local state immediately
-        const updatedCategories = categories.map(cat => {
-            const newOrder = reordered.findIndex(c => c.id === cat.id)
-            if (newOrder !== -1) {
-                return { ...cat, chip_order: newOrder + 1 }
-            }
-            return cat
-        })
-        setCategories(updatedCategories)
-
-        // Save to backend
+    // Save order helper with optimistic update
+    const saveOrder = useCallback(async (
+        updates: { id: number; chip_order?: number; section_order?: number }[]
+    ) => {
         setSaving(true)
         try {
-            for (let i = 0; i < reordered.length; i++) {
+            for (const update of updates) {
                 await fetch('/api/recipe-categories', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: reordered[i].id, chip_order: i + 1 }),
+                    body: JSON.stringify(update),
                 })
             }
+        } catch (error) {
+            console.error('Error saving order:', error)
+            // Refetch to restore correct state
+            fetchCategories()
         } finally {
             setSaving(false)
+        }
+    }, [])
+
+    // Update category helper
+    const updateCategory = useCallback(async (
+        id: number,
+        updates: Partial<RecipeCategoryFormValues>
+    ) => {
+        setSaving(true)
+        try {
+            await fetch('/api/recipe-categories', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, ...updates }),
+            })
+        } catch (error) {
+            console.error('Error updating category:', error)
+            fetchCategories()
+        } finally {
+            setSaving(false)
+        }
+    }, [])
+
+    // Drag handlers
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveId(String(event.active.id))
+        const zone = getZoneFromId(event.active.id)
+        setOverZone(zone)
+    }
+
+    const handleDragOver = (event: DragOverEvent) => {
+        const { over } = event
+        if (!over) {
+            setOverZone(null)
+            return
+        }
+
+        const overId = String(over.id)
+        if (overId === 'chips-zone') {
+            setOverZone('chip')
+        } else if (overId === 'sections-zone') {
+            setOverZone('section')
+        } else {
+            setOverZone(getZoneFromId(over.id))
         }
     }
 
-    const handleSectionDragEnd = async (event: DragEndEvent) => {
+    const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event
-        if (!over || active.id === over.id) return
 
-        const oldIndex = sectionCategories.findIndex(c => `section-${c.id}` === active.id)
-        const newIndex = sectionCategories.findIndex(c => `section-${c.id}` === over.id)
+        setActiveId(null)
+        setOverZone(null)
 
-        const reordered = arrayMove(sectionCategories, oldIndex, newIndex)
+        if (!over || !sourceZone || !activeCategory) return
 
-        // Update local state immediately
-        const updatedCategories = categories.map(cat => {
-            const newOrder = reordered.findIndex(c => c.id === cat.id)
-            if (newOrder !== -1) {
-                return { ...cat, section_order: newOrder + 1 }
+        const overId = String(over.id)
+        let targetZone: DragZone | null = null
+
+        if (overId === 'chips-zone') {
+            targetZone = 'chip'
+        } else if (overId === 'sections-zone') {
+            targetZone = 'section'
+        } else {
+            targetZone = getZoneFromId(over.id)
+        }
+
+        if (!targetZone) return
+
+        // Cross-zone drag: move category from one zone to another
+        if (sourceZone !== targetZone) {
+            // If already in target zone, just remove from source
+            if (targetZone === 'chip' && activeCategory.display_as_chip) {
+                // Already a chip, do nothing
+                return
             }
-            return cat
-        })
+            if (targetZone === 'section' && activeCategory.display_as_section) {
+                // Already a section, just remove from chips
+                const updatedCategories = categories.map(c =>
+                    c.id === activeCategory.id
+                        ? { ...c, display_as_chip: false }
+                        : c
+                )
+                setCategories(updatedCategories)
+                await updateCategory(activeCategory.id, { display_as_chip: false })
+                return
+            }
+
+            // Move to new zone
+            const maxOrder = targetZone === 'chip'
+                ? Math.max(0, ...chipCategories.map(c => c.chip_order))
+                : Math.max(0, ...sectionCategories.map(c => c.section_order))
+
+            const newOrder = maxOrder + 1
+
+            const updatedCategories = categories.map(c =>
+                c.id === activeCategory.id
+                    ? {
+                        ...c,
+                        display_as_chip: targetZone === 'chip',
+                        display_as_section: targetZone === 'section',
+                        chip_order: targetZone === 'chip' ? newOrder : c.chip_order,
+                        section_order: targetZone === 'section' ? newOrder : c.section_order,
+                    }
+                    : c
+            )
+            setCategories(updatedCategories)
+
+            await updateCategory(activeCategory.id, {
+                display_as_chip: targetZone === 'chip',
+                display_as_section: targetZone === 'section',
+                chip_order: targetZone === 'chip' ? newOrder : undefined,
+                section_order: targetZone === 'section' ? newOrder : undefined,
+            })
+            return
+        }
+
+        // Same-zone reorder
+        if (active.id === over.id) return
+
+        if (sourceZone === 'chip') {
+            const oldIndex = chipCategories.findIndex(c => `chip-${c.id}` === active.id)
+            const newIndex = chipCategories.findIndex(c => `chip-${c.id}` === over.id)
+
+            if (oldIndex !== -1 && newIndex !== -1) {
+                const reordered = arrayMove(chipCategories, oldIndex, newIndex)
+
+                // Optimistic update
+                const updatedCategories = categories.map(cat => {
+                    const newOrder = reordered.findIndex(c => c.id === cat.id)
+                    if (newOrder !== -1) {
+                        return { ...cat, chip_order: newOrder + 1 }
+                    }
+                    return cat
+                })
+                setCategories(updatedCategories)
+
+                // Save to backend
+                await saveOrder(reordered.map((c, i) => ({ id: c.id, chip_order: i + 1 })))
+            }
+        } else if (sourceZone === 'section') {
+            const oldIndex = sectionCategories.findIndex(c => `section-${c.id}` === active.id)
+            const newIndex = sectionCategories.findIndex(c => `section-${c.id}` === over.id)
+
+            if (oldIndex !== -1 && newIndex !== -1) {
+                const reordered = arrayMove(sectionCategories, oldIndex, newIndex)
+
+                // Optimistic update
+                const updatedCategories = categories.map(cat => {
+                    const newOrder = reordered.findIndex(c => c.id === cat.id)
+                    if (newOrder !== -1) {
+                        return { ...cat, section_order: newOrder + 1 }
+                    }
+                    return cat
+                })
+                setCategories(updatedCategories)
+
+                // Save to backend
+                await saveOrder(reordered.map((c, i) => ({ id: c.id, section_order: i + 1 })))
+            }
+        }
+    }
+
+    const handleDragCancel = () => {
+        setActiveId(null)
+        setOverZone(null)
+    }
+
+    // Add handlers
+    const handleAddToChips = async (category: RecipeCategory) => {
+        const maxOrder = Math.max(0, ...chipCategories.map(c => c.chip_order))
+        const newOrder = maxOrder + 1
+
+        const updatedCategories = categories.map(c =>
+            c.id === category.id
+                ? { ...c, display_as_chip: true, chip_order: newOrder }
+                : c
+        )
         setCategories(updatedCategories)
 
-        // Save to backend
-        setSaving(true)
-        try {
-            for (let i = 0; i < reordered.length; i++) {
-                await fetch('/api/recipe-categories', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: reordered[i].id, section_order: i + 1 }),
-                })
-            }
-        } finally {
-            setSaving(false)
-        }
+        await updateCategory(category.id, {
+            display_as_chip: true,
+            chip_order: newOrder,
+        })
+    }
+
+    const handleAddToSections = async (category: RecipeCategory) => {
+        const maxOrder = Math.max(0, ...sectionCategories.map(c => c.section_order))
+        const newOrder = maxOrder + 1
+
+        const updatedCategories = categories.map(c =>
+            c.id === category.id
+                ? { ...c, display_as_section: true, section_order: newOrder }
+                : c
+        )
+        setCategories(updatedCategories)
+
+        await updateCategory(category.id, {
+            display_as_section: true,
+            section_order: newOrder,
+        })
+    }
+
+    // Remove handlers
+    const handleRemoveFromChips = async (category: RecipeCategory) => {
+        const updatedCategories = categories.map(c =>
+            c.id === category.id
+                ? { ...c, display_as_chip: false }
+                : c
+        )
+        setCategories(updatedCategories)
+
+        await updateCategory(category.id, { display_as_chip: false })
+    }
+
+    const handleRemoveFromSections = async (category: RecipeCategory) => {
+        const updatedCategories = categories.map(c =>
+            c.id === category.id
+                ? { ...c, display_as_section: false }
+                : c
+        )
+        setCategories(updatedCategories)
+
+        await updateCategory(category.id, { display_as_section: false })
+    }
+
+    // Duplicate handlers
+    const handleDuplicateToSection = async (category: RecipeCategory) => {
+        if (category.display_as_section) return
+
+        const maxOrder = Math.max(0, ...sectionCategories.map(c => c.section_order))
+        const newOrder = maxOrder + 1
+
+        const updatedCategories = categories.map(c =>
+            c.id === category.id
+                ? { ...c, display_as_section: true, section_order: newOrder }
+                : c
+        )
+        setCategories(updatedCategories)
+
+        await updateCategory(category.id, {
+            display_as_section: true,
+            section_order: newOrder,
+        })
+    }
+
+    const handleDuplicateToChip = async (category: RecipeCategory) => {
+        if (category.display_as_chip) return
+
+        const maxOrder = Math.max(0, ...chipCategories.map(c => c.chip_order))
+        const newOrder = maxOrder + 1
+
+        const updatedCategories = categories.map(c =>
+            c.id === category.id
+                ? { ...c, display_as_chip: true, chip_order: newOrder }
+                : c
+        )
+        setCategories(updatedCategories)
+
+        await updateCategory(category.id, {
+            display_as_chip: true,
+            chip_order: newOrder,
+        })
     }
 
     const handleSubmit = async (values: RecipeCategoryFormValues) => {
@@ -444,9 +887,9 @@ export default function RecipeCategoriesPage() {
                         {categories.length} catégorie{categories.length > 1 ? 's' : ''}
                     </Badge>
                     {saving && (
-                        <span className="text-sm text-muted-foreground animate-pulse">
+                        <Badge variant="outline" className="animate-pulse">
                             Sauvegarde...
-                        </span>
+                        </Badge>
                     )}
                 </div>
                 <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -468,7 +911,7 @@ export default function RecipeCategoriesPage() {
                 </Dialog>
             </div>
 
-            {/* Aperçu style App */}
+            {/* Aperçu style App with Global DndContext */}
             <Card>
                 <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
@@ -476,20 +919,27 @@ export default function RecipeCategoriesPage() {
                         Aperçu catalogue (style app)
                     </CardTitle>
                     <CardDescription>
-                        Glissez-déposez pour réorganiser l&apos;ordre d&apos;affichage
+                        Glissez-déposez pour réorganiser ou déplacer entre zones
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {/* Chips Section */}
-                    {chipCategories.length > 0 && (
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragStart={handleDragStart}
+                        onDragOver={handleDragOver}
+                        onDragEnd={handleDragEnd}
+                        onDragCancel={handleDragCancel}
+                    >
+                        {/* Chips Section */}
                         <div className="space-y-3">
                             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                                 Chips (Header du catalogue)
                             </h3>
-                            <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={handleChipDragEnd}
+                            <DroppableZone
+                                id="chips-zone"
+                                isOver={overZone === 'chip' && sourceZone !== 'chip'}
+                                className="min-h-[160px] p-2"
                             >
                                 <SortableContext
                                     items={chipCategories.map(c => `chip-${c.id}`)}
@@ -501,25 +951,36 @@ export default function RecipeCategoriesPage() {
                                                 key={category.id}
                                                 category={category}
                                                 onEdit={handleEdit}
+                                                onRemove={handleRemoveFromChips}
+                                                onDuplicateToSection={handleDuplicateToSection}
                                                 disabled={saving}
                                             />
                                         ))}
+                                        <AddCategoryPopover
+                                            zone="chip"
+                                            availableCategories={availableForChips}
+                                            onSelect={handleAddToChips}
+                                            disabled={saving}
+                                        />
                                     </div>
                                 </SortableContext>
-                            </DndContext>
+                                {chipCategories.length === 0 && (
+                                    <div className="flex items-center justify-center h-[120px] text-muted-foreground text-sm">
+                                        Glissez une catégorie ici ou cliquez sur + pour ajouter
+                                    </div>
+                                )}
+                            </DroppableZone>
                         </div>
-                    )}
 
-                    {/* Sections */}
-                    {sectionCategories.length > 0 && (
+                        {/* Sections */}
                         <div className="space-y-3">
                             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                                 Sections (Page catalogue)
                             </h3>
-                            <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={handleSectionDragEnd}
+                            <DroppableZone
+                                id="sections-zone"
+                                isOver={overZone === 'section' && sourceZone !== 'section'}
+                                className="min-h-[100px] p-2"
                             >
                                 <SortableContext
                                     items={sectionCategories.map(c => `section-${c.id}`)}
@@ -531,22 +992,47 @@ export default function RecipeCategoriesPage() {
                                                 key={category.id}
                                                 category={category}
                                                 onEdit={handleEdit}
+                                                onRemove={handleRemoveFromSections}
+                                                onDuplicateToChip={handleDuplicateToChip}
                                                 disabled={saving}
                                             />
                                         ))}
                                     </div>
                                 </SortableContext>
-                            </DndContext>
+                                <div className="mt-2">
+                                    <AddCategoryPopover
+                                        zone="section"
+                                        availableCategories={availableForSections}
+                                        onSelect={handleAddToSections}
+                                        disabled={saving}
+                                    />
+                                </div>
+                                {sectionCategories.length === 0 && (
+                                    <div className="flex items-center justify-center h-[60px] text-muted-foreground text-sm">
+                                        Glissez une catégorie ici ou cliquez sur + pour ajouter
+                                    </div>
+                                )}
+                            </DroppableZone>
                         </div>
-                    )}
 
-                    {chipCategories.length === 0 && sectionCategories.length === 0 && (
-                        <div className="text-center py-8 text-muted-foreground">
-                            Aucune catégorie configurée pour l&apos;affichage.
-                            <br />
-                            Activez &quot;Afficher comme chip&quot; ou &quot;Afficher comme section&quot; dans les paramètres d&apos;une catégorie.
-                        </div>
-                    )}
+                        {/* Drag Overlay */}
+                        <DragOverlay>
+                            {activeId && activeCategory && sourceZone === 'chip' && (
+                                <SortableChipItem
+                                    category={activeCategory}
+                                    onEdit={() => {}}
+                                    isDragOverlay
+                                />
+                            )}
+                            {activeId && activeCategory && sourceZone === 'section' && (
+                                <SortableSectionItem
+                                    category={activeCategory}
+                                    onEdit={() => {}}
+                                    isDragOverlay
+                                />
+                            )}
+                        </DragOverlay>
+                    </DndContext>
                 </CardContent>
             </Card>
 
