@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { RecipeCategoryForm } from '@/features/cooking/components/recipe-category-form'
 import type { RecipeCategory, RecipeCategoryFormValues, DragZone } from '@/features/cooking/types/recipe-category'
-import { Pencil, Trash2, Pin, Tags, ListOrdered, GripVertical, Rows3, LayoutGrid, Plus, X } from 'lucide-react'
+import { Pencil, Trash2, Pin, Tags, ListOrdered, GripVertical, Rows3, LayoutGrid, Plus, X, Eye, Loader2 } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import {
     AlertDialog,
@@ -51,6 +52,14 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+
+// Type for preview recipe
+type PreviewRecipe = {
+    id: number
+    title: string
+    img_path: string | null
+    dish_type: string
+}
 
 // Helper functions for drag IDs
 function getZoneFromId(id: string | number): DragZone | null {
@@ -391,11 +400,13 @@ function AddCategoryPopover({
 function CategoryCardItem({
     category,
     onEdit,
-    onDelete
+    onDelete,
+    onPreview,
 }: {
     category: RecipeCategory
     onEdit: (category: RecipeCategory) => void
     onDelete: (category: RecipeCategory) => void
+    onPreview?: (category: RecipeCategory) => void
 }) {
     return (
         <div
@@ -447,6 +458,20 @@ function CategoryCardItem({
                         </Link>
                     </Button>
                 )}
+                {/* Preview button for dynamic categories */}
+                {category.is_dynamic && onPreview && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onPreview(category)
+                        }}
+                        title="Prévisualiser les recettes"
+                    >
+                        <Eye className="h-4 w-4 text-primary" />
+                    </Button>
+                )}
                 <Button
                     variant="ghost"
                     size="icon"
@@ -480,6 +505,13 @@ export default function RecipeCategoriesPage() {
     const [editingCategory, setEditingCategory] = useState<RecipeCategory | null>(null)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [categoryToDelete, setCategoryToDelete] = useState<RecipeCategory | null>(null)
+
+    // Preview state
+    const [previewDialogOpen, setPreviewDialogOpen] = useState(false)
+    const [previewCategory, setPreviewCategory] = useState<RecipeCategory | null>(null)
+    const [previewRecipes, setPreviewRecipes] = useState<PreviewRecipe[]>([])
+    const [previewLoading, setPreviewLoading] = useState(false)
+    const [previewError, setPreviewError] = useState<string | null>(null)
 
     // Drag state
     const [activeId, setActiveId] = useState<string | null>(null)
@@ -862,6 +894,30 @@ export default function RecipeCategoriesPage() {
         setOpen(true)
     }
 
+    const handlePreview = async (category: RecipeCategory) => {
+        setPreviewCategory(category)
+        setPreviewDialogOpen(true)
+        setPreviewLoading(true)
+        setPreviewError(null)
+        setPreviewRecipes([])
+
+        try {
+            const response = await fetch(`/api/recipe-categories/${category.id}/preview?limit=10`)
+            const result = await response.json()
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Erreur lors de la prévisualisation')
+            }
+
+            setPreviewRecipes(result.data?.recipes || [])
+        } catch (error) {
+            console.error('Error previewing category:', error)
+            setPreviewError(error instanceof Error ? error.message : 'Erreur inconnue')
+        } finally {
+            setPreviewLoading(false)
+        }
+    }
+
     const handleOpenChange = (isOpen: boolean) => {
         setOpen(isOpen)
         if (!isOpen) {
@@ -1081,6 +1137,7 @@ export default function RecipeCategoriesPage() {
                                         setCategoryToDelete(cat)
                                         setDeleteDialogOpen(true)
                                     }}
+                                    onPreview={handlePreview}
                                 />
                             ))}
                         </div>
@@ -1106,6 +1163,88 @@ export default function RecipeCategoriesPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Preview Dialog */}
+            <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+                <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-hidden flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <span
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
+                                style={{ backgroundColor: (previewCategory?.color || '#000') + '20' }}
+                            >
+                                {previewCategory?.emoji}
+                            </span>
+                            Prévisualisation : {previewCategory?.name.fr}
+                        </DialogTitle>
+                        <p className="text-sm text-muted-foreground">
+                            {previewCategory?.dynamic_type === 'seasonality'
+                                ? '🍂 Recettes de saison (mois actuel)'
+                                : '⭐ Recommandations personnalisées'}
+                        </p>
+                    </DialogHeader>
+
+                    <div className="flex-1 overflow-y-auto">
+                        {previewLoading ? (
+                            <div className="flex items-center justify-center py-12">
+                                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                            </div>
+                        ) : previewError ? (
+                            <div className="text-center py-12">
+                                <p className="text-destructive">{previewError}</p>
+                                <p className="text-sm text-muted-foreground mt-2">
+                                    Vérifiez que le backend est en cours d&apos;exécution.
+                                </p>
+                            </div>
+                        ) : previewRecipes.length === 0 ? (
+                            <div className="text-center py-12 text-muted-foreground">
+                                <p>Aucune recette trouvée pour cette catégorie.</p>
+                                {previewCategory?.dynamic_type === 'seasonality' && (
+                                    <p className="text-sm mt-2">
+                                        Aucune recette n&apos;a de saisonnalité définie pour ce mois.
+                                    </p>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-3">
+                                {previewRecipes.map((recipe) => (
+                                    <div
+                                        key={recipe.id}
+                                        className="flex items-center gap-3 p-3 border rounded-lg bg-muted/30"
+                                    >
+                                        {recipe.img_path ? (
+                                            <Image
+                                                src={recipe.img_path}
+                                                alt={recipe.title}
+                                                width={48}
+                                                height={48}
+                                                className="w-12 h-12 rounded-lg object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-xs">
+                                                ?
+                                            </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-sm truncate">{recipe.title}</p>
+                                            <p className="text-xs text-muted-foreground">ID: {recipe.id}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="pt-4 border-t flex justify-between items-center">
+                        <p className="text-xs text-muted-foreground">
+                            {previewRecipes.length} recette{previewRecipes.length > 1 ? 's' : ''} affichée{previewRecipes.length > 1 ? 's' : ''}
+                        </p>
+                        <Button variant="outline" onClick={() => setPreviewDialogOpen(false)}>
+                            Fermer
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
