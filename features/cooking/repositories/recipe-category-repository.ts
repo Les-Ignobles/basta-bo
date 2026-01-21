@@ -63,6 +63,8 @@ export class RecipeCategoryRepository {
             display_as_section: payload.display_as_section,
             chip_order: payload.chip_order,
             section_order: payload.section_order,
+            is_dynamic: payload.is_dynamic,
+            dynamic_type: payload.dynamic_type,
         }
 
         const { data, error } = await this.client
@@ -98,6 +100,8 @@ export class RecipeCategoryRepository {
         if (payload.display_as_section !== undefined) dbPayload.display_as_section = payload.display_as_section
         if (payload.chip_order !== undefined) dbPayload.chip_order = payload.chip_order
         if (payload.section_order !== undefined) dbPayload.section_order = payload.section_order
+        if (payload.is_dynamic !== undefined) dbPayload.is_dynamic = payload.is_dynamic
+        if (payload.dynamic_type !== undefined) dbPayload.dynamic_type = payload.dynamic_type
 
         const { data, error } = await this.client
             .from(this.table)

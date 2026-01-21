@@ -1,5 +1,10 @@
 import type { TranslationText } from '@/lib/i18n'
 
+/**
+ * Types de catégories dynamiques
+ */
+export type DynamicCategoryType = 'seasonality' | 'user_recommendations'
+
 export interface RecipeCategory {
     id: number
     name: TranslationText
@@ -11,6 +16,10 @@ export interface RecipeCategory {
     chip_order: number
     section_order: number
     created_at: string
+    /** True si le contenu est calculé dynamiquement */
+    is_dynamic: boolean
+    /** Type de calcul: seasonality ou user_recommendations */
+    dynamic_type: DynamicCategoryType | null
 }
 
 export interface RecipeCategoryFormValues {
@@ -23,6 +32,8 @@ export interface RecipeCategoryFormValues {
     display_as_section: boolean
     chip_order: number
     section_order: number
+    is_dynamic: boolean
+    dynamic_type: DynamicCategoryType | null
 }
 
 /**

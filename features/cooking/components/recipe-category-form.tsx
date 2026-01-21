@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import type { RecipeCategoryFormValues } from '@/features/cooking/types/recipe-category'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import type { DynamicCategoryType, RecipeCategoryFormValues } from '@/features/cooking/types/recipe-category'
 
 type Props = {
     defaultValues?: Partial<RecipeCategoryFormValues>
@@ -29,6 +30,8 @@ export function RecipeCategoryForm({ defaultValues, onSubmit, submittingLabel = 
         display_as_section: false,
         chip_order: 0,
         section_order: 0,
+        is_dynamic: false,
+        dynamic_type: null,
         ...defaultValues,
     })
     const [loading, setLoading] = useState(false)
@@ -183,6 +186,65 @@ export function RecipeCategoryForm({ defaultValues, onSubmit, submittingLabel = 
                                 onChange={(e) => setValues((s) => ({ ...s, section_order: parseInt(e.target.value) || 0 }))}
                                 className="w-20"
                             />
+                        </div>
+                    )}
+                </div>
+
+                {/* Configuration dynamique */}
+                <div className="space-y-4 pt-4 border-t">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        Catégorie dynamique
+                    </h3>
+
+                    <div className="flex items-center space-x-2">
+                        <Switch
+                            id="is_dynamic"
+                            checked={values.is_dynamic}
+                            onCheckedChange={(checked: boolean) => {
+                                setValues((s) => ({
+                                    ...s,
+                                    is_dynamic: checked,
+                                    dynamic_type: checked ? 'seasonality' : null,
+                                }))
+                            }}
+                        />
+                        <Label htmlFor="is_dynamic" className="text-sm font-medium">
+                            Catégorie dynamique
+                        </Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground ml-10">
+                        Le contenu de cette catégorie sera calculé automatiquement au lieu d'être lié manuellement aux recettes
+                    </p>
+
+                    {values.is_dynamic && (
+                        <div className="ml-10 space-y-3">
+                            <div className="space-y-2">
+                                <Label htmlFor="dynamic_type" className="text-sm">Type de calcul</Label>
+                                <Select
+                                    value={values.dynamic_type || 'seasonality'}
+                                    onValueChange={(value: DynamicCategoryType) => setValues((s) => ({ ...s, dynamic_type: value }))}
+                                >
+                                    <SelectTrigger className="w-64">
+                                        <SelectValue placeholder="Sélectionner un type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="seasonality">
+                                            🍂 Recettes de saison
+                                        </SelectItem>
+                                        <SelectItem value="user_recommendations">
+                                            ⭐ Recommandations personnalisées
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
+                                {values.dynamic_type === 'seasonality' && (
+                                    <p>Les recettes seront filtrées selon leur saisonnalité par rapport au mois en cours.</p>
+                                )}
+                                {values.dynamic_type === 'user_recommendations' && (
+                                    <p>Les recettes seront personnalisées selon le profil de l'utilisateur (allergies, régimes, équipements). Requiert une authentification.</p>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>

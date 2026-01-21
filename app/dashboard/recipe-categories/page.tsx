@@ -263,6 +263,11 @@ function SortableSectionItem({
                 {category.display_as_chip && (
                     <Badge variant="outline" className="text-xs">Chip</Badge>
                 )}
+                {category.is_dynamic && (
+                    <Badge variant="default" className="text-xs">
+                        {category.dynamic_type === 'seasonality' ? '🍂 Dynamique' : '⭐ Dynamique'}
+                    </Badge>
+                )}
 
                 {/* Duplicate action */}
                 {canDuplicate && !isDragOverlay && (
@@ -280,14 +285,17 @@ function SortableSectionItem({
                     </Button>
                 )}
 
-                <Link
-                    href={`/dashboard/recipe-categories/${category.id}/order`}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <Button variant="ghost" size="icon" title="Gérer l'ordre des recettes">
-                        <ListOrdered className="h-4 w-4" />
-                    </Button>
-                </Link>
+                {/* Hide order button for dynamic categories */}
+                {!category.is_dynamic && (
+                    <Link
+                        href={`/dashboard/recipe-categories/${category.id}/order`}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <Button variant="ghost" size="icon" title="Gérer l'ordre des recettes">
+                            <ListOrdered className="h-4 w-4" />
+                        </Button>
+                    </Link>
+                )}
 
                 {/* Remove button */}
                 {onRemove && !isDragOverlay && (
@@ -418,19 +426,27 @@ function CategoryCardItem({
                 {category.display_as_section && (
                     <Badge variant="outline" className="text-xs">Section</Badge>
                 )}
+                {category.is_dynamic && (
+                    <Badge variant="default" className="text-xs">
+                        {category.dynamic_type === 'seasonality' ? '🍂' : '⭐'} Dynamique
+                    </Badge>
+                )}
             </div>
 
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    asChild
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <Link href={`/dashboard/recipe-categories/${category.id}/order`}>
-                        <ListOrdered className="h-4 w-4" />
-                    </Link>
-                </Button>
+                {/* Hide order button for dynamic categories */}
+                {!category.is_dynamic && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        asChild
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <Link href={`/dashboard/recipe-categories/${category.id}/order`}>
+                            <ListOrdered className="h-4 w-4" />
+                        </Link>
+                    </Button>
+                )}
                 <Button
                     variant="ghost"
                     size="icon"
@@ -865,6 +881,8 @@ export default function RecipeCategoriesPage() {
             display_as_section: editingCategory.display_as_section,
             chip_order: editingCategory.chip_order,
             section_order: editingCategory.section_order,
+            is_dynamic: editingCategory.is_dynamic,
+            dynamic_type: editingCategory.dynamic_type,
         }
     }
 
