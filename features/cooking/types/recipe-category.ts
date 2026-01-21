@@ -6,6 +6,10 @@ export interface RecipeCategory {
     emoji: string
     color: string
     is_pinned: boolean
+    display_as_chip: boolean
+    display_as_section: boolean
+    chip_order: number
+    section_order: number
     created_at: string
 }
 
@@ -15,6 +19,10 @@ export interface RecipeCategoryFormValues {
     emoji: string
     color: string
     is_pinned: boolean
+    display_as_chip: boolean
+    display_as_section: boolean
+    chip_order: number
+    section_order: number
 }
 
 /**

@@ -59,6 +59,10 @@ export class RecipeCategoryRepository {
             emoji: payload.emoji,
             color: payload.color,
             is_pinned: payload.is_pinned,
+            display_as_chip: payload.display_as_chip,
+            display_as_section: payload.display_as_section,
+            chip_order: payload.chip_order,
+            section_order: payload.section_order,
         }
 
         const { data, error } = await this.client
@@ -90,6 +94,10 @@ export class RecipeCategoryRepository {
         if (payload.emoji !== undefined) dbPayload.emoji = payload.emoji
         if (payload.color !== undefined) dbPayload.color = payload.color
         if (payload.is_pinned !== undefined) dbPayload.is_pinned = payload.is_pinned
+        if (payload.display_as_chip !== undefined) dbPayload.display_as_chip = payload.display_as_chip
+        if (payload.display_as_section !== undefined) dbPayload.display_as_section = payload.display_as_section
+        if (payload.chip_order !== undefined) dbPayload.chip_order = payload.chip_order
+        if (payload.section_order !== undefined) dbPayload.section_order = payload.section_order
 
         const { data, error } = await this.client
             .from(this.table)

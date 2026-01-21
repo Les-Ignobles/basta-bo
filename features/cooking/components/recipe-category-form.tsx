@@ -25,6 +25,10 @@ export function RecipeCategoryForm({ defaultValues, onSubmit, submittingLabel = 
         emoji: '',
         color: '#FF5733',
         is_pinned: false,
+        display_as_chip: false,
+        display_as_section: false,
+        chip_order: 0,
+        section_order: 0,
         ...defaultValues,
     })
     const [loading, setLoading] = useState(false)
@@ -111,15 +115,76 @@ export function RecipeCategoryForm({ defaultValues, onSubmit, submittingLabel = 
                     </div>
                 </div>
 
-                <div className="flex items-center space-x-2 pt-2">
-                    <Switch
-                        id="is_pinned"
-                        checked={values.is_pinned}
-                        onCheckedChange={(checked: boolean) => setValues((s) => ({ ...s, is_pinned: checked }))}
-                    />
-                    <Label htmlFor="is_pinned" className="text-sm font-medium">
-                        Épingler dans le menu bibliothèque
-                    </Label>
+                {/* Configuration d'affichage */}
+                <div className="space-y-4 pt-4 border-t">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        Configuration d'affichage
+                    </h3>
+
+                    {/* Tag sur les recettes (isPinned) */}
+                    <div className="flex items-center space-x-2">
+                        <Switch
+                            id="is_pinned"
+                            checked={values.is_pinned}
+                            onCheckedChange={(checked: boolean) => setValues((s) => ({ ...s, is_pinned: checked }))}
+                        />
+                        <Label htmlFor="is_pinned" className="text-sm font-medium">
+                            Afficher comme tag sur les cartes de recettes
+                        </Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground ml-10">
+                        Le badge de cette catégorie sera affiché sur l'image des recettes qui la composent
+                    </p>
+
+                    {/* Chip dans le header */}
+                    <div className="flex items-center space-x-2">
+                        <Switch
+                            id="display_as_chip"
+                            checked={values.display_as_chip}
+                            onCheckedChange={(checked: boolean) => setValues((s) => ({ ...s, display_as_chip: checked }))}
+                        />
+                        <Label htmlFor="display_as_chip" className="text-sm font-medium">
+                            Afficher comme chip dans le header du catalogue
+                        </Label>
+                    </div>
+                    {values.display_as_chip && (
+                        <div className="ml-10 flex items-center gap-2">
+                            <Label htmlFor="chip_order" className="text-sm">Ordre :</Label>
+                            <Input
+                                id="chip_order"
+                                type="number"
+                                min="0"
+                                value={values.chip_order}
+                                onChange={(e) => setValues((s) => ({ ...s, chip_order: parseInt(e.target.value) || 0 }))}
+                                className="w-20"
+                            />
+                        </div>
+                    )}
+
+                    {/* Section sur la page */}
+                    <div className="flex items-center space-x-2">
+                        <Switch
+                            id="display_as_section"
+                            checked={values.display_as_section}
+                            onCheckedChange={(checked: boolean) => setValues((s) => ({ ...s, display_as_section: checked }))}
+                        />
+                        <Label htmlFor="display_as_section" className="text-sm font-medium">
+                            Afficher comme section sur la page catalogue
+                        </Label>
+                    </div>
+                    {values.display_as_section && (
+                        <div className="ml-10 flex items-center gap-2">
+                            <Label htmlFor="section_order" className="text-sm">Ordre :</Label>
+                            <Input
+                                id="section_order"
+                                type="number"
+                                min="0"
+                                value={values.section_order}
+                                onChange={(e) => setValues((s) => ({ ...s, section_order: parseInt(e.target.value) || 0 }))}
+                                className="w-20"
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 
