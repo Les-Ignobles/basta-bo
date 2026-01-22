@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { RecipeCategoryForm } from '@/features/cooking/components/recipe-category-form'
 import type { RecipeCategory, RecipeCategoryFormValues, DragZone } from '@/features/cooking/types/recipe-category'
-import { Pencil, Trash2, Pin, Tags, ListOrdered, GripVertical, Rows3, LayoutGrid, Plus, X, Eye, Loader2 } from 'lucide-react'
+import { Pencil, Trash2, Pin, Tags, GripVertical, Plus, X, Eye, Loader2, LayoutGrid, BookOpen, HelpCircle, UtensilsCrossed, Sparkles } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -127,69 +129,84 @@ function SortableChipItem({
     const canDuplicate = onDuplicateToSection && !category.display_as_section
 
     return (
-        <div
-            ref={!isDragOverlay ? setNodeRef : undefined}
-            style={style}
-            className={`relative flex flex-col items-center justify-center p-4 rounded-xl border-2 min-w-[120px] cursor-pointer group ${
-                isDragging && !isDragOverlay ? 'opacity-30' : ''
-            } ${isDragOverlay ? 'shadow-lg ring-2 ring-primary' : ''} ${disabled ? 'opacity-60' : ''} bg-background`}
-            onClick={() => !isDragOverlay && onEdit(category)}
-        >
-            {/* Drag handle */}
-            <button
-                type="button"
-                className={`absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity touch-none ${disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
-                {...attributes}
-                {...listeners}
-                onClick={(e) => e.stopPropagation()}
+        <TooltipProvider>
+            <div
+                ref={!isDragOverlay ? setNodeRef : undefined}
+                style={style}
+                className={`relative flex flex-col items-center justify-center p-4 rounded-xl border-2 min-w-[120px] cursor-pointer group ${
+                    isDragging && !isDragOverlay ? 'opacity-30' : ''
+                } ${isDragOverlay ? 'shadow-lg ring-2 ring-primary' : ''} ${disabled ? 'opacity-60' : ''} bg-background`}
+                onClick={() => !isDragOverlay && onEdit(category)}
             >
-                <GripVertical className="h-4 w-4 text-muted-foreground" />
-            </button>
-
-            {/* Remove button */}
-            {onRemove && !isDragOverlay && (
-                <button
-                    type="button"
-                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded"
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        onRemove(category)
-                    }}
-                    title="Retirer des chips"
-                >
-                    <X className="h-3 w-3 text-destructive" />
-                </button>
-            )}
-
-            {/* Duplicate action menu */}
-            {canDuplicate && !isDragOverlay && (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                {/* Drag handle */}
+                <Tooltip>
+                    <TooltipTrigger asChild>
                         <button
                             type="button"
-                            className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded text-xs"
+                            className={`absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity touch-none ${disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
+                            {...attributes}
+                            {...listeners}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <Plus className="h-3 w-3" />
+                            <GripVertical className="h-4 w-4 text-muted-foreground" />
                         </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => onDuplicateToSection?.(category)}>
-                            Ajouter aussi comme section
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )}
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                        <p>Glisser pour réordonner</p>
+                    </TooltipContent>
+                </Tooltip>
 
-            <div
-                className="w-16 h-16 rounded-lg flex items-center justify-center text-3xl mb-2"
-                style={{ backgroundColor: category.color + '20' }}
-            >
-                {category.emoji}
+                {/* Remove button */}
+                {onRemove && !isDragOverlay && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button
+                                type="button"
+                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    onRemove(category)
+                                }}
+                            >
+                                <X className="h-3 w-3 text-destructive" />
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                            <p>Retirer des filtres rapides</p>
+                        </TooltipContent>
+                    </Tooltip>
+                )}
+
+                {/* Duplicate action menu */}
+                {canDuplicate && !isDragOverlay && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                type="button"
+                                className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded text-xs"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <Plus className="h-3 w-3" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => onDuplicateToSection?.(category)}>
+                                Ajouter aussi comme bloc
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
+
+                <div
+                    className="w-16 h-16 rounded-lg flex items-center justify-center text-3xl mb-2"
+                    style={{ backgroundColor: category.color + '20' }}
+                >
+                    {category.emoji}
+                </div>
+                <span className="text-sm font-medium text-center">{category.name.fr}</span>
+                <span className="text-xs text-muted-foreground">Position {category.chip_order}</span>
             </div>
-            <span className="text-sm font-medium text-center">{category.name.fr}</span>
-            <span className="text-xs text-muted-foreground">#{category.chip_order}</span>
-        </div>
+        </TooltipProvider>
     )
 }
 
@@ -226,103 +243,157 @@ function SortableSectionItem({
     const canDuplicate = onDuplicateToChip && !category.display_as_chip
 
     return (
-        <div
-            ref={!isDragOverlay ? setNodeRef : undefined}
-            style={style}
-            className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer group ${
-                isDragging && !isDragOverlay ? 'opacity-30' : ''
-            } ${isDragOverlay ? 'shadow-lg ring-2 ring-primary' : ''} ${disabled ? 'opacity-60' : ''} bg-background`}
-            onClick={() => !isDragOverlay && onEdit(category)}
-        >
-            <button
-                type="button"
-                className={`touch-none ${disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
-                {...attributes}
-                {...listeners}
-                onClick={(e) => e.stopPropagation()}
-            >
-                <GripVertical className="h-5 w-5 text-muted-foreground" />
-            </button>
-
-            <span className="w-8 h-8 flex items-center justify-center bg-muted rounded-full text-sm font-medium">
-                {category.section_order}
-            </span>
-
+        <TooltipProvider>
             <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-                style={{ backgroundColor: category.color + '20' }}
+                ref={!isDragOverlay ? setNodeRef : undefined}
+                style={style}
+                className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer group ${
+                    isDragging && !isDragOverlay ? 'opacity-30' : ''
+                } ${isDragOverlay ? 'shadow-lg ring-2 ring-primary' : ''} ${disabled ? 'opacity-60' : ''} bg-background`}
+                onClick={() => !isDragOverlay && onEdit(category)}
             >
-                {category.emoji}
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button
+                            type="button"
+                            className={`touch-none ${disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
+                            {...attributes}
+                            {...listeners}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <GripVertical className="h-5 w-5 text-muted-foreground" />
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                        <p>Glisser pour réordonner</p>
+                    </TooltipContent>
+                </Tooltip>
+
+                <span className="w-8 h-8 flex items-center justify-center bg-muted rounded-full text-sm font-medium">
+                    {category.section_order}
+                </span>
+
+                <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                    style={{ backgroundColor: category.color + '20' }}
+                >
+                    {category.emoji}
+                </div>
+
+                <div className="flex-1">
+                    <span className="font-medium">{category.name.fr}</span>
+                    {category.name.en && (
+                        <span className="text-sm text-muted-foreground ml-2">({category.name.en})</span>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                    {category.is_pinned && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Badge variant="secondary" className="gap-1 cursor-help">
+                                    <Pin className="h-3 w-3" />
+                                    Badge
+                                </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Affiché comme badge sur les cartes de recettes</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                    {category.display_as_chip && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Badge variant="outline" className="text-xs cursor-help">Filtre</Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Visible comme filtre rapide en haut du catalogue</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                    {category.is_dynamic && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Badge variant="default" className="text-xs cursor-help">
+                                    {category.dynamic_type === 'seasonality' ? '🍂 Auto' : '⭐ Auto'}
+                                </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>
+                                    {category.dynamic_type === 'seasonality'
+                                        ? 'Recettes sélectionnées automatiquement selon la saison'
+                                        : 'Recettes personnalisées selon le profil utilisateur'}
+                                </p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+
+                    {/* Duplicate action */}
+                    {canDuplicate && !isDragOverlay && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        onDuplicateToChip?.(category)
+                                    }}
+                                >
+                                    <Plus className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Ajouter aussi comme filtre rapide</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+
+                    {/* Hide manage recipes for dynamic categories */}
+                    {!category.is_dynamic && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Link
+                                    href={`/dashboard/recipe-categories/${category.id}/order`}
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <Button variant="outline" size="sm" className="gap-1.5">
+                                        <UtensilsCrossed className="h-4 w-4" />
+                                        <span className="hidden sm:inline">Recettes</span>
+                                    </Button>
+                                </Link>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Ajouter ou organiser les recettes de cette catégorie</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+
+                    {/* Remove button */}
+                    {onRemove && !isDragOverlay && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        onRemove(category)
+                                    }}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Retirer de cette zone</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                </div>
             </div>
-
-            <div className="flex-1">
-                <span className="font-medium">{category.name.fr}</span>
-                {category.name.en && (
-                    <span className="text-sm text-muted-foreground ml-2">({category.name.en})</span>
-                )}
-            </div>
-
-            <div className="flex items-center gap-2">
-                {category.is_pinned && (
-                    <Badge variant="secondary" className="gap-1">
-                        <Pin className="h-3 w-3" />
-                        Tag
-                    </Badge>
-                )}
-                {category.display_as_chip && (
-                    <Badge variant="outline" className="text-xs">Chip</Badge>
-                )}
-                {category.is_dynamic && (
-                    <Badge variant="default" className="text-xs">
-                        {category.dynamic_type === 'seasonality' ? '🍂 Dynamique' : '⭐ Dynamique'}
-                    </Badge>
-                )}
-
-                {/* Duplicate action */}
-                {canDuplicate && !isDragOverlay && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            onDuplicateToChip?.(category)
-                        }}
-                        title="Ajouter aussi comme chip"
-                    >
-                        <Plus className="h-4 w-4" />
-                    </Button>
-                )}
-
-                {/* Hide order button for dynamic categories */}
-                {!category.is_dynamic && (
-                    <Link
-                        href={`/dashboard/recipe-categories/${category.id}/order`}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <Button variant="ghost" size="icon" title="Gérer l'ordre des recettes">
-                            <ListOrdered className="h-4 w-4" />
-                        </Button>
-                    </Link>
-                )}
-
-                {/* Remove button */}
-                {onRemove && !isDragOverlay && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            onRemove(category)
-                        }}
-                        title="Retirer des sections"
-                    >
-                        <X className="h-4 w-4" />
-                    </Button>
-                )}
-            </div>
-        </div>
+        </TooltipProvider>
     )
 }
 
@@ -345,6 +416,8 @@ function AddCategoryPopover({
         setOpen(false)
     }
 
+    const zoneLabel = zone === 'chip' ? 'filtre rapide' : 'bloc'
+
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
@@ -364,7 +437,7 @@ function AddCategoryPopover({
             <PopoverContent className="w-64 p-2" align="start">
                 <div className="space-y-1">
                     <p className="text-sm font-medium px-2 py-1">
-                        Ajouter comme {zone === 'chip' ? 'chip' : 'section'}
+                        Ajouter comme {zoneLabel}
                     </p>
                     {availableCategories.length === 0 ? (
                         <p className="text-sm text-muted-foreground px-2 py-4 text-center">
@@ -396,8 +469,8 @@ function AddCategoryPopover({
     )
 }
 
-// All Categories Card Item
-function CategoryCardItem({
+// Category Card for the list view
+function CategoryCard({
     category,
     onEdit,
     onDelete,
@@ -409,91 +482,165 @@ function CategoryCardItem({
     onPreview?: (category: RecipeCategory) => void
 }) {
     return (
-        <div
-            className="flex items-center gap-3 p-3 bg-background border rounded-lg hover:bg-muted/50 cursor-pointer group"
-            onClick={() => onEdit(category)}
-        >
+        <TooltipProvider>
             <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
-                style={{ backgroundColor: category.color + '20' }}
+                className="flex items-center gap-4 p-4 bg-background border rounded-lg hover:bg-muted/30 cursor-pointer group transition-colors"
+                onClick={() => onEdit(category)}
             >
-                {category.emoji}
-            </div>
+                <div
+                    className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl shrink-0"
+                    style={{ backgroundColor: category.color + '20' }}
+                >
+                    {category.emoji}
+                </div>
 
-            <div className="flex-1 min-w-0">
-                <div className="font-medium truncate">{category.name.fr}</div>
-                <div className="text-xs text-muted-foreground">
-                    {category.name.en || 'Pas de traduction EN'}
+                <div className="flex-1 min-w-0">
+                    <div className="font-medium">{category.name.fr}</div>
+                    <div className="text-sm text-muted-foreground">
+                        {category.name.en || 'Pas de traduction anglaise'}
+                    </div>
+                </div>
+
+                {/* Display badges */}
+                <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                    {category.is_pinned && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Badge variant="secondary" className="gap-1 cursor-help text-xs">
+                                    <Pin className="h-3 w-3" />
+                                    Badge
+                                </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Ce badge apparaît sur les cartes de recettes</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                    {category.display_as_chip && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Badge variant="outline" className="text-xs cursor-help">Filtre</Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Visible comme filtre rapide en haut du catalogue</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                    {category.display_as_section && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Badge variant="outline" className="text-xs cursor-help">Bloc</Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Affiché comme bloc sur la page catalogue</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                    {category.is_dynamic && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Badge variant="default" className="text-xs cursor-help gap-1">
+                                    <Sparkles className="h-3 w-3" />
+                                    Auto
+                                </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>
+                                    {category.dynamic_type === 'seasonality'
+                                        ? 'Recettes sélectionnées automatiquement selon la saison'
+                                        : 'Recettes personnalisées selon le profil utilisateur'}
+                                </p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Manage recipes - hidden for dynamic */}
+                    {!category.is_dynamic && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1.5"
+                                    asChild
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <Link href={`/dashboard/recipe-categories/${category.id}/order`}>
+                                        <UtensilsCrossed className="h-4 w-4" />
+                                        <span className="hidden lg:inline">Recettes</span>
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Ajouter ou organiser les recettes</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+
+                    {/* Preview for dynamic */}
+                    {category.is_dynamic && onPreview && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1.5"
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        onPreview(category)
+                                    }}
+                                >
+                                    <Eye className="h-4 w-4" />
+                                    <span className="hidden lg:inline">Aperçu</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Voir quelles recettes seront affichées</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    onEdit(category)
+                                }}
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Modifier la catégorie</p>
+                        </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    onDelete(category)
+                                }}
+                            >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Supprimer la catégorie</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
             </div>
-
-            <div className="flex items-center gap-1 shrink-0">
-                {category.is_pinned && (
-                    <Badge variant="outline" className="text-xs">Tag</Badge>
-                )}
-                {category.display_as_chip && (
-                    <Badge variant="outline" className="text-xs">Chip</Badge>
-                )}
-                {category.display_as_section && (
-                    <Badge variant="outline" className="text-xs">Section</Badge>
-                )}
-                {category.is_dynamic && (
-                    <Badge variant="default" className="text-xs">
-                        {category.dynamic_type === 'seasonality' ? '🍂' : '⭐'} Dynamique
-                    </Badge>
-                )}
-            </div>
-
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                {/* Hide order button for dynamic categories */}
-                {!category.is_dynamic && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        asChild
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <Link href={`/dashboard/recipe-categories/${category.id}/order`}>
-                            <ListOrdered className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                )}
-                {/* Preview button for dynamic categories */}
-                {category.is_dynamic && onPreview && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            onPreview(category)
-                        }}
-                        title="Prévisualiser les recettes"
-                    >
-                        <Eye className="h-4 w-4 text-primary" />
-                    </Button>
-                )}
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        onEdit(category)
-                    }}
-                >
-                    <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        onDelete(category)
-                    }}
-                >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-            </div>
-        </div>
+        </TooltipProvider>
     )
 }
 
@@ -945,7 +1092,7 @@ export default function RecipeCategoriesPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-12">
-                <span className="text-muted-foreground">Chargement...</span>
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
         )
     }
@@ -961,14 +1108,18 @@ export default function RecipeCategoriesPage() {
                         {categories.length} catégorie{categories.length > 1 ? 's' : ''}
                     </Badge>
                     {saving && (
-                        <Badge variant="outline" className="animate-pulse">
+                        <Badge variant="outline" className="animate-pulse gap-1.5">
+                            <Loader2 className="h-3 w-3 animate-spin" />
                             Sauvegarde...
                         </Badge>
                     )}
                 </div>
                 <Dialog open={open} onOpenChange={handleOpenChange}>
                     <DialogTrigger asChild>
-                        <Button>Nouvelle catégorie</Button>
+                        <Button className="gap-2">
+                            <Plus className="h-4 w-4" />
+                            Nouvelle catégorie
+                        </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
@@ -985,165 +1136,229 @@ export default function RecipeCategoriesPage() {
                 </Dialog>
             </div>
 
-            {/* Aperçu style App with Global DndContext */}
-            <Card>
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
+            {/* Main content with Tabs */}
+            <Tabs defaultValue="preview" className="space-y-4">
+                <TabsList>
+                    <TabsTrigger value="preview" className="gap-2">
                         <LayoutGrid className="h-4 w-4" />
-                        Aperçu catalogue (style app)
-                    </CardTitle>
-                    <CardDescription>
-                        Glissez-déposez pour réorganiser ou déplacer entre zones
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragStart={handleDragStart}
-                        onDragOver={handleDragOver}
-                        onDragEnd={handleDragEnd}
-                        onDragCancel={handleDragCancel}
-                    >
-                        {/* Chips Section */}
-                        <div className="space-y-3">
-                            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                                Chips (Header du catalogue)
-                            </h3>
-                            <DroppableZone
-                                id="chips-zone"
-                                isOver={overZone === 'chip' && sourceZone !== 'chip'}
-                                className="min-h-[160px] p-2"
-                            >
-                                <SortableContext
-                                    items={chipCategories.map(c => `chip-${c.id}`)}
-                                    strategy={horizontalListSortingStrategy}
-                                >
-                                    <div className="flex gap-3 overflow-x-auto pb-2">
-                                        {chipCategories.map((category) => (
-                                            <SortableChipItem
-                                                key={category.id}
-                                                category={category}
-                                                onEdit={handleEdit}
-                                                onRemove={handleRemoveFromChips}
-                                                onDuplicateToSection={handleDuplicateToSection}
-                                                disabled={saving}
-                                            />
-                                        ))}
-                                        <AddCategoryPopover
-                                            zone="chip"
-                                            availableCategories={availableForChips}
-                                            onSelect={handleAddToChips}
-                                            disabled={saving}
-                                        />
-                                    </div>
-                                </SortableContext>
-                                {chipCategories.length === 0 && (
-                                    <div className="flex items-center justify-center h-[120px] text-muted-foreground text-sm">
-                                        Glissez une catégorie ici ou cliquez sur + pour ajouter
-                                    </div>
-                                )}
-                            </DroppableZone>
-                        </div>
-
-                        {/* Sections */}
-                        <div className="space-y-3">
-                            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                                Sections (Page catalogue)
-                            </h3>
-                            <DroppableZone
-                                id="sections-zone"
-                                isOver={overZone === 'section' && sourceZone !== 'section'}
-                                className="min-h-[100px] p-2"
-                            >
-                                <SortableContext
-                                    items={sectionCategories.map(c => `section-${c.id}`)}
-                                    strategy={verticalListSortingStrategy}
-                                >
-                                    <div className="space-y-2">
-                                        {sectionCategories.map((category) => (
-                                            <SortableSectionItem
-                                                key={category.id}
-                                                category={category}
-                                                onEdit={handleEdit}
-                                                onRemove={handleRemoveFromSections}
-                                                onDuplicateToChip={handleDuplicateToChip}
-                                                disabled={saving}
-                                            />
-                                        ))}
-                                    </div>
-                                </SortableContext>
-                                <div className="mt-2">
-                                    <AddCategoryPopover
-                                        zone="section"
-                                        availableCategories={availableForSections}
-                                        onSelect={handleAddToSections}
-                                        disabled={saving}
-                                    />
-                                </div>
-                                {sectionCategories.length === 0 && (
-                                    <div className="flex items-center justify-center h-[60px] text-muted-foreground text-sm">
-                                        Glissez une catégorie ici ou cliquez sur + pour ajouter
-                                    </div>
-                                )}
-                            </DroppableZone>
-                        </div>
-
-                        {/* Drag Overlay */}
-                        <DragOverlay>
-                            {activeId && activeCategory && sourceZone === 'chip' && (
-                                <SortableChipItem
-                                    category={activeCategory}
-                                    onEdit={() => {}}
-                                    isDragOverlay
-                                />
-                            )}
-                            {activeId && activeCategory && sourceZone === 'section' && (
-                                <SortableSectionItem
-                                    category={activeCategory}
-                                    onEdit={() => {}}
-                                    isDragOverlay
-                                />
-                            )}
-                        </DragOverlay>
-                    </DndContext>
-                </CardContent>
-            </Card>
-
-            {/* Toutes les catégories */}
-            <Card>
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                        <Rows3 className="h-4 w-4" />
+                        Aperçu du catalogue
+                    </TabsTrigger>
+                    <TabsTrigger value="list" className="gap-2">
+                        <BookOpen className="h-4 w-4" />
                         Toutes les catégories
-                    </CardTitle>
-                    <CardDescription>
-                        Cliquez sur une catégorie pour la modifier
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {categories.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                            Aucune catégorie. Créez-en une !
-                        </div>
-                    ) : (
-                        <div className="space-y-2">
-                            {categories.map((category) => (
-                                <CategoryCardItem
-                                    key={category.id}
-                                    category={category}
-                                    onEdit={handleEdit}
-                                    onDelete={(cat) => {
-                                        setCategoryToDelete(cat)
-                                        setDeleteDialogOpen(true)
-                                    }}
-                                    onPreview={handlePreview}
-                                />
-                            ))}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                    </TabsTrigger>
+                </TabsList>
+
+                {/* Preview Tab */}
+                <TabsContent value="preview">
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        Prévisualisation du catalogue
+                                    </CardTitle>
+                                    <CardDescription className="mt-1">
+                                        Organisez les catégories. Glissez-déposez pour réordonner.
+                                    </CardDescription>
+                                </div>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="shrink-0">
+                                                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="left" className="max-w-xs">
+                                            <p className="font-medium mb-1">Comment ça fonctionne ?</p>
+                                            <ul className="text-xs space-y-1">
+                                                <li><strong>Filtres rapides :</strong> Petits boutons en haut du catalogue</li>
+                                                <li><strong>Blocs :</strong> Sections avec leurs recettes sur la page</li>
+                                                <li>Une catégorie peut apparaître aux deux endroits</li>
+                                            </ul>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragStart={handleDragStart}
+                                onDragOver={handleDragOver}
+                                onDragEnd={handleDragEnd}
+                                onDragCancel={handleDragCancel}
+                            >
+                                {/* Chips Section */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-sm font-medium">
+                                            Filtres rapides
+                                        </h3>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Petits boutons affichés en haut du catalogue pour filtrer rapidement les recettes</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
+                                    <DroppableZone
+                                        id="chips-zone"
+                                        isOver={overZone === 'chip' && sourceZone !== 'chip'}
+                                        className="min-h-[160px] p-3 bg-muted/30 border border-dashed rounded-lg"
+                                    >
+                                        <SortableContext
+                                            items={chipCategories.map(c => `chip-${c.id}`)}
+                                            strategy={horizontalListSortingStrategy}
+                                        >
+                                            <div className="flex gap-3 overflow-x-auto pb-2">
+                                                {chipCategories.map((category) => (
+                                                    <SortableChipItem
+                                                        key={category.id}
+                                                        category={category}
+                                                        onEdit={handleEdit}
+                                                        onRemove={handleRemoveFromChips}
+                                                        onDuplicateToSection={handleDuplicateToSection}
+                                                        disabled={saving}
+                                                    />
+                                                ))}
+                                                <AddCategoryPopover
+                                                    zone="chip"
+                                                    availableCategories={availableForChips}
+                                                    onSelect={handleAddToChips}
+                                                    disabled={saving}
+                                                />
+                                            </div>
+                                        </SortableContext>
+                                        {chipCategories.length === 0 && (
+                                            <div className="flex items-center justify-center h-[100px] text-muted-foreground text-sm">
+                                                Glissez une catégorie ici ou cliquez sur + pour ajouter
+                                            </div>
+                                        )}
+                                    </DroppableZone>
+                                </div>
+
+                                {/* Sections */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-sm font-medium">
+                                            Blocs du catalogue
+                                        </h3>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Sections affichées sur la page catalogue avec leurs recettes</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
+                                    <DroppableZone
+                                        id="sections-zone"
+                                        isOver={overZone === 'section' && sourceZone !== 'section'}
+                                        className="min-h-[100px] p-3 bg-muted/30 border border-dashed rounded-lg"
+                                    >
+                                        <SortableContext
+                                            items={sectionCategories.map(c => `section-${c.id}`)}
+                                            strategy={verticalListSortingStrategy}
+                                        >
+                                            <div className="space-y-2">
+                                                {sectionCategories.map((category) => (
+                                                    <SortableSectionItem
+                                                        key={category.id}
+                                                        category={category}
+                                                        onEdit={handleEdit}
+                                                        onRemove={handleRemoveFromSections}
+                                                        onDuplicateToChip={handleDuplicateToChip}
+                                                        disabled={saving}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </SortableContext>
+                                        <div className="mt-2">
+                                            <AddCategoryPopover
+                                                zone="section"
+                                                availableCategories={availableForSections}
+                                                onSelect={handleAddToSections}
+                                                disabled={saving}
+                                            />
+                                        </div>
+                                        {sectionCategories.length === 0 && (
+                                            <div className="flex items-center justify-center h-[60px] text-muted-foreground text-sm">
+                                                Glissez une catégorie ici ou cliquez sur + pour ajouter
+                                            </div>
+                                        )}
+                                    </DroppableZone>
+                                </div>
+
+                                {/* Drag Overlay */}
+                                <DragOverlay>
+                                    {activeId && activeCategory && sourceZone === 'chip' && (
+                                        <SortableChipItem
+                                            category={activeCategory}
+                                            onEdit={() => {}}
+                                            isDragOverlay
+                                        />
+                                    )}
+                                    {activeId && activeCategory && sourceZone === 'section' && (
+                                        <SortableSectionItem
+                                            category={activeCategory}
+                                            onEdit={() => {}}
+                                            isDragOverlay
+                                        />
+                                    )}
+                                </DragOverlay>
+                            </DndContext>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* List Tab */}
+                <TabsContent value="list">
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base">Toutes les catégories</CardTitle>
+                            <CardDescription>
+                                Créez, modifiez ou supprimez des catégories. Cliquez sur une catégorie pour la modifier.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {categories.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <Tags className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                                    <p className="text-muted-foreground mb-4">Aucune catégorie pour le moment</p>
+                                    <Button onClick={() => setOpen(true)} className="gap-2">
+                                        <Plus className="h-4 w-4" />
+                                        Créer une catégorie
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {categories.map((category) => (
+                                        <CategoryCard
+                                            key={category.id}
+                                            category={category}
+                                            onEdit={handleEdit}
+                                            onDelete={(cat) => {
+                                                setCategoryToDelete(cat)
+                                                setDeleteDialogOpen(true)
+                                            }}
+                                            onPreview={handlePreview}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
 
             {/* Delete Dialog */}
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -1175,12 +1390,12 @@ export default function RecipeCategoriesPage() {
                             >
                                 {previewCategory?.emoji}
                             </span>
-                            Prévisualisation : {previewCategory?.name.fr}
+                            Aperçu : {previewCategory?.name.fr}
                         </DialogTitle>
                         <p className="text-sm text-muted-foreground">
                             {previewCategory?.dynamic_type === 'seasonality'
-                                ? '🍂 Recettes de saison (mois actuel)'
-                                : '⭐ Recommandations personnalisées'}
+                                ? '🍂 Recettes sélectionnées automatiquement selon la saison'
+                                : '⭐ Recettes personnalisées selon le profil utilisateur'}
                         </p>
                     </DialogHeader>
 

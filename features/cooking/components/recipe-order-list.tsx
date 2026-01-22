@@ -17,16 +17,40 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical } from 'lucide-react'
+import { GripVertical, Trash2, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import type { RecipeOrderItem } from '@/features/cooking/types/recipe-category'
 
 type Props = {
     recipes: RecipeOrderItem[]
     onOrderChange: (recipeIds: number[]) => Promise<void>
+    onRemove?: (recipeId: number) => Promise<void>
     disabled?: boolean
 }
 
-function SortableRecipeItem({ recipe, disabled }: { recipe: RecipeOrderItem; disabled?: boolean }) {
+function SortableRecipeItem({
+    recipe,
+    disabled,
+    onRemove,
+    isRemoving,
+}: {
+    recipe: RecipeOrderItem
+    disabled?: boolean
+    onRemove?: (recipeId: number) => Promise<void>
+    isRemoving?: boolean
+}) {
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false)
     const {
         attributes,
         listeners,
@@ -39,6 +63,13 @@ function SortableRecipeItem({ recipe, disabled }: { recipe: RecipeOrderItem; dis
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
+    }
+
+    async function handleConfirmRemove() {
+        if (onRemove) {
+            await onRemove(recipe.id)
+            setIsConfirmOpen(false)
+        }
     }
 
     return (
@@ -75,13 +106,59 @@ function SortableRecipeItem({ recipe, disabled }: { recipe: RecipeOrderItem; dis
             )}
 
             <span className="font-medium flex-1">{recipe.title}</span>
+
+            {onRemove && !isDragging && (
+                <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+                    <AlertDialogTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-destructive"
+                            disabled={disabled || isRemoving}
+                        >
+                            {isRemoving ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Trash2 className="h-4 w-4" />
+                            )}
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Retirer la recette</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Voulez-vous vraiment retirer « {recipe.title} » de cette catégorie ?
+                                La recette ne sera pas supprimée, elle sera simplement retirée de cette catégorie.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel disabled={isRemoving}>Annuler</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={handleConfirmRemove}
+                                disabled={isRemoving}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                                {isRemoving ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Suppression...
+                                    </>
+                                ) : (
+                                    'Retirer'
+                                )}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
         </div>
     )
 }
 
-export function RecipeOrderList({ recipes: initialRecipes, onOrderChange, disabled = false }: Props) {
+export function RecipeOrderList({ recipes: initialRecipes, onOrderChange, onRemove, disabled = false }: Props) {
     const [recipes, setRecipes] = useState(initialRecipes)
     const [saving, setSaving] = useState(false)
+    const [removingId, setRemovingId] = useState<number | null>(null)
 
     // Sync internal state when prop changes (e.g., after adding a recipe)
     useEffect(() => {
@@ -119,6 +196,19 @@ export function RecipeOrderList({ recipes: initialRecipes, onOrderChange, disabl
         }
     }
 
+    async function handleRemove(recipeId: number) {
+        if (!onRemove) return
+
+        setRemovingId(recipeId)
+        try {
+            await onRemove(recipeId)
+            // Remove from local state immediately for optimistic UI
+            setRecipes((prev) => prev.filter((r) => r.id !== recipeId))
+        } finally {
+            setRemovingId(null)
+        }
+    }
+
     if (recipes.length === 0) {
         return (
             <div className="text-center py-8 text-muted-foreground">
@@ -149,7 +239,9 @@ export function RecipeOrderList({ recipes: initialRecipes, onOrderChange, disabl
                             <SortableRecipeItem
                                 key={recipe.id}
                                 recipe={recipe}
-                                disabled={disabled || saving}
+                                disabled={disabled || saving || removingId !== null}
+                                onRemove={onRemove ? handleRemove : undefined}
+                                isRemoving={removingId === recipe.id}
                             />
                         ))}
                     </div>
