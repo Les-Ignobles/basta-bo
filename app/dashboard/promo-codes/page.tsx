@@ -50,7 +50,7 @@ export default function PromoCodesPage() {
       {/* Description */}
       <p className="text-muted-foreground">
         Générez des codes promo pour les jeux-concours et opérations marketing.
-        Chaque code permet d'obtenir un abonnement premium d'un mois ou d'un an.
+        Chaque code permet d&apos;obtenir un abonnement premium d&apos;un mois ou d&apos;un an.
       </p>
 
       {/* Generate Form */}

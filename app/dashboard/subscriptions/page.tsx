@@ -31,8 +31,8 @@ export default function SubscriptionsPage() {
 
       {/* Description */}
       <p className="text-muted-foreground">
-        Recherchez un utilisateur par email ou UUID pour modifier sa date de fin d'abonnement premium.
-        Utilisez cette page pour offrir des dédommagements (1 mois ou 1 an d'abonnement).
+        Recherchez un utilisateur par email ou UUID pour modifier sa date de fin d&apos;abonnement premium.
+        Utilisez cette page pour offrir des dédommagements (1 mois ou 1 an d&apos;abonnement).
       </p>
 
       {/* Search Form */}
