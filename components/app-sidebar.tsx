@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings, BookOpen, FolderOpen, HelpCircle, ChefHat, Link2, Layers, MessageSquare, Tags } from "lucide-react"
+import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings, BookOpen, FolderOpen, HelpCircle, ChefHat, Link2, Layers, MessageSquare, Tags, Users, Ticket } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/components/auth-provider"
@@ -158,6 +158,22 @@ export function AppSidebar() {
                                         <Link href="/dashboard/ingredient-search-namespaces" className="flex items-center gap-2">
                                             <Layers className="size-4" />
                                             <span>Search Namespaces</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/subscriptions'}>
+                                        <Link href="/dashboard/subscriptions" className="flex items-center gap-2">
+                                            <Users className="size-4" />
+                                            <span>Abonnements</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/promo-codes'}>
+                                        <Link href="/dashboard/promo-codes" className="flex items-center gap-2">
+                                            <Ticket className="size-4" />
+                                            <span>Codes Promo</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
