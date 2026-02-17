@@ -32,7 +32,7 @@ function HorizontalBarChart({ data }: { data: { label: string; count: number }[]
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis type="number" />
         <YAxis type="category" dataKey="label" width={140} tick={{ fontSize: 12 }} />
-        <Tooltip formatter={(value: number) => value.toLocaleString('fr-FR')} />
+        <Tooltip formatter={(value) => Number(value).toLocaleString('fr-FR')} />
         <Bar dataKey="count" fill="#2563eb" radius={[0, 4, 4, 0]} />
       </BarChart>
     </ResponsiveContainer>
@@ -57,7 +57,7 @@ function DonutChart({ data }: { data: { label: string; count: number }[] }) {
             <Cell key={index} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip formatter={(value: number) => value.toLocaleString('fr-FR')} />
+        <Tooltip formatter={(value) => Number(value).toLocaleString('fr-FR')} />
         <Legend />
       </PieChart>
     </ResponsiveContainer>
@@ -90,7 +90,7 @@ export function StatisticsOnboardingCharts({ stats }: StatisticsOnboardingCharts
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="label" tick={{ fontSize: 12 }} />
             <YAxis />
-            <Tooltip formatter={(value: number) => value.toLocaleString('fr-FR')} />
+            <Tooltip formatter={(value) => Number(value).toLocaleString('fr-FR')} />
             <Line
               type="monotone"
               dataKey="count"
@@ -137,7 +137,7 @@ export function StatisticsOnboardingCharts({ stats }: StatisticsOnboardingCharts
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="label" tick={{ fontSize: 11 }} />
               <YAxis />
-              <Tooltip formatter={(value: number) => value.toLocaleString('fr-FR')} />
+              <Tooltip formatter={(value) => Number(value).toLocaleString('fr-FR')} />
               <Bar dataKey="count" fill="#7c3aed" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

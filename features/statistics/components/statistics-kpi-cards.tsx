@@ -44,7 +44,7 @@ export function StatisticsKpiCards({ kpis }: StatisticsKpiCardsProps) {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{label}</p>
-              <p className="text-2xl font-bold">{format(kpis[key], kpis)}</p>
+              <p className="text-2xl font-bold">{format(kpis[key])}</p>
             </div>
           </CardContent>
         </Card>
