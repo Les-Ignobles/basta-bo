@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings, BookOpen, FolderOpen, HelpCircle, ChefHat, Link2, Layers, MessageSquare, Tags, Users, Ticket } from "lucide-react"
+import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings, BookOpen, FolderOpen, HelpCircle, ChefHat, Link2, Layers, MessageSquare, Tags, Users, Ticket, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/components/auth-provider"
@@ -174,6 +174,14 @@ export function AppSidebar() {
                                         <Link href="/dashboard/promo-codes" className="flex items-center gap-2">
                                             <Ticket className="size-4" />
                                             <span>Codes Promo</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/statistics'}>
+                                        <Link href="/dashboard/statistics" className="flex items-center gap-2">
+                                            <BarChart3 className="size-4" />
+                                            <span>Statistiques</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
