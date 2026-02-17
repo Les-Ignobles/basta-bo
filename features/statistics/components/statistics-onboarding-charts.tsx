@@ -2,7 +2,7 @@
 
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell, Legend,
+  LineChart, Line, PieChart, Pie, Cell, Legend, LabelList,
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { OnboardingStats } from '../types/statistics.types'
@@ -25,15 +25,23 @@ function ChartCard({ title, children }: ChartCardProps) {
   )
 }
 
-function HorizontalBarChart({ data }: { data: { label: string; count: number }[] }) {
+function HorizontalBarChart({ data, total }: { data: { label: string; count: number }[]; total: number }) {
   return (
     <ResponsiveContainer width="100%" height={data.length * 40 + 40}>
-      <BarChart data={data} layout="vertical" margin={{ left: 20, right: 20 }}>
+      <BarChart data={data} layout="vertical" margin={{ left: 20, right: 60 }}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis type="number" />
         <YAxis type="category" dataKey="label" width={140} tick={{ fontSize: 12 }} />
         <Tooltip formatter={(value) => Number(value).toLocaleString('fr-FR')} />
-        <Bar dataKey="count" fill="#2563eb" radius={[0, 4, 4, 0]} />
+        <Bar dataKey="count" fill="#2563eb" radius={[0, 4, 4, 0]}>
+          <LabelList
+            dataKey="count"
+            position="right"
+            fontSize={11}
+            fill="#6b7280"
+            formatter={(value) => { const n = Number(value); return total > 0 ? `${((n / total) * 100).toFixed(1)}%` : '0%' }}
+          />
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   )
@@ -69,6 +77,7 @@ interface StatisticsOnboardingChartsProps {
 }
 
 export function StatisticsOnboardingCharts({ stats }: StatisticsOnboardingChartsProps) {
+  const totalUsers = stats.kpis.totalUsers
   const registrationData = stats.registrationsByMonth.map((r) => ({
     ...r,
     label: r.month.slice(5) + '/' + r.month.slice(2, 4),
@@ -106,20 +115,20 @@ export function StatisticsOnboardingCharts({ stats }: StatisticsOnboardingCharts
       {/* 2 columns: Diets + Allergies */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartCard title="Regimes alimentaires">
-          <HorizontalBarChart data={stats.dietDistribution} />
+          <HorizontalBarChart total={totalUsers} data={stats.dietDistribution} />
         </ChartCard>
         <ChartCard title="Allergies">
-          <HorizontalBarChart data={stats.allergyDistribution} />
+          <HorizontalBarChart total={totalUsers} data={stats.allergyDistribution} />
         </ChartCard>
       </div>
 
       {/* 2 columns: Equipment + Goals */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartCard title="Equipement cuisine">
-          <HorizontalBarChart data={stats.equipmentDistribution} />
+          <HorizontalBarChart total={totalUsers} data={stats.equipmentDistribution} />
         </ChartCard>
         <ChartCard title="Objectifs batch cooking">
-          <HorizontalBarChart data={stats.goalsDistribution} />
+          <HorizontalBarChart total={totalUsers} data={stats.goalsDistribution} />
         </ChartCard>
       </div>
 
@@ -138,7 +147,15 @@ export function StatisticsOnboardingCharts({ stats }: StatisticsOnboardingCharts
               <XAxis dataKey="label" tick={{ fontSize: 11 }} />
               <YAxis />
               <Tooltip formatter={(value) => Number(value).toLocaleString('fr-FR')} />
-              <Bar dataKey="count" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="count" fill="#7c3aed" radius={[4, 4, 0, 0]}>
+                <LabelList
+                  dataKey="count"
+                  position="top"
+                  fontSize={11}
+                  fill="#6b7280"
+                  formatter={(value) => { const n = Number(value); return totalUsers > 0 ? `${((n / totalUsers) * 100).toFixed(1)}%` : '0%' }}
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
