@@ -154,7 +154,8 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                 ingredient_id: si.ingredient_id,
                 quantity: si.quantity,
                 unit: si.unit,
-                is_optional: si.is_optional
+                is_optional: si.is_optional,
+                weight_in_grams: si.weight_in_grams ?? null
             }))
             setValues(prev => ({ ...prev, structured_ingredients: structuredIngredients }))
         }
@@ -311,7 +312,8 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                 ingredient_id: ingredient.id,
                 quantity: null,
                 unit: null,
-                is_optional: false
+                is_optional: false,
+                weight_in_grams: null
             }
             const newStructuredIngredients = [...(values.structured_ingredients || []), newStructuredIngredient]
 
@@ -393,7 +395,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                     ...prev,
                     structured_ingredients: [
                         ...structured,
-                        { ingredient_id: ingredientId, quantity: null, unit: null, is_optional: false, [field]: value }
+                        { ingredient_id: ingredientId, quantity: null, unit: null, is_optional: false, weight_in_grams: null, [field]: value }
                     ]
                 }
             }
@@ -695,6 +697,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                                     <th className="text-left p-2 font-medium">Ingrédient</th>
                                                     <th className="text-left p-2 font-medium w-20">Qté</th>
                                                     <th className="text-left p-2 font-medium w-32">Unité</th>
+                                                    <th className="text-left p-2 font-medium w-20">Poids (g)</th>
                                                     <th className="text-center p-2 font-medium w-14">Opt.</th>
                                                     <th className="w-8"></th>
                                                 </tr>
@@ -761,6 +764,25 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                                                         ))}
                                                                     </SelectContent>
                                                                 </Select>
+                                                            </td>
+                                                            <td className="p-1">
+                                                                {structured?.unit && structured.unit !== IngredientUnit.GRAM && structured.unit !== IngredientUnit.KILOGRAM ? (
+                                                                    <Input
+                                                                        type="number"
+                                                                        step="any"
+                                                                        min="0"
+                                                                        value={structured?.weight_in_grams ?? ''}
+                                                                        onChange={(e) => updateStructuredIngredient(
+                                                                            ingredient.id,
+                                                                            'weight_in_grams',
+                                                                            e.target.value ? parseFloat(e.target.value) : null
+                                                                        )}
+                                                                        className="h-8 text-sm w-full"
+                                                                        placeholder="-"
+                                                                    />
+                                                                ) : (
+                                                                    <span className="text-xs text-muted-foreground px-2">auto</span>
+                                                                )}
                                                             </td>
                                                             <td className="p-1 text-center">
                                                                 <Checkbox

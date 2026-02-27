@@ -79,6 +79,10 @@ export type Ingredient = {
     suffix_plural: TranslationText
     category_id: number | null
     is_basic: boolean
+    calories_per_100g: number | null
+    proteins_per_100g: number | null
+    fats_per_100g: number | null
+    carbs_per_100g: number | null
 }
 
 export type IngredientCategory = {
@@ -169,6 +173,7 @@ export type IngredientRecipePivot = {
     quantity: number | null
     unit: IngredientUnit | null
     is_optional: boolean
+    weight_in_grams: number | null
 }
 
 export type StructuredIngredient = {
@@ -176,5 +181,6 @@ export type StructuredIngredient = {
     quantity: number | null
     unit: IngredientUnit | null
     is_optional: boolean
+    weight_in_grams: number | null
 }
 

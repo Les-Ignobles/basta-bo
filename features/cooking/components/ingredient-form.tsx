@@ -21,6 +21,10 @@ export type IngredientFormValues = {
     img_path?: string | null
     category_id?: number | null
     is_basic: boolean
+    calories_per_100g?: number | null
+    proteins_per_100g?: number | null
+    fats_per_100g?: number | null
+    carbs_per_100g?: number | null
 }
 
 type Props = {
@@ -227,6 +231,55 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                     <Label htmlFor="is_basic" className="text-sm font-medium">
                         Ingrédient de base
                     </Label>
+                </div>
+                <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground font-medium">Valeurs nutritionnelles (pour 100g)</div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="space-y-1">
+                            <Label className="text-xs">Calories (kcal)</Label>
+                            <Input
+                                type="number"
+                                step="1"
+                                min="0"
+                                value={values.calories_per_100g ?? ''}
+                                onChange={(e) => setValues((s) => ({ ...s, calories_per_100g: e.target.value ? parseInt(e.target.value) : null }))}
+                                placeholder="-"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Proteines (g)</Label>
+                            <Input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                value={values.proteins_per_100g ?? ''}
+                                onChange={(e) => setValues((s) => ({ ...s, proteins_per_100g: e.target.value ? parseFloat(e.target.value) : null }))}
+                                placeholder="-"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Lipides (g)</Label>
+                            <Input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                value={values.fats_per_100g ?? ''}
+                                onChange={(e) => setValues((s) => ({ ...s, fats_per_100g: e.target.value ? parseFloat(e.target.value) : null }))}
+                                placeholder="-"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Glucides (g)</Label>
+                            <Input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                value={values.carbs_per_100g ?? ''}
+                                onChange={(e) => setValues((s) => ({ ...s, carbs_per_100g: e.target.value ? parseFloat(e.target.value) : null }))}
+                                placeholder="-"
+                            />
+                        </div>
+                    </div>
                 </div>
                 <div className="space-y-1">
                     {values.name?.fr && values.name.fr.trim() ? (

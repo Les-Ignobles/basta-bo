@@ -72,7 +72,8 @@ export class IngredientRecipePivotRepository extends BaseRepository<IngredientRe
                 ingredient_id: ingredientId,
                 quantity: null,
                 unit: null,
-                is_optional: false
+                is_optional: false,
+                weight_in_grams: null
             }))
             await this.createBatch(pivots)
         }
@@ -89,7 +90,8 @@ export class IngredientRecipePivotRepository extends BaseRepository<IngredientRe
                 ingredient_id: si.ingredient_id,
                 quantity: si.quantity,
                 unit: si.unit,
-                is_optional: si.is_optional
+                is_optional: si.is_optional,
+                weight_in_grams: si.weight_in_grams
             }))
             await this.createBatch(pivots)
         }

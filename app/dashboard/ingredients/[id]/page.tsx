@@ -104,6 +104,10 @@ export default function IngredientDetailPage() {
             img_path: values.img_path ?? null,
             category_id: values.category_id ?? null,
             is_basic: values.is_basic,
+            calories_per_100g: values.calories_per_100g ?? null,
+            proteins_per_100g: values.proteins_per_100g ?? null,
+            fats_per_100g: values.fats_per_100g ?? null,
+            carbs_per_100g: values.carbs_per_100g ?? null,
         })
 
         setEditDialogOpen(false)

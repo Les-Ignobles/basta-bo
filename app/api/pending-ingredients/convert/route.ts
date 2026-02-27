@@ -36,7 +36,11 @@ export async function POST(request: NextRequest) {
             category_id: ingredientData.category_id,
             img_path: ingredientData.img_path || null,
             is_basic: false, // Par défaut, les ingrédients convertis ne sont pas de base
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            calories_per_100g: null,
+            proteins_per_100g: null,
+            fats_per_100g: null,
+            carbs_per_100g: null,
         }
 
         const newIngredient = await ingredientRepo.create(ingredientToCreate)
