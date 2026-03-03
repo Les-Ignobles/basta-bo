@@ -48,7 +48,8 @@ export const ROUTE_SCOPE_MAP: Record<string, RoleScope[]> = {
     '/dashboard/advice/faq': ['advice:read'],
     '/dashboard/admin': ['admin:read'],
     '/dashboard/subscriptions': ['admin:write'],
-    '/dashboard/promo-codes': ['admin:write']
+    '/dashboard/promo-codes': ['admin:write'],
+    '/dashboard/unsubscribe-feedbacks': ['admin:read']
 }
 
 // Mapping des groupes de sidebar vers les scopes requis

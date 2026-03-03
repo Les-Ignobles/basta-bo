@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings, BookOpen, FolderOpen, HelpCircle, ChefHat, Link2, Layers, MessageSquare, Tags, Users, Ticket, BarChart3 } from "lucide-react"
+import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings, BookOpen, FolderOpen, HelpCircle, ChefHat, Link2, Layers, MessageSquare, Tags, Users, Ticket, BarChart3, UserX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/components/auth-provider"
@@ -182,6 +182,14 @@ export function AppSidebar() {
                                         <Link href="/dashboard/statistics" className="flex items-center gap-2">
                                             <BarChart3 className="size-4" />
                                             <span>Statistiques</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/unsubscribe-feedbacks'}>
+                                        <Link href="/dashboard/unsubscribe-feedbacks" className="flex items-center gap-2">
+                                            <UserX className="size-4" />
+                                            <span>Retours Désabonnement</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
