@@ -50,6 +50,37 @@ export async function GET() {
       .select('meal_people_quantity, batch_cooking_session_count')
       .is('deleted_at', null)
 
+    // Avg age from birthdate (all users + premium only)
+    const nowDate = new Date()
+    function computeAvgAge(rows: { birthdate: string }[]): number {
+      if (rows.length === 0) return 0
+      const sum = rows.reduce((acc, r) => {
+        const birth = new Date(r.birthdate)
+        let age = nowDate.getFullYear() - birth.getFullYear()
+        const md = nowDate.getMonth() - birth.getMonth()
+        if (md < 0 || (md === 0 && nowDate.getDate() < birth.getDate())) age--
+        return acc + age
+      }, 0)
+      return Number((sum / rows.length).toFixed(1))
+    }
+
+    const [{ data: birthdateData }, { data: premiumBirthdateData }] = await Promise.all([
+      supabaseServer
+        .from('user_profiles')
+        .select('birthdate')
+        .is('deleted_at', null)
+        .not('birthdate', 'is', null),
+      supabaseServer
+        .from('user_profiles')
+        .select('birthdate')
+        .is('deleted_at', null)
+        .not('birthdate', 'is', null)
+        .gt('premium_sub_end_at', nowDate.toISOString()),
+    ])
+
+    const avgAge = computeAvgAge(birthdateData ?? [])
+    const avgPremiumAge = computeAvgAge(premiumBirthdateData ?? [])
+
     let avgHouseholdSize = 0
     let avgSessionCount = 0
     if (avgData && avgData.length > 0) {
@@ -65,6 +96,8 @@ export async function GET() {
       premiumPercentage: totalUsers > 0 ? Number((100 * premiumUsers / totalUsers).toFixed(1)) : 0,
       avgHouseholdSize,
       avgSessionCount,
+      avgAge,
+      avgPremiumAge,
     }
 
     // --- Registrations by month (last 12 months) ---

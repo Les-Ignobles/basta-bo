@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card'
-import { Users, Crown, Home, ChefHat } from 'lucide-react'
+import { Users, Crown, Home, ChefHat, CalendarDays } from 'lucide-react'
 import type { OnboardingKpis } from '../types/statistics.types'
 
 interface StatisticsKpiCardsProps {
@@ -31,11 +31,23 @@ const kpiConfig = [
     icon: ChefHat,
     format: (v: number) => v.toLocaleString('fr-FR'),
   },
+  {
+    key: 'avgAge' as const,
+    label: 'Age moyen total',
+    icon: CalendarDays,
+    format: (v: number) => `${v} ans`,
+  },
+  {
+    key: 'avgPremiumAge' as const,
+    label: 'Age moyen premium',
+    icon: Crown,
+    format: (v: number) => `${v} ans`,
+  },
 ]
 
 export function StatisticsKpiCards({ kpis }: StatisticsKpiCardsProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {kpiConfig.map(({ key, label, icon: Icon, format }) => (
         <Card key={key}>
           <CardContent className="flex items-center gap-4">

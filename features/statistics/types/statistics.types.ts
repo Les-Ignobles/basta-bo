@@ -4,6 +4,8 @@ export interface OnboardingKpis {
   premiumPercentage: number
   avgHouseholdSize: number
   avgSessionCount: number
+  avgAge: number
+  avgPremiumAge: number
 }
 
 export interface LabelCount {
