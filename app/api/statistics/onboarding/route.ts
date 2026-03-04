@@ -157,6 +157,19 @@ export async function GET() {
       }))
     )
 
+    // --- Top 10 recipes by batchcooking usage ---
+    const { data: topRecipesData } = await supabaseServer
+      .from('recipes')
+      .select('id, title, batchcooking_usage_count')
+      .order('batchcooking_usage_count', { ascending: false })
+      .limit(10)
+
+    const topRecipesByUsage = (topRecipesData ?? []).map((r: { id: number; title: string; batchcooking_usage_count: number }) => ({
+      id: r.id,
+      title: r.title,
+      usageCount: r.batchcooking_usage_count ?? 0,
+    }))
+
     const stats: OnboardingStats = {
       kpis,
       registrationsByMonth,
@@ -167,6 +180,7 @@ export async function GET() {
       householdSizeDistribution,
       appetiteDistribution,
       goalsDistribution,
+      topRecipesByUsage,
     }
 
     return NextResponse.json({ data: stats })

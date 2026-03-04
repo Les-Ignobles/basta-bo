@@ -53,6 +53,7 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                         <TableHead>Image</TableHead>
                         <TableHead>Ingrédients</TableHead>
                         <TableHead>Saisonnalité</TableHead>
+                        <TableHead className="text-right">Batch cooking</TableHead>
                         <TableHead className="text-right">Créé le</TableHead>
                         <TableHead className="w-[60px] text-right">Actions</TableHead>
                     </TableRow>
@@ -60,7 +61,7 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                 <TableBody>
                     {loading ? (
                         <TableRow>
-                            <TableCell colSpan={9} className="text-center py-8">
+                            <TableCell colSpan={10} className="text-center py-8">
                                 <div className="flex items-center justify-center gap-2 text-muted-foreground">
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                     <span>Chargement des recettes...</span>
@@ -115,6 +116,12 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                                                 <span className="text-xs text-muted-foreground">Toute l'année</span>
                                             )}
                                         </TableCell>
+                                        <TableCell className="text-right tabular-nums cursor-pointer" onClick={() => onEdit?.(recipe)}>
+                                            {recipe.batchcooking_usage_count > 0
+                                                ? recipe.batchcooking_usage_count.toLocaleString('fr-FR')
+                                                : <span className="text-muted-foreground">&mdash;</span>
+                                            }
+                                        </TableCell>
                                         <TableCell className="text-right text-xs text-muted-foreground cursor-pointer" onClick={() => onEdit?.(recipe)}>
                                             {new Date(recipe.created_at).toLocaleString()}
                                         </TableCell>
@@ -140,7 +147,7 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                             })}
                             {recipes.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-6">
+                                    <TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-6">
                                         Aucune recette trouvée.
                                     </TableCell>
                                 </TableRow>

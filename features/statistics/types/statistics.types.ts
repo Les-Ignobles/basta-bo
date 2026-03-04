@@ -21,6 +21,12 @@ export interface RegistrationEntry {
   count: number
 }
 
+export interface TopRecipeEntry {
+  id: number
+  title: string
+  usageCount: number
+}
+
 export interface OnboardingStats {
   kpis: OnboardingKpis
   registrationsByMonth: RegistrationEntry[]
@@ -31,4 +37,5 @@ export interface OnboardingStats {
   householdSizeDistribution: HouseholdSizeEntry[]
   appetiteDistribution: LabelCount[]
   goalsDistribution: LabelCount[]
+  topRecipesByUsage: TopRecipeEntry[]
 }

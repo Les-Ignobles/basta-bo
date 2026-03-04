@@ -5,6 +5,7 @@ import { BarChart3, Loader2 } from 'lucide-react'
 import { useStatisticsStore } from '@/features/statistics/stores/statistics-store'
 import { StatisticsKpiCards } from '@/features/statistics/components/statistics-kpi-cards'
 import { StatisticsOnboardingCharts } from '@/features/statistics/components/statistics-onboarding-charts'
+import { StatisticsTopRecipesChart } from '@/features/statistics/components/statistics-top-recipes-chart'
 import { CsvExportButton } from '@/features/statistics/components/csv-export-button'
 
 export default function StatisticsPage() {
@@ -49,6 +50,12 @@ export default function StatisticsPage() {
 
       {/* Onboarding Charts */}
       <StatisticsOnboardingCharts stats={data} />
+
+      {/* Recipes */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Recettes</h2>
+        <StatisticsTopRecipesChart recipes={data.topRecipesByUsage} />
+      </div>
     </div>
   )
 }

@@ -114,6 +114,7 @@ export type Recipe = {
     proteins_per_serving: number | null
     fats_per_serving: number | null
     carbs_per_serving: number | null
+    batchcooking_usage_count: number
 }
 
 export type KitchenEquipment = {
