@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings, BookOpen, FolderOpen, HelpCircle, ChefHat, Link2, Layers, MessageSquare, Tags, Users, Ticket, BarChart3, UserX } from "lucide-react"
+import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings, BookOpen, FolderOpen, HelpCircle, ChefHat, Link2, Layers, MessageSquare, Tags, Users, Ticket, BarChart3, UserX, Wand2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/components/auth-provider"
@@ -142,6 +142,14 @@ export function AppSidebar() {
                                         <Link href="/dashboard/admin" className="flex items-center gap-2">
                                             <Settings className="size-4" />
                                             <span>Analyse des Allergies</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/admin/normalize-recipe-actions'}>
+                                        <Link href="/dashboard/admin/normalize-recipe-actions" className="flex items-center gap-2">
+                                            <Wand2 className="size-4" />
+                                            <span>Normalisation Recettes</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>

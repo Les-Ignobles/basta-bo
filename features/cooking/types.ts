@@ -185,3 +185,165 @@ export type StructuredIngredient = {
     weight_in_grams: number | null
 }
 
+// === Recipe Actions (V6 normalization) ===
+
+export type RecipeActionIngredientBO = {
+    name: string
+    ingredient_id: number
+}
+
+export type RecipeActionBO = {
+    id: number
+    recipe_id: number
+    step_index: number
+    action_type: string
+    equipment: string | null
+    raw_instruction: string
+    normalized_instruction: string
+    duration_minutes: number
+    passive_time_minutes: number
+    ingredients: RecipeActionIngredientBO[]
+    phase: string
+    created_at: string
+}
+
+export enum RecipeActionType {
+    WASH = 'wash',
+    PEEL = 'peel',
+    CUT = 'cut',
+    GRATE = 'grate',
+    MINCE = 'mince',
+    CRUSH = 'crush',
+    ZEST = 'zest',
+    SQUEEZE = 'squeeze',
+    DRAIN = 'drain',
+    SOAK = 'soak',
+    MARINATE = 'marinate',
+    MIX = 'mix',
+    WHISK = 'whisk',
+    KNEAD = 'knead',
+    BLEND = 'blend',
+    SAUTE = 'saute',
+    FRY = 'fry',
+    DEEP_FRY = 'deep_fry',
+    BOIL = 'boil',
+    SIMMER = 'simmer',
+    STEAM = 'steam',
+    REDUCE = 'reduce',
+    FLAMBE = 'flambe',
+    STIR_FRY = 'stir_fry',
+    PREHEAT = 'preheat',
+    BAKE = 'bake',
+    ROAST = 'roast',
+    GRILL = 'grill',
+    BROIL = 'broil',
+    GRATINATE = 'gratinate',
+    ASSEMBLE = 'assemble',
+    SEASON = 'season',
+    GARNISH = 'garnish',
+    COOL = 'cool',
+    REST = 'rest',
+    STORE = 'store',
+}
+
+export const RECIPE_ACTION_TYPE_LABELS: Record<RecipeActionType, string> = {
+    [RecipeActionType.WASH]: 'Laver',
+    [RecipeActionType.PEEL]: 'Eplucher',
+    [RecipeActionType.CUT]: 'Couper',
+    [RecipeActionType.GRATE]: 'Raper',
+    [RecipeActionType.MINCE]: 'Emincer',
+    [RecipeActionType.CRUSH]: 'Ecraser',
+    [RecipeActionType.ZEST]: 'Zester',
+    [RecipeActionType.SQUEEZE]: 'Presser',
+    [RecipeActionType.DRAIN]: 'Egoutter',
+    [RecipeActionType.SOAK]: 'Tremper',
+    [RecipeActionType.MARINATE]: 'Mariner',
+    [RecipeActionType.MIX]: 'Melanger',
+    [RecipeActionType.WHISK]: 'Fouetter',
+    [RecipeActionType.KNEAD]: 'Petrir',
+    [RecipeActionType.BLEND]: 'Mixer',
+    [RecipeActionType.SAUTE]: 'Faire sauter',
+    [RecipeActionType.FRY]: 'Frire',
+    [RecipeActionType.DEEP_FRY]: 'Friture',
+    [RecipeActionType.BOIL]: 'Faire bouillir',
+    [RecipeActionType.SIMMER]: 'Mijoter',
+    [RecipeActionType.STEAM]: 'Cuire vapeur',
+    [RecipeActionType.REDUCE]: 'Reduire',
+    [RecipeActionType.FLAMBE]: 'Flamber',
+    [RecipeActionType.STIR_FRY]: 'Sauter (wok)',
+    [RecipeActionType.PREHEAT]: 'Prechauffer',
+    [RecipeActionType.BAKE]: 'Cuire au four',
+    [RecipeActionType.ROAST]: 'Rotir',
+    [RecipeActionType.GRILL]: 'Griller',
+    [RecipeActionType.BROIL]: 'Gratiner (grill)',
+    [RecipeActionType.GRATINATE]: 'Gratiner',
+    [RecipeActionType.ASSEMBLE]: 'Assembler',
+    [RecipeActionType.SEASON]: 'Assaisonner',
+    [RecipeActionType.GARNISH]: 'Garnir',
+    [RecipeActionType.COOL]: 'Refroidir',
+    [RecipeActionType.REST]: 'Reposer',
+    [RecipeActionType.STORE]: 'Stocker',
+}
+
+export enum CookingEquipmentBO {
+    // Contenants
+    BOWL = 'bowl',
+    SALAD_BOWL = 'salad_bowl',
+    // Cuisson feu / plaque
+    FRYING_PAN = 'frying_pan',
+    SAUCEPAN = 'saucepan',
+    STOCKPOT = 'stockpot',
+    WOK = 'wok',
+    DUTCH_OVEN = 'dutch_oven',
+    GRILL_PAN = 'grill_pan',
+    CREPE_PAN = 'crepe_pan',
+    // Four & moules
+    OVEN = 'oven',
+    BAKING_SHEET = 'baking_sheet',
+    BAKING_DISH = 'baking_dish',
+    CAKE_PAN = 'cake_pan',
+    TART_PAN = 'tart_pan',
+    MUFFIN_PAN = 'muffin_pan',
+    RAMEKIN = 'ramekin',
+    // Cuisson spécialisée
+    STEAMER = 'steamer',
+    DEEP_FRYER = 'deep_fryer',
+    PRESSURE_COOKER = 'pressure_cooker',
+    SLOW_COOKER = 'slow_cooker',
+    // Électroménager
+    BLENDER = 'blender',
+    IMMERSION_BLENDER = 'immersion_blender',
+    FOOD_PROCESSOR = 'food_processor',
+    STAND_MIXER = 'stand_mixer',
+    // Aucun
+    NONE = 'none',
+}
+
+export const COOKING_EQUIPMENT_LABELS: Record<CookingEquipmentBO, string> = {
+    [CookingEquipmentBO.BOWL]: 'Bol',
+    [CookingEquipmentBO.SALAD_BOWL]: 'Saladier',
+    [CookingEquipmentBO.FRYING_PAN]: 'Poêle',
+    [CookingEquipmentBO.SAUCEPAN]: 'Casserole',
+    [CookingEquipmentBO.STOCKPOT]: 'Faitout',
+    [CookingEquipmentBO.WOK]: 'Wok',
+    [CookingEquipmentBO.DUTCH_OVEN]: 'Cocotte',
+    [CookingEquipmentBO.GRILL_PAN]: 'Poêle grill',
+    [CookingEquipmentBO.CREPE_PAN]: 'Crêpière',
+    [CookingEquipmentBO.OVEN]: 'Four',
+    [CookingEquipmentBO.BAKING_SHEET]: 'Plaque de cuisson',
+    [CookingEquipmentBO.BAKING_DISH]: 'Plat à four',
+    [CookingEquipmentBO.CAKE_PAN]: 'Moule à gâteau',
+    [CookingEquipmentBO.TART_PAN]: 'Moule à tarte',
+    [CookingEquipmentBO.MUFFIN_PAN]: 'Moule à muffins',
+    [CookingEquipmentBO.RAMEKIN]: 'Ramequin',
+    [CookingEquipmentBO.STEAMER]: 'Cuiseur vapeur',
+    [CookingEquipmentBO.DEEP_FRYER]: 'Friteuse',
+    [CookingEquipmentBO.PRESSURE_COOKER]: 'Cocotte-minute',
+    [CookingEquipmentBO.SLOW_COOKER]: 'Mijoteuse',
+    [CookingEquipmentBO.BLENDER]: 'Mixeur / Blender',
+    [CookingEquipmentBO.IMMERSION_BLENDER]: 'Mixeur plongeant',
+    [CookingEquipmentBO.FOOD_PROCESSOR]: 'Robot culinaire',
+    [CookingEquipmentBO.STAND_MIXER]: 'Robot pâtissier',
+    [CookingEquipmentBO.NONE]: 'Aucun',
+}
+

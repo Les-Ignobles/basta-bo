@@ -9,7 +9,9 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Check, ChevronsUpDown, Loader2 } from 'lucide-react'
+
+import { Check, ChevronsUpDown, Loader2, Flame, Beef, Droplets, Wheat } from 'lucide-react'
+import { RecipeActionsSection } from './recipe-actions-section'
 import { cn } from '@/lib/utils'
 import type { RecipeFormValues, KitchenEquipment, Ingredient, StructuredIngredient, IngredientRecipePivot } from '@/features/cooking/types'
 import { DishType, DISH_TYPE_LABELS, QuantificationType, QUANTIFICATION_TYPE_LABELS, IngredientUnit, INGREDIENT_UNIT_LABELS } from '@/features/cooking/types'
@@ -33,6 +35,7 @@ type Props = {
     defaultCategoryIds?: number[]
     onCategoriesChange?: (categoryIds: number[]) => void
     formId?: string
+    recipeId?: number
 }
 
 const MONTHS = [
@@ -51,7 +54,7 @@ const QUANTIFICATION_TYPES = [
     { value: QuantificationType.PER_UNIT, label: QUANTIFICATION_TYPE_LABELS[QuantificationType.PER_UNIT] }
 ]
 
-export function RecipeForm({ defaultValues, defaultIngredients, defaultStructuredIngredients, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets, allergies, recipeCategories, defaultCategoryIds, onCategoriesChange, formId }: Props) {
+export function RecipeForm({ defaultValues, defaultIngredients, defaultStructuredIngredients, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets, allergies, recipeCategories, defaultCategoryIds, onCategoriesChange, formId, recipeId }: Props) {
     const [values, setValues] = useState<RecipeFormValues>({
         title: '',
         ingredients_name: [],
@@ -64,12 +67,11 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
         diet_mask: null,
         allergy_mask: null,
         instructions: '',
-        dish_type: DishType.PLAT, // Par défaut "plat"
-        quantification_type: QuantificationType.PER_PERSON, // Par défaut "par personne"
-        is_folklore: false, // Par défaut false
-        is_visible: true, // Par défaut true
-        base_servings: null, // Nombre de portions de base
-        // Valeurs nutritionnelles
+        dish_type: DishType.PLAT,
+        quantification_type: QuantificationType.PER_PERSON,
+        is_folklore: false,
+        is_visible: true,
+        base_servings: null,
         calories_per_serving: null,
         proteins_per_serving: null,
         fats_per_serving: null,
@@ -113,13 +115,12 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
             } finally {
                 setSearching(false)
             }
-        }, 300) // Debounce de 300ms
+        }, 300)
 
         return () => clearTimeout(timeoutId)
     }, [ingredientInput, searchIngredients])
 
     // Update form values when defaultValues change (for edit mode)
-    // On utilise JSON.stringify pour comparer le contenu réel, pas juste la référence
     useEffect(() => {
         if (defaultValues) {
             setValues({
@@ -137,7 +138,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                 is_folklore: defaultValues.is_folklore || false,
                 is_visible: defaultValues.is_visible !== undefined ? defaultValues.is_visible : true,
                 base_servings: defaultValues.base_servings ?? null,
-                // Valeurs nutritionnelles
                 calories_per_serving: defaultValues.calories_per_serving ?? null,
                 proteins_per_serving: defaultValues.proteins_per_serving ?? null,
                 fats_per_serving: defaultValues.fats_per_serving ?? null,
@@ -163,7 +163,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
     }, [JSON.stringify(defaultStructuredIngredients)])
 
     // Initialize masks from default values
-    // On utilise JSON.stringify pour comparer le contenu réel
     useEffect(() => {
         if (defaultValues?.seasonality_mask !== undefined && defaultValues.seasonality_mask !== null) {
             const months = []
@@ -211,7 +210,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
     }, [allergies, selectedAllergies.length])
 
     // Initialiser selectedIngredients depuis defaultIngredients (mode édition)
-    // On utilise JSON.stringify pour comparer le contenu réel
     useEffect(() => {
         if (defaultIngredients && defaultIngredients.length > 0) {
             setSelectedIngredients(defaultIngredients)
@@ -222,7 +220,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
     // Fonction helper pour synchroniser les ingrédients via l'API (mode édition uniquement)
     async function syncIngredientsToAPI(ingredientIds: number[], ingredientNames: string[], structuredIngredients?: StructuredIngredient[]) {
         const recipeId = defaultValues?.id
-        if (!recipeId) return // Mode création, pas de sync immédiat
+        if (!recipeId) return
 
         setSyncingIngredients(true)
         try {
@@ -240,7 +238,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
             }
         } catch (error) {
             console.error('Failed to sync ingredients:', error)
-            // On pourrait afficher un toast d'erreur ici
         } finally {
             setSyncingIngredients(false)
         }
@@ -250,7 +247,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
         e.preventDefault()
         setLoading(true)
         try {
-            // Convert selected months to bitmask
             let seasonalityMask = 0
             selectedMonths.forEach((selected, index) => {
                 if (selected) {
@@ -258,7 +254,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                 }
             })
 
-            // Convert selected equipments to bitmask
             let equipmentsMask = 0
             selectedEquipments.forEach((selected, index) => {
                 if (selected && kitchenEquipments[index]?.bit_index !== null) {
@@ -266,7 +261,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                 }
             })
 
-            // Convert selected diets to bitmask
             let dietMask = 0
             if (diets) {
                 selectedDiets.forEach((selected, index) => {
@@ -276,7 +270,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                 })
             }
 
-            // Convert selected allergies to bitmask
             let allergyMask = 0
             if (allergies) {
                 selectedAllergies.forEach((selected, index) => {
@@ -299,7 +292,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
     }
 
     async function addIngredient(ingredient: Ingredient) {
-        // Vérifier que l'ingrédient n'est pas déjà sélectionné
         if (!selectedIngredients.find(i => i.id === ingredient.id)) {
             const newSelectedIngredients = [...selectedIngredients, ingredient]
             setSelectedIngredients(newSelectedIngredients)
@@ -307,7 +299,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
             const newIngredientIds = newSelectedIngredients.map(i => i.id)
             const newIngredientNames = newSelectedIngredients.map(i => i.name.fr)
 
-            // Ajouter un nouvel ingrédient structuré avec valeurs par défaut
             const newStructuredIngredient: StructuredIngredient = {
                 ingredient_id: ingredient.id,
                 quantity: null,
@@ -327,7 +318,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
             setIngredientInput('')
             setIngredientOpen(false)
 
-            // Synchroniser avec l'API en mode édition (avec les données structurées)
             await syncIngredientsToAPI(newIngredientIds, newIngredientNames, newStructuredIngredients)
         }
     }
@@ -340,7 +330,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
         const newIngredientIds = newSelectedIngredients.map(i => i.id)
         const newIngredientNames = newSelectedIngredients.map(i => i.name.fr)
 
-        // Filtrer aussi les structured_ingredients pour retirer l'ingrédient supprimé
         const newStructuredIngredients = (values.structured_ingredients || [])
             .filter(si => si.ingredient_id !== removedIngredient.id)
 
@@ -351,7 +340,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
             structured_ingredients: newStructuredIngredients
         }))
 
-        // Synchroniser avec l'API en mode édition (avec les données structurées)
         await syncIngredientsToAPI(newIngredientIds, newIngredientNames, newStructuredIngredients)
     }
 
@@ -406,16 +394,19 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
         return values.structured_ingredients?.find(si => si.ingredient_id === ingredientId)
     }
 
+    const hasNutrition = values.calories_per_serving !== null || values.proteins_per_serving !== null
+
     return (
         <form id={formId} onSubmit={handleSubmit} className="space-y-6">
-            <Tabs defaultValue="info" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="info">Informations & Préparation</TabsTrigger>
+            <Tabs defaultValue="recipe" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="recipe">Recette</TabsTrigger>
+                    <TabsTrigger value="preparation">Préparation</TabsTrigger>
                     <TabsTrigger value="criteria">Critères</TabsTrigger>
                 </TabsList>
 
-                {/* Tab 1: Informations générales, Ingrédients & Préparation */}
-                <TabsContent value="info" className="space-y-6 mt-6">
+                {/* Tab 1: Recette (infos + ingrédients) */}
+                <TabsContent value="recipe" className="space-y-6 mt-6">
                     {/* Section Titre et Image */}
                     <div className="space-y-4">
                         <h3 className="text-base font-semibold text-foreground">Informations principales</h3>
@@ -445,10 +436,10 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                         </div>
                     </div>
 
-                    {/* Section Classification */}
+                    {/* Section Classification + Options (compact) */}
                     <div className="space-y-4">
-                        <h3 className="text-base font-semibold text-foreground">Classification</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <h3 className="text-base font-semibold text-foreground">Classification & Options</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-foreground">Type de plat *</label>
                                 <Select
@@ -456,7 +447,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                     onValueChange={(value) => setValues(prev => ({ ...prev, dish_type: parseInt(value) as DishType }))}
                                 >
                                     <SelectTrigger className="text-base">
-                                        <SelectValue placeholder="Sélectionner un type de plat" />
+                                        <SelectValue placeholder="Type de plat" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {DISH_TYPES.map((dishType) => (
@@ -466,27 +457,25 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                <p className="text-xs text-muted-foreground">Entrée, plat principal ou dessert</p>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">Type de quantification *</label>
+                                <label className="text-sm font-medium text-foreground">Quantification *</label>
                                 <Select
                                     value={values.quantification_type.toString()}
                                     onValueChange={(value) => setValues(prev => ({ ...prev, quantification_type: parseInt(value) as QuantificationType }))}
                                 >
                                     <SelectTrigger className="text-base">
-                                        <SelectValue placeholder="Sélectionner un type de quantification" />
+                                        <SelectValue placeholder="Quantification" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {QUANTIFICATION_TYPES.map((quantificationType) => (
-                                            <SelectItem key={quantificationType.value} value={quantificationType.value.toString()}>
-                                                {quantificationType.label}
+                                        {QUANTIFICATION_TYPES.map((qt) => (
+                                            <SelectItem key={qt.value} value={qt.value.toString()}>
+                                                {qt.label}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                <p className="text-xs text-muted-foreground">Comment les portions sont calculées</p>
                             </div>
 
                             <div className="space-y-2">
@@ -502,353 +491,288 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                     placeholder="Ex: 4"
                                     className="text-base"
                                 />
-                                <p className="text-xs text-muted-foreground">Nombre de personnes pour les quantités de base</p>
+                            </div>
+
+                            <div className="space-y-3 flex flex-col justify-center">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <Checkbox
+                                        checked={values.is_visible}
+                                        onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_visible: Boolean(checked) }))}
+                                    />
+                                    <span className="text-sm">Visible</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <Checkbox
+                                        checked={values.is_folklore}
+                                        onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_folklore: Boolean(checked) }))}
+                                    />
+                                    <span className="text-sm">Folklore</span>
+                                </label>
                             </div>
                         </div>
                     </div>
 
-                    {/* Section Valeurs nutritionnelles */}
+                    {/* Section Ingrédients + Nutrition */}
                     <div className="space-y-4">
-                        <h3 className="text-base font-semibold text-foreground">Valeurs nutritionnelles (par portion)</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">Calories (kcal)</label>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    value={values.calories_per_serving ?? ''}
-                                    onChange={(e) => setValues(prev => ({
-                                        ...prev,
-                                        calories_per_serving: e.target.value ? parseInt(e.target.value, 10) : null
-                                    }))}
-                                    placeholder="Ex: 450"
-                                    className="text-base"
-                                />
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-base font-semibold text-foreground">Ingrédients</h3>
+                                {syncingIngredients && (
+                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                )}
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">Protéines (g)</label>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    step="0.1"
-                                    value={values.proteins_per_serving ?? ''}
-                                    onChange={(e) => setValues(prev => ({
-                                        ...prev,
-                                        proteins_per_serving: e.target.value ? parseFloat(e.target.value) : null
-                                    }))}
-                                    placeholder="Ex: 25.5"
-                                    className="text-base"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">Lipides (g)</label>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    step="0.1"
-                                    value={values.fats_per_serving ?? ''}
-                                    onChange={(e) => setValues(prev => ({
-                                        ...prev,
-                                        fats_per_serving: e.target.value ? parseFloat(e.target.value) : null
-                                    }))}
-                                    placeholder="Ex: 18.2"
-                                    className="text-base"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">Glucides (g)</label>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    step="0.1"
-                                    value={values.carbs_per_serving ?? ''}
-                                    onChange={(e) => setValues(prev => ({
-                                        ...prev,
-                                        carbs_per_serving: e.target.value ? parseFloat(e.target.value) : null
-                                    }))}
-                                    placeholder="Ex: 42.0"
-                                    className="text-base"
-                                />
-                            </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">Valeurs pour une portion standard (basées sur le nombre de portions de base)</p>
-                    </div>
 
-                    {/* Section Options */}
-                    <div className="space-y-4">
-                        <h3 className="text-base font-semibold text-foreground">Options de publication</h3>
-                        <div className="flex flex-col gap-4 border rounded-lg p-4 bg-muted/30">
-                            <label className="flex items-center gap-3 cursor-pointer">
-                                <Checkbox
-                                    checked={values.is_visible}
-                                    onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_visible: Boolean(checked) }))}
-                                />
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-medium">Visible sur l&apos;application</span>
-                                    <span className="text-xs text-muted-foreground">La recette sera accessible aux utilisateurs</span>
+                            {/* Valeurs nutritionnelles (inline, read-only) */}
+                            {hasNutrition && (
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-1.5 text-sm">
+                                        <Flame className="h-3.5 w-3.5 text-orange-500" />
+                                        <span className="font-medium">{values.calories_per_serving ?? '—'}</span>
+                                        <span className="text-xs text-muted-foreground">kcal</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-sm">
+                                        <Beef className="h-3.5 w-3.5 text-red-500" />
+                                        <span className="font-medium">{values.proteins_per_serving ?? '—'}</span>
+                                        <span className="text-xs text-muted-foreground">g</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-sm">
+                                        <Droplets className="h-3.5 w-3.5 text-yellow-500" />
+                                        <span className="font-medium">{values.fats_per_serving ?? '—'}</span>
+                                        <span className="text-xs text-muted-foreground">g</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-sm">
+                                        <Wheat className="h-3.5 w-3.5 text-amber-700" />
+                                        <span className="font-medium">{values.carbs_per_serving ?? '—'}</span>
+                                        <span className="text-xs text-muted-foreground">g</span>
+                                    </div>
                                 </div>
-                            </label>
-                            <label className="flex items-center gap-3 cursor-pointer">
-                                <Checkbox
-                                    checked={values.is_folklore}
-                                    onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_folklore: Boolean(checked) }))}
-                                />
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-medium">Recette folklore</span>
-                                    <span className="text-xs text-muted-foreground">Marque cette recette comme traditionnelle ou régionale</span>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-
-                    {/* Section Ingrédients */}
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <h3 className="text-base font-semibold text-foreground">Ingrédients</h3>
-                            {syncingIngredients && (
-                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                             )}
                         </div>
 
                         {/* Sélection d'ingrédients */}
-                        <div className="space-y-1">
-                            <div className="text-xs text-muted-foreground">
-                                Sélectionner les ingrédients
-                            </div>
-                            <div className="flex gap-2 w-full max-w-md">
-                                <Popover open={ingredientOpen} onOpenChange={setIngredientOpen}>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            role="combobox"
-                                            aria-expanded={ingredientOpen}
-                                            className="flex-1 justify-between"
-                                        >
-                                            {ingredientInput || "Ajouter un nouvel ingrédient..."}
-                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-full p-0">
-                                        <Command>
-                                            <CommandInput
-                                                placeholder="Taper le nom d'un ingrédient..."
-                                                value={ingredientInput}
-                                                onValueChange={setIngredientInput}
-                                            />
-                                            <CommandList>
-                                                <CommandEmpty>
-                                                    {searching ? "Recherche en cours..." :
-                                                        searchResults.length === 0 && ingredientInput ? "Aucun ingrédient trouvé." :
-                                                            "Tapez pour rechercher des ingrédients..."}
-                                                </CommandEmpty>
-                                                {searchResults.length > 0 && (
-                                                    <CommandGroup heading="Ingrédients disponibles">
-                                                        {searchResults.map((ingredient) => (
-                                                            <CommandItem
-                                                                key={ingredient.id}
-                                                                value={ingredient.name.fr}
-                                                                onSelect={() => addIngredient(ingredient)}
-                                                            >
-                                                                <Check
-                                                                    className={cn(
-                                                                        "mr-2 h-4 w-4",
-                                                                        selectedIngredients.find(i => i.id === ingredient.id) ? "opacity-100" : "opacity-0"
-                                                                    )}
-                                                                />
-                                                                {ingredient.name.fr}
-                                                            </CommandItem>
-                                                        ))}
-                                                    </CommandGroup>
-                                                )}
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
+                        <div className="flex gap-2 w-full max-w-md">
+                            <Popover open={ingredientOpen} onOpenChange={setIngredientOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-expanded={ingredientOpen}
+                                        className="flex-1 justify-between"
+                                    >
+                                        {ingredientInput || "Ajouter un ingrédient..."}
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-full p-0">
+                                    <Command>
+                                        <CommandInput
+                                            placeholder="Taper le nom d'un ingrédient..."
+                                            value={ingredientInput}
+                                            onValueChange={setIngredientInput}
+                                        />
+                                        <CommandList>
+                                            <CommandEmpty>
+                                                {searching ? "Recherche en cours..." :
+                                                    searchResults.length === 0 && ingredientInput ? "Aucun ingrédient trouvé." :
+                                                        "Tapez pour rechercher..."}
+                                            </CommandEmpty>
+                                            {searchResults.length > 0 && (
+                                                <CommandGroup heading="Ingrédients disponibles">
+                                                    {searchResults.map((ingredient) => (
+                                                        <CommandItem
+                                                            key={ingredient.id}
+                                                            value={ingredient.name.fr}
+                                                            onSelect={() => addIngredient(ingredient)}
+                                                        >
+                                                            <Check
+                                                                className={cn(
+                                                                    "mr-2 h-4 w-4",
+                                                                    selectedIngredients.find(i => i.id === ingredient.id) ? "opacity-100" : "opacity-0"
+                                                                )}
+                                                            />
+                                                            {ingredient.name.fr}
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            )}
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
                         </div>
 
-                        {/* Comparaison côte à côte : Texte original vs Structuré */}
+                        {/* Tableau ingrédients structurés (pleine largeur) */}
                         {selectedIngredients.length > 0 && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {/* Colonne gauche : Quantités textuelles (original) */}
-                                <div className="space-y-2">
-                                    <div className="text-xs text-muted-foreground font-medium">
-                                        Quantités textuelles (ancien format)
-                                    </div>
-                                    <Textarea
-                                        value={values.ingredients_quantities ?? ''}
-                                        onChange={(e) => setValues(prev => ({ ...prev, ingredients_quantities: e.target.value }))}
-                                        placeholder="Quantités des ingrédients (format texte)"
-                                        rows={16}
-                                        className="resize-none bg-muted/30 text-muted-foreground text-sm"
-                                    />
-                                </div>
-
-                                {/* Colonne droite : Quantités structurées (migration) */}
-                                <div className="space-y-2">
-                                    <div className="text-xs text-muted-foreground font-medium">
-                                        Quantités structurées (normalisées)
-                                    </div>
-                                    <div className="border rounded-md overflow-hidden">
-                                        <table className="w-full text-sm">
-                                            <thead className="bg-muted/50">
-                                                <tr>
-                                                    <th className="w-10"></th>
-                                                    <th className="text-left p-2 font-medium">Ingrédient</th>
-                                                    <th className="text-left p-2 font-medium w-20">Qté</th>
-                                                    <th className="text-left p-2 font-medium w-32">Unité</th>
-                                                    <th className="text-left p-2 font-medium w-20">Poids (g)</th>
-                                                    <th className="text-center p-2 font-medium w-14">Opt.</th>
-                                                    <th className="w-8"></th>
+                            <div className="border rounded-md overflow-hidden">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-muted/50">
+                                        <tr>
+                                            <th className="w-10"></th>
+                                            <th className="text-left p-2 font-medium">Ingrédient</th>
+                                            <th className="text-left p-2 font-medium w-24">Quantité</th>
+                                            <th className="text-left p-2 font-medium w-32">Unité</th>
+                                            <th className="text-left p-2 font-medium w-24">Poids (g)</th>
+                                            <th className="text-center p-2 font-medium w-14">Opt.</th>
+                                            <th className="w-8"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {[...selectedIngredients]
+                                            .sort((a, b) => a.name.fr.localeCompare(b.name.fr, 'fr'))
+                                            .map((ingredient) => {
+                                            const structured = getStructuredIngredient(ingredient.id)
+                                            const originalIndex = selectedIngredients.findIndex(i => i.id === ingredient.id)
+                                            return (
+                                                <tr key={ingredient.id} className="border-t">
+                                                    <td className="p-1 pl-2">
+                                                        {ingredient.img_path ? (
+                                                            <img
+                                                                src={ingredient.img_path}
+                                                                alt={ingredient.name.fr}
+                                                                className="w-8 h-8 rounded object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-8 h-8 rounded bg-muted flex items-center justify-center text-muted-foreground text-xs">
+                                                                ?
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-2">
+                                                        <span className="truncate block max-w-[200px]" title={ingredient.name.fr}>
+                                                            {ingredient.name.fr}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-1">
+                                                        <Input
+                                                            type="number"
+                                                            step="any"
+                                                            min="0"
+                                                            value={structured?.quantity ?? ''}
+                                                            onChange={(e) => updateStructuredIngredient(
+                                                                ingredient.id,
+                                                                'quantity',
+                                                                e.target.value ? parseFloat(e.target.value) : null
+                                                            )}
+                                                            className="h-8 text-sm w-full"
+                                                            placeholder="-"
+                                                        />
+                                                    </td>
+                                                    <td className="p-1">
+                                                        <Select
+                                                            value={structured?.unit ?? 'none'}
+                                                            onValueChange={(value) => updateStructuredIngredient(
+                                                                ingredient.id,
+                                                                'unit',
+                                                                value === 'none' ? null : value as IngredientUnit
+                                                            )}
+                                                        >
+                                                            <SelectTrigger className="h-8 text-sm">
+                                                                <SelectValue placeholder="-" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="none">-</SelectItem>
+                                                                {Object.entries(INGREDIENT_UNIT_LABELS).map(([unit, label]) => (
+                                                                    <SelectItem key={unit} value={unit}>
+                                                                        {label}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </td>
+                                                    <td className="p-1">
+                                                        {structured?.unit && structured.unit !== IngredientUnit.GRAM && structured.unit !== IngredientUnit.KILOGRAM ? (
+                                                            <Input
+                                                                type="number"
+                                                                step="any"
+                                                                min="0"
+                                                                value={structured?.weight_in_grams ?? ''}
+                                                                onChange={(e) => updateStructuredIngredient(
+                                                                    ingredient.id,
+                                                                    'weight_in_grams',
+                                                                    e.target.value ? parseFloat(e.target.value) : null
+                                                                )}
+                                                                className="h-8 text-sm w-full"
+                                                                placeholder="-"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground px-2">auto</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-1 text-center">
+                                                        <Checkbox
+                                                            checked={structured?.is_optional ?? false}
+                                                            onCheckedChange={(checked) => updateStructuredIngredient(
+                                                                ingredient.id,
+                                                                'is_optional',
+                                                                Boolean(checked)
+                                                            )}
+                                                        />
+                                                    </td>
+                                                    <td className="p-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeIngredient(originalIndex)}
+                                                            className="text-muted-foreground hover:text-destructive"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </td>
                                                 </tr>
-                                            </thead>
-                                            <tbody>
-                                                {[...selectedIngredients]
-                                                    .sort((a, b) => a.name.fr.localeCompare(b.name.fr, 'fr'))
-                                                    .map((ingredient) => {
-                                                    const structured = getStructuredIngredient(ingredient.id)
-                                                    const originalIndex = selectedIngredients.findIndex(i => i.id === ingredient.id)
-                                                    return (
-                                                        <tr key={ingredient.id} className="border-t">
-                                                            <td className="p-1 pl-2">
-                                                                {ingredient.img_path ? (
-                                                                    <img
-                                                                        src={ingredient.img_path}
-                                                                        alt={ingredient.name.fr}
-                                                                        className="w-8 h-8 rounded object-cover"
-                                                                    />
-                                                                ) : (
-                                                                    <div className="w-8 h-8 rounded bg-muted flex items-center justify-center text-muted-foreground text-xs">
-                                                                        ?
-                                                                    </div>
-                                                                )}
-                                                            </td>
-                                                            <td className="p-2">
-                                                                <span className="truncate block max-w-[150px]" title={ingredient.name.fr}>
-                                                                    {ingredient.name.fr}
-                                                                </span>
-                                                            </td>
-                                                            <td className="p-1">
-                                                                <Input
-                                                                    type="number"
-                                                                    step="any"
-                                                                    min="0"
-                                                                    value={structured?.quantity ?? ''}
-                                                                    onChange={(e) => updateStructuredIngredient(
-                                                                        ingredient.id,
-                                                                        'quantity',
-                                                                        e.target.value ? parseFloat(e.target.value) : null
-                                                                    )}
-                                                                    className="h-8 text-sm w-full"
-                                                                    placeholder="-"
-                                                                />
-                                                            </td>
-                                                            <td className="p-1">
-                                                                <Select
-                                                                    value={structured?.unit ?? 'none'}
-                                                                    onValueChange={(value) => updateStructuredIngredient(
-                                                                        ingredient.id,
-                                                                        'unit',
-                                                                        value === 'none' ? null : value as IngredientUnit
-                                                                    )}
-                                                                >
-                                                                    <SelectTrigger className="h-8 text-sm">
-                                                                        <SelectValue placeholder="-" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        <SelectItem value="none">-</SelectItem>
-                                                                        {Object.entries(INGREDIENT_UNIT_LABELS).map(([unit, label]) => (
-                                                                            <SelectItem key={unit} value={unit}>
-                                                                                {label}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            </td>
-                                                            <td className="p-1">
-                                                                {structured?.unit && structured.unit !== IngredientUnit.GRAM && structured.unit !== IngredientUnit.KILOGRAM ? (
-                                                                    <Input
-                                                                        type="number"
-                                                                        step="any"
-                                                                        min="0"
-                                                                        value={structured?.weight_in_grams ?? ''}
-                                                                        onChange={(e) => updateStructuredIngredient(
-                                                                            ingredient.id,
-                                                                            'weight_in_grams',
-                                                                            e.target.value ? parseFloat(e.target.value) : null
-                                                                        )}
-                                                                        className="h-8 text-sm w-full"
-                                                                        placeholder="-"
-                                                                    />
-                                                                ) : (
-                                                                    <span className="text-xs text-muted-foreground px-2">auto</span>
-                                                                )}
-                                                            </td>
-                                                            <td className="p-1 text-center">
-                                                                <Checkbox
-                                                                    checked={structured?.is_optional ?? false}
-                                                                    onCheckedChange={(checked) => updateStructuredIngredient(
-                                                                        ingredient.id,
-                                                                        'is_optional',
-                                                                        Boolean(checked)
-                                                                    )}
-                                                                />
-                                                            </td>
-                                                            <td className="p-1">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => removeIngredient(originalIndex)}
-                                                                    className="text-muted-foreground hover:text-destructive"
-                                                                >
-                                                                    ×
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    )
-                                                })}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+                                            )
+                                        })}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
 
-                        {/* Afficher le textarea seul si pas d'ingrédients sélectionnés */}
                         {selectedIngredients.length === 0 && (
-                            <div className="space-y-1">
-                                <div className="text-xs text-muted-foreground">
-                                    Quantités des ingrédients (sélectionnez des ingrédients pour voir la comparaison)
-                                </div>
+                            <div className="border border-dashed rounded-md p-8 text-center text-sm text-muted-foreground">
+                                Aucun ingrédient ajouté. Utilisez le champ ci-dessus pour rechercher et ajouter des ingrédients.
+                            </div>
+                        )}
+
+                        {/* Ancien format (texte brut) */}
+                        {values.ingredients_quantities && (
+                            <div className="space-y-2">
+                                <div className="text-xs text-muted-foreground font-medium">Ancien format (texte brut)</div>
                                 <Textarea
                                     value={values.ingredients_quantities ?? ''}
                                     onChange={(e) => setValues(prev => ({ ...prev, ingredients_quantities: e.target.value }))}
-                                    placeholder="Quantités des ingrédients"
-                                    rows={8}
-                                    className="resize-none bg-muted/30 text-muted-foreground"
+                                    rows={10}
+                                    className="resize-none bg-muted/30 text-muted-foreground text-sm"
                                 />
                             </div>
                         )}
                     </div>
 
-                    {/* Section Préparation (en dessous) */}
-                    <div className="space-y-4">
-                        <h3 className="text-base font-semibold text-foreground">Instructions de préparation</h3>
-                        <div className="space-y-1">
-                            <div className="text-xs text-muted-foreground">
-                                Décrivez les étapes de préparation de la recette
-                            </div>
+                </TabsContent>
+
+                {/* Tab 2: Préparation */}
+                <TabsContent value="preparation" className="space-y-6 mt-6">
+                    {/* Actions normalisées (V6) - section principale */}
+                    {recipeId ? (
+                        <RecipeActionsSection recipeId={recipeId} />
+                    ) : (
+                        <div className="border border-dashed rounded-md p-8 text-center text-sm text-muted-foreground">
+                            Enregistrez la recette pour accéder aux étapes de préparation.
+                        </div>
+                    )}
+
+                    {/* Ancien format instructions (texte brut) */}
+                    {values.instructions && (
+                        <div className="space-y-2">
+                            <div className="text-xs text-muted-foreground font-medium">Ancien format (texte brut)</div>
                             <Textarea
                                 value={values.instructions ?? ''}
                                 onChange={(e) => setValues(prev => ({ ...prev, instructions: e.target.value }))}
-                                placeholder="Instructions de la recette"
                                 rows={12}
-                                className="resize-none"
+                                className="resize-none bg-muted/30 text-muted-foreground text-sm"
                             />
                         </div>
-                    </div>
+                    )}
                 </TabsContent>
 
-                {/* Tab 2: Critères de sélection */}
+                {/* Tab 3: Critères de sélection */}
                 <TabsContent value="criteria" className="space-y-4 mt-6">
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold text-foreground">Critères de sélection</h3>

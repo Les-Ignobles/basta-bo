@@ -274,6 +274,7 @@ export default function EditRecipePage() {
                     onCategoriesChange={handleCategoriesChange}
                     submittingLabel="Mise à jour..."
                     formId="recipe-form"
+                    recipeId={recipeId}
                 />
             </div>
         </div>
