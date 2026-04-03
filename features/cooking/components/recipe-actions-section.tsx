@@ -153,24 +153,21 @@ export function RecipeActionsSection({ recipeId }: Props) {
         }
     }
 
-    const handleUpdateAction = async (actionId: number, field: string, value: unknown) => {
-        try {
-            const res = await fetch(`/api/recipes/${recipeId}/actions/${actionId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ [field]: value }),
-            })
+    const handleUpdateAction = (actionId: number, field: string, value: unknown) => {
+        // Optimistic update
+        setActions(prev => prev.map(a => a.id === actionId ? { ...a, [field]: value } : a))
 
-            if (res.ok) {
-                const data = await res.json()
-                setActions(prev => prev.map(a => a.id === actionId ? data.data : a))
-            }
-        } catch (error) {
+        // Sync in background
+        fetch(`/api/recipes/${recipeId}/actions/${actionId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [field]: value }),
+        }).catch(error => {
             console.error('Failed to update action:', error)
-        }
+        })
     }
 
-    const handleDragEnd = async (event: DragEndEvent) => {
+    const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event
         if (!over || active.id === over.id) return
 
@@ -179,14 +176,13 @@ export function RecipeActionsSection({ recipeId }: Props) {
         if (oldIndex === -1 || newIndex === -1) return
 
         const reordered = arrayMove(actions, oldIndex, newIndex)
-        // Update step_index for each action
         const updated = reordered.map((action, i) => ({ ...action, step_index: i }))
         setActions(updated)
 
-        // Persist new order
+        // Persist new order in background
         for (const action of updated) {
             if (action.step_index !== actions.find(a => a.id === action.id)?.step_index) {
-                await handleUpdateAction(action.id, 'step_index', action.step_index)
+                handleUpdateAction(action.id, 'step_index', action.step_index)
             }
         }
     }
@@ -216,6 +212,7 @@ export function RecipeActionsSection({ recipeId }: Props) {
                 <div className="flex items-center gap-2">
                     {actions.length > 0 && (
                         <Button
+                            type="button"
                             variant="outline"
                             size="sm"
                             onClick={handleDeleteAll}
@@ -226,6 +223,7 @@ export function RecipeActionsSection({ recipeId }: Props) {
                         </Button>
                     )}
                     <Button
+                        type="button"
                         variant="outline"
                         size="sm"
                         onClick={handleConvert}
@@ -244,6 +242,7 @@ export function RecipeActionsSection({ recipeId }: Props) {
                         )}
                     </Button>
                     <Button
+                        type="button"
                         size="sm"
                         onClick={handleAddAction}
                     >

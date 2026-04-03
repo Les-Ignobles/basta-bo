@@ -16,7 +16,6 @@ export async function POST(
                 step_index: body.step_index ?? 0,
                 action_type: body.action_type ?? 'cut',
                 equipment: body.equipment ?? null,
-                raw_instruction: body.raw_instruction ?? '',
                 normalized_instruction: body.normalized_instruction ?? '',
                 duration_minutes: body.duration_minutes ?? 0,
                 passive_time_minutes: body.passive_time_minutes ?? 0,
