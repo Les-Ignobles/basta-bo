@@ -758,18 +758,19 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                         </div>
                     )}
 
-                    {/* Ancien format instructions (texte brut) */}
-                    {values.instructions && (
-                        <div className="space-y-2">
-                            <div className="text-xs text-muted-foreground font-medium">Ancien format (texte brut)</div>
-                            <Textarea
-                                value={values.instructions ?? ''}
-                                onChange={(e) => setValues(prev => ({ ...prev, instructions: e.target.value }))}
-                                rows={12}
-                                className="resize-none bg-muted/30 text-muted-foreground text-sm"
-                            />
+                    {/* Version textuelle des instructions (utilisee par la conversion IA) */}
+                    <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground font-medium">
+                            Version textuelle (source pour la conversion IA)
                         </div>
-                    )}
+                        <Textarea
+                            value={values.instructions ?? ''}
+                            onChange={(e) => setValues(prev => ({ ...prev, instructions: e.target.value }))}
+                            rows={12}
+                            placeholder="Collez ici la preparation au format texte brut. Enregistrez la recette puis utilisez le bouton 'Reconvertir (IA)' ci-dessus pour generer les etapes normalisees."
+                            className="resize-none bg-muted/30 text-sm"
+                        />
+                    </div>
                 </TabsContent>
 
                 {/* Tab 3: Critères de sélection */}
