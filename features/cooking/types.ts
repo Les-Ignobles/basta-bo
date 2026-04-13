@@ -265,7 +265,7 @@ export const RECIPE_ACTION_TYPE_LABELS: Record<RecipeActionType, string> = {
     [RecipeActionType.SAUTE]: 'Faire sauter',
     [RecipeActionType.FRY]: 'Frire',
     [RecipeActionType.DEEP_FRY]: 'Friture',
-    [RecipeActionType.BOIL]: 'Faire bouillir',
+    [RecipeActionType.BOIL]: 'Cuire à l\'eau / Bouillir',
     [RecipeActionType.SIMMER]: 'Mijoter',
     [RecipeActionType.STEAM]: 'Cuire vapeur',
     [RecipeActionType.REDUCE]: 'Reduire',
@@ -289,6 +289,7 @@ export enum CookingEquipmentBO {
     // Contenants
     BOWL = 'bowl',
     SALAD_BOWL = 'salad_bowl',
+    FOOD_CONTAINER = 'food_container',
     // Cuisson feu / plaque
     FRYING_PAN = 'frying_pan',
     SAUCEPAN = 'saucepan',
@@ -322,6 +323,7 @@ export enum CookingEquipmentBO {
 export const COOKING_EQUIPMENT_LABELS: Record<CookingEquipmentBO, string> = {
     [CookingEquipmentBO.BOWL]: 'Bol',
     [CookingEquipmentBO.SALAD_BOWL]: 'Saladier',
+    [CookingEquipmentBO.FOOD_CONTAINER]: 'Boîte hermétique / Tupperware',
     [CookingEquipmentBO.FRYING_PAN]: 'Poêle',
     [CookingEquipmentBO.SAUCEPAN]: 'Casserole',
     [CookingEquipmentBO.STOCKPOT]: 'Faitout',
