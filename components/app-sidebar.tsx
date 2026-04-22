@@ -170,9 +170,17 @@ export function AppSidebar() {
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                                 <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/users'}>
+                                        <Link href="/dashboard/users" className="flex items-center gap-2">
+                                            <Users className="size-4" />
+                                            <span>Utilisateurs</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
                                     <SidebarMenuButton asChild isActive={pathname === '/dashboard/subscriptions'}>
                                         <Link href="/dashboard/subscriptions" className="flex items-center gap-2">
-                                            <Users className="size-4" />
+                                            <Ticket className="size-4" />
                                             <span>Abonnements</span>
                                         </Link>
                                     </SidebarMenuButton>

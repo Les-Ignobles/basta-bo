@@ -1,5 +1,6 @@
 "use client"
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -120,10 +121,26 @@ type BatchCookingSessionDetails = {
 }
 
 export default function BatchCookingSessionDetailsPage() {
+    const searchParams = useSearchParams()
     const [sessionId, setSessionId] = useState('')
     const [session, setSession] = useState<BatchCookingSessionDetails | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
+
+    // Auto-load session from query param
+    useEffect(() => {
+        const idParam = searchParams.get('id')
+        if (idParam) {
+            setSessionId(idParam)
+        }
+    }, [searchParams])
+
+    useEffect(() => {
+        if (sessionId && searchParams.get('id')) {
+            fetchSessionDetails()
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sessionId])
 
     const fetchSessionDetails = async () => {
         if (!sessionId.trim()) {
