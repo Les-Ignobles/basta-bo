@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useUserStore } from '@/features/users/stores/user-store'
 import { UsersTable } from '@/features/users/components/users-table'
+import { UsersExportDialog } from '@/features/users/components/users-export-dialog'
 
 export default function UsersPage() {
     const router = useRouter()
@@ -68,9 +69,12 @@ export default function UsersPage() {
                         Users ayant généré au moins 1 session dans les 30 derniers jours
                     </p>
                 </div>
-                <Badge variant="secondary" className="text-sm">
-                    {total} utilisateurs
-                </Badge>
+                <div className="flex items-center gap-3">
+                    <Badge variant="secondary" className="text-sm">
+                        {total} utilisateurs
+                    </Badge>
+                    <UsersExportDialog />
+                </div>
             </div>
 
             <div className="flex items-center justify-between mb-4">
