@@ -4,12 +4,13 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { ArrowLeft, ChefHat, Loader2, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Ingredient, Recipe, IngredientCategory } from '@/features/cooking/types'
 import { DISH_TYPE_LABELS } from '@/features/cooking/types'
 import { IngredientForm, type IngredientFormValues } from '@/features/cooking/components/ingredient-form'
 import { useCookingStore } from '@/features/cooking/store'
+
+const FORM_ID = 'ingredient-edit-form'
 
 export default function IngredientDetailPage() {
     const params = useParams()
@@ -22,8 +23,8 @@ export default function IngredientDetailPage() {
     const [recipes, setRecipes] = useState<Recipe[]>([])
     const [categories, setCategories] = useState<IngredientCategory[]>([])
     const [loading, setLoading] = useState(true)
+    const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [editDialogOpen, setEditDialogOpen] = useState(false)
     const [navigation, setNavigation] = useState<{ previous: number | null; next: number | null } | null>(null)
 
     const { updateIngredient } = useCookingStore()
@@ -43,12 +44,12 @@ export default function IngredientDetailPage() {
                 const navParams = new URLSearchParams()
                 const search = searchParams.get('search')
                 const noImage = searchParams.get('noImage')
-                const categories = searchParams.get('categories')
+                const categoriesParam = searchParams.get('categories')
                 const translationFilter = searchParams.get('translationFilter')
 
                 if (search) navParams.set('search', search)
                 if (noImage) navParams.set('noImage', noImage)
-                if (categories) navParams.set('categories', categories)
+                if (categoriesParam) navParams.set('categories', categoriesParam)
                 if (translationFilter) navParams.set('translationFilter', translationFilter)
 
                 const navigationUrl = navParams.toString()
@@ -96,37 +97,41 @@ export default function IngredientDetailPage() {
 
     async function handleSubmit(values: IngredientFormValues) {
         if (!values.id) return
+        setSubmitting(true)
+        try {
+            await updateIngredient(values.id, {
+                name: values.name,
+                suffix_singular: values.suffix_singular,
+                suffix_plural: values.suffix_plural,
+                img_path: values.img_path ?? null,
+                category_id: values.category_id ?? null,
+                is_basic: values.is_basic,
+                calories_per_100g: values.calories_per_100g ?? null,
+                proteins_per_100g: values.proteins_per_100g ?? null,
+                fats_per_100g: values.fats_per_100g ?? null,
+                carbs_per_100g: values.carbs_per_100g ?? null,
+                price_per_100g: values.price_per_100g ?? null,
+            })
 
-        await updateIngredient(values.id, {
-            name: values.name,
-            suffix_singular: values.suffix_singular,
-            suffix_plural: values.suffix_plural,
-            img_path: values.img_path ?? null,
-            category_id: values.category_id ?? null,
-            is_basic: values.is_basic,
-            calories_per_100g: values.calories_per_100g ?? null,
-            proteins_per_100g: values.proteins_per_100g ?? null,
-            fats_per_100g: values.fats_per_100g ?? null,
-            carbs_per_100g: values.carbs_per_100g ?? null,
-            price_per_100g: values.price_per_100g ?? null,
-        })
-
-        setEditDialogOpen(false)
-
-        // Reload ingredient data
-        const ingredientRes = await fetch(`/api/ingredients/${ingredientId}`)
-        if (ingredientRes.ok) {
-            const ingredientData = await ingredientRes.json()
-            setIngredient(ingredientData.data.ingredient)
+            // Reload ingredient data so the page reflects the latest persisted state
+            const ingredientRes = await fetch(`/api/ingredients/${ingredientId}`)
+            if (ingredientRes.ok) {
+                const ingredientData = await ingredientRes.json()
+                setIngredient(ingredientData.data.ingredient)
+            }
+        } finally {
+            setSubmitting(false)
         }
     }
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-[50vh]">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    <span>Chargement...</span>
+            <div className="container mx-auto py-6">
+                <div className="flex items-center justify-center py-12">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Chargement de l&apos;ingrédient...</span>
+                    </div>
                 </div>
             </div>
         )
@@ -134,7 +139,7 @@ export default function IngredientDetailPage() {
 
     if (error || !ingredient) {
         return (
-            <div className="space-y-4">
+            <div className="container mx-auto py-6">
                 <Button variant="ghost" onClick={() => {
                     const targetPage = returnPage ? `?page=${returnPage}` : ''
                     router.push(`/dashboard/ingredients${targetPage}`)
@@ -142,7 +147,7 @@ export default function IngredientDetailPage() {
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Retour aux ingrédients
                 </Button>
-                <Card>
+                <Card className="mt-4">
                     <CardContent className="pt-6">
                         <p className="text-center text-muted-foreground">
                             {error || 'Ingrédient introuvable'}
@@ -154,122 +159,86 @@ export default function IngredientDetailPage() {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Button variant="outline" size="sm" onClick={() => {
-                        const targetPage = returnPage ? `?page=${returnPage}` : ''
-                        router.push(`/dashboard/ingredients${targetPage}`)
-                    }}>
-                        <ArrowLeft className="h-4 w-4 mr-2" />
-                        Retour
-                    </Button>
-                    <div className="flex items-center gap-2">
+        <div className="container mx-auto py-6 space-y-6">
+            {/* Barre sticky avec navigation et actions */}
+            <div className="sticky top-0 z-50 bg-background border-b pb-4 mb-6">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                                if (navigation?.previous) {
-                                    // Préserver tous les paramètres de filtrage pour la navigation
-                                    router.push(`/dashboard/ingredients/${navigation.previous}?${searchParams.toString()}`)
-                                }
+                                const targetPage = returnPage ? `?page=${returnPage}` : ''
+                                router.push(`/dashboard/ingredients${targetPage}`)
                             }}
-                            disabled={!navigation?.previous}
-                            title="Ingrédient précédent"
+                            className="flex items-center gap-2"
                         >
-                            <ChevronLeft className="h-4 w-4" />
+                            <ArrowLeft className="h-4 w-4" />
+                            Retour
                         </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                                if (navigation?.next) {
-                                    // Préserver tous les paramètres de filtrage pour la navigation
-                                    router.push(`/dashboard/ingredients/${navigation.next}?${searchParams.toString()}`)
-                                }
-                            }}
-                            disabled={!navigation?.next}
-                            title="Ingrédient suivant"
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    if (navigation?.previous) {
+                                        router.push(`/dashboard/ingredients/${navigation.previous}?${searchParams.toString()}`)
+                                    }
+                                }}
+                                disabled={!navigation?.previous}
+                                title="Ingrédient précédent"
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    if (navigation?.next) {
+                                        router.push(`/dashboard/ingredients/${navigation.next}?${searchParams.toString()}`)
+                                    }
+                                }}
+                                disabled={!navigation?.next}
+                                title="Ingrédient suivant"
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-2xl font-semibold font-christmas">
+                                {ingredient.name?.fr || 'Sans nom'}
+                            </h1>
+                            <Badge variant="secondary">
+                                {getCategoryLabel(ingredient.category_id)}
+                            </Badge>
+                            {ingredient.is_basic && (
+                                <Badge variant="outline">Ingrédient de base</Badge>
+                            )}
+                        </div>
                     </div>
+                    <Button
+                        type="submit"
+                        form={FORM_ID}
+                        disabled={submitting}
+                        className="flex items-center gap-2"
+                    >
+                        {submitting ? 'Mise à jour...' : 'Enregistrer'}
+                    </Button>
                 </div>
-                <Button onClick={() => setEditDialogOpen(true)}>
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Éditer l&apos;ingrédient
-                </Button>
             </div>
 
-            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                <DialogContent className="sm:max-w-[800px] max-w-[95vw] w-full">
-                    <DialogHeader>
-                        <DialogTitle className="font-christmas">Modifier l&apos;ingrédient</DialogTitle>
-                    </DialogHeader>
-                    <IngredientForm
-                        onSubmit={handleSubmit}
-                        defaultValues={ingredient || undefined}
-                        categories={categories.map((c) => ({ id: Number(c.id), label: `${c.emoji ?? ''} ${c.title?.fr ?? ''}`.trim() }))}
-                    />
-                </DialogContent>
-            </Dialog>
+            {/* Formulaire d'édition (toujours rendu) */}
+            <div className="bg-white rounded-lg border p-6">
+                <IngredientForm
+                    onSubmit={handleSubmit}
+                    defaultValues={ingredient}
+                    categories={categories.map((c) => ({ id: Number(c.id), label: `${c.emoji ?? ''} ${c.title?.fr ?? ''}`.trim() }))}
+                    formId={FORM_ID}
+                    submittingLabel="Mise à jour..."
+                />
+            </div>
 
-            {/* Ingredient Details Card */}
-            <Card>
-                <CardHeader>
-                    <div className="flex items-start gap-4">
-                        {ingredient.img_path ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                                src={ingredient.img_path}
-                                alt={ingredient.name?.fr ?? ''}
-                                className="h-24 w-24 rounded-lg object-cover"
-                            />
-                        ) : (
-                            <div className="h-24 w-24 rounded-lg bg-muted flex items-center justify-center">
-                                <ChefHat className="h-12 w-12 text-muted-foreground" />
-                            </div>
-                        )}
-                        <div className="flex-1">
-                            <CardTitle className="text-2xl font-christmas mb-2">
-                                {ingredient.name?.fr ?? 'Sans nom'}
-                            </CardTitle>
-                            <div className="flex flex-wrap gap-2">
-                                <Badge variant="secondary">
-                                    {getCategoryLabel(ingredient.category_id)}
-                                </Badge>
-                                {ingredient.is_basic && (
-                                    <Badge variant="outline">
-                                        Ingrédient de base
-                                    </Badge>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <span className="text-muted-foreground">Singulier:</span>
-                            <span className="ml-2">{ingredient.suffix_singular?.fr ?? '-'}</span>
-                        </div>
-                        <div>
-                            <span className="text-muted-foreground">Pluriel:</span>
-                            <span className="ml-2">{ingredient.suffix_plural?.fr ?? '-'}</span>
-                        </div>
-                        <div>
-                            <span className="text-muted-foreground">ID:</span>
-                            <span className="ml-2">{ingredient.id}</span>
-                        </div>
-                        <div>
-                            <span className="text-muted-foreground">Créé le:</span>
-                            <span className="ml-2">{new Date(ingredient.created_at).toLocaleDateString()}</span>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Recipes List Card */}
+            {/* Recettes utilisant cet ingrédient */}
             <Card>
                 <CardHeader>
                     <CardTitle className="font-christmas">Recettes utilisant cet ingrédient</CardTitle>

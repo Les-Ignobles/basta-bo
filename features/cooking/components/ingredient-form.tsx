@@ -33,9 +33,14 @@ type Props = {
     onSubmit: (values: IngredientFormValues) => Promise<void> | void
     submittingLabel?: string
     categories: Array<{ id: number; label: string }>
+    /**
+     * Quand fourni, le form expose `id={formId}` et masque son bouton "Enregistrer" interne.
+     * Le parent doit alors fournir un bouton externe `<button type="submit" form={formId}>`.
+     */
+    formId?: string
 }
 
-export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', categories }: Props) {
+export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', categories, formId }: Props) {
     // Trier les catégories par ordre alphabétique (en retirant l'emoji du tri)
     const sortedCategories = [...categories].sort((a, b) => {
         // Extraire le nom sans l'emoji (tout ce qui vient après le premier espace)
@@ -119,7 +124,7 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form id={formId} onSubmit={handleSubmit} className="space-y-6">
             {/* Bouton d'autocomplétion IA en haut */}
             <div className="flex justify-end pb-4 border-b">
                 <Button
@@ -318,11 +323,13 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                     )}
                 </div>
             </div>
-            <div className="flex justify-end gap-2">
-                <Button type="submit" disabled={loading}>
-                    {loading ? submittingLabel : 'Enregistrer'}
-                </Button>
-            </div>
+            {!formId && (
+                <div className="flex justify-end gap-2">
+                    <Button type="submit" disabled={loading}>
+                        {loading ? submittingLabel : 'Enregistrer'}
+                    </Button>
+                </div>
+            )}
         </form>
     )
 }
