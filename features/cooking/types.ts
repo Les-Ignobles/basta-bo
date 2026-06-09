@@ -83,6 +83,7 @@ export type Ingredient = {
     proteins_per_100g: number | null
     fats_per_100g: number | null
     carbs_per_100g: number | null
+    price_per_100g: number | null
 }
 
 export type IngredientCategory = {

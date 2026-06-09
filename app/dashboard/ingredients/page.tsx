@@ -69,6 +69,7 @@ export default function IngredientsIndexPage() {
                 proteins_per_100g: values.proteins_per_100g ?? null,
                 fats_per_100g: values.fats_per_100g ?? null,
                 carbs_per_100g: values.carbs_per_100g ?? null,
+                price_per_100g: values.price_per_100g ?? null,
             })
         } else {
             // Create new ingredient
@@ -83,6 +84,7 @@ export default function IngredientsIndexPage() {
                 proteins_per_100g: values.proteins_per_100g ?? null,
                 fats_per_100g: values.fats_per_100g ?? null,
                 carbs_per_100g: values.carbs_per_100g ?? null,
+                price_per_100g: values.price_per_100g ?? null,
             })
         }
         setOpen(false)

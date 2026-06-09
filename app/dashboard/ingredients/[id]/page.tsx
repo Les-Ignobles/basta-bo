@@ -108,6 +108,7 @@ export default function IngredientDetailPage() {
             proteins_per_100g: values.proteins_per_100g ?? null,
             fats_per_100g: values.fats_per_100g ?? null,
             carbs_per_100g: values.carbs_per_100g ?? null,
+            price_per_100g: values.price_per_100g ?? null,
         })
 
         setEditDialogOpen(false)

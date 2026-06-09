@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
             proteins_per_100g: null,
             fats_per_100g: null,
             carbs_per_100g: null,
+            price_per_100g: null,
         }
 
         const newIngredient = await ingredientRepo.create(ingredientToCreate)

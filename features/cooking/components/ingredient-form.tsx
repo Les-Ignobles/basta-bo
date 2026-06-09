@@ -25,6 +25,7 @@ export type IngredientFormValues = {
     proteins_per_100g?: number | null
     fats_per_100g?: number | null
     carbs_per_100g?: number | null
+    price_per_100g?: number | null
 }
 
 type Props = {
@@ -276,6 +277,22 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                                 min="0"
                                 value={values.carbs_per_100g ?? ''}
                                 onChange={(e) => setValues((s) => ({ ...s, carbs_per_100g: e.target.value ? parseFloat(e.target.value) : null }))}
+                                placeholder="-"
+                            />
+                        </div>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground font-medium">Prix indicatif (pour 100g)</div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="space-y-1">
+                            <Label className="text-xs">Prix (€)</Label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={values.price_per_100g ?? ''}
+                                onChange={(e) => setValues((s) => ({ ...s, price_per_100g: e.target.value ? parseFloat(e.target.value) : null }))}
                                 placeholder="-"
                             />
                         </div>
