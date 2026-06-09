@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import { Check, ChevronsUpDown, Loader2, Flame, Beef, Droplets, Wheat } from 'lucide-react'
 import { RecipeActionsSection } from './recipe-actions-section'
+import { RecipePriceBreakdown } from './recipe-price-breakdown'
 import { cn } from '@/lib/utils'
 import type { RecipeFormValues, KitchenEquipment, Ingredient, StructuredIngredient, IngredientRecipePivot } from '@/features/cooking/types'
 import { DishType, DISH_TYPE_LABELS, QuantificationType, QUANTIFICATION_TYPE_LABELS, IngredientUnit, INGREDIENT_UNIT_LABELS } from '@/features/cooking/types'
@@ -90,6 +91,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
     const [selectedIngredients, setSelectedIngredients] = useState<Ingredient[]>([])
     const [syncingIngredients, setSyncingIngredients] = useState(false)
     const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>(defaultCategoryIds || [])
+    const [priceBreakdownOpen, setPriceBreakdownOpen] = useState(false)
 
     const { searchIngredients } = useCookingStore()
 
@@ -396,6 +398,52 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
 
     const hasNutrition = values.calories_per_serving !== null || values.proteins_per_serving !== null
 
+    // Calcul indicatif du prix par portion (ou par unité selon la quantification).
+    // Source: price_per_100g de chaque ingrédient × grammes / 100, sommé puis divisé par base_servings.
+    // Les ingrédients sans prix renseigné sont ignorés et signalés via `isPartial`.
+    const pricePerServing = (() => {
+        const baseServings = values.base_servings ?? 0
+        if (baseServings <= 0) return null
+        const structured = values.structured_ingredients ?? []
+        if (structured.length === 0) return null
+
+        let total = 0
+        let pricedCount = 0
+        let missingPriceCount = 0
+
+        for (const si of structured) {
+            const ingredient = selectedIngredients.find(i => i.id === si.ingredient_id)
+            if (!ingredient) continue
+
+            // Grammes : même règle que pour la nutrition (g → quantity, kg → ×1000, sinon weight_in_grams)
+            let grams: number | null = null
+            if (si.unit === IngredientUnit.GRAM) {
+                grams = si.quantity
+            } else if (si.unit === IngredientUnit.KILOGRAM) {
+                grams = si.quantity !== null ? si.quantity * 1000 : null
+            } else {
+                grams = si.weight_in_grams
+            }
+            if (grams === null || grams <= 0) continue
+
+            if (ingredient.price_per_100g === null || ingredient.price_per_100g === undefined) {
+                missingPriceCount++
+                continue
+            }
+            total += ingredient.price_per_100g * grams / 100
+            pricedCount++
+        }
+
+        if (pricedCount === 0) return null
+        return {
+            value: total / baseServings,
+            isPartial: missingPriceCount > 0,
+            missingPriceCount,
+        }
+    })()
+
+    const priceLabel = values.quantification_type === QuantificationType.PER_UNIT ? 'unité' : 'portion'
+
     return (
         <form id={formId} onSubmit={handleSubmit} className="space-y-6">
             <Tabs defaultValue="recipe" className="w-full">
@@ -522,31 +570,62 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                 )}
                             </div>
 
-                            {/* Valeurs nutritionnelles (inline, read-only) */}
-                            {hasNutrition && (
-                                <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-1.5 text-sm">
-                                        <Flame className="h-3.5 w-3.5 text-orange-500" />
-                                        <span className="font-medium">{values.calories_per_serving ?? '—'}</span>
-                                        <span className="text-xs text-muted-foreground">kcal</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 text-sm">
-                                        <Beef className="h-3.5 w-3.5 text-red-500" />
-                                        <span className="font-medium">{values.proteins_per_serving ?? '—'}</span>
-                                        <span className="text-xs text-muted-foreground">g</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 text-sm">
-                                        <Droplets className="h-3.5 w-3.5 text-yellow-500" />
-                                        <span className="font-medium">{values.fats_per_serving ?? '—'}</span>
-                                        <span className="text-xs text-muted-foreground">g</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 text-sm">
-                                        <Wheat className="h-3.5 w-3.5 text-amber-700" />
-                                        <span className="font-medium">{values.carbs_per_serving ?? '—'}</span>
-                                        <span className="text-xs text-muted-foreground">g</span>
-                                    </div>
-                                </div>
-                            )}
+                            {/* Valeurs nutritionnelles + prix (inline, read-only) */}
+                            <div className="flex items-center gap-4 flex-wrap justify-end">
+                                {hasNutrition && (
+                                    <>
+                                        <div className="flex items-center gap-1.5 text-sm">
+                                            <Flame className="h-3.5 w-3.5 text-orange-500" />
+                                            <span className="font-medium">{values.calories_per_serving ?? '—'}</span>
+                                            <span className="text-xs text-muted-foreground">kcal</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-sm">
+                                            <Beef className="h-3.5 w-3.5 text-red-500" />
+                                            <span className="font-medium">{values.proteins_per_serving ?? '—'}</span>
+                                            <span className="text-xs text-muted-foreground">g</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-sm">
+                                            <Droplets className="h-3.5 w-3.5 text-yellow-500" />
+                                            <span className="font-medium">{values.fats_per_serving ?? '—'}</span>
+                                            <span className="text-xs text-muted-foreground">g</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-sm">
+                                            <Wheat className="h-3.5 w-3.5 text-amber-700" />
+                                            <span className="font-medium">{values.carbs_per_serving ?? '—'}</span>
+                                            <span className="text-xs text-muted-foreground">g</span>
+                                        </div>
+                                    </>
+                                )}
+                                {pricePerServing && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setPriceBreakdownOpen(true)}
+                                        className="flex items-center gap-1.5 text-sm rounded-md px-1.5 py-0.5 hover:bg-muted transition-colors"
+                                        title={pricePerServing.isPartial
+                                            ? `Estimation partielle : ${pricePerServing.missingPriceCount} ingrédient(s) sans prix renseigné. Cliquer pour voir le détail et éditer.`
+                                            : `Cliquer pour voir le détail par ingrédient et éditer les prix au 100g`}
+                                    >
+                                        <span className="text-base">💶</span>
+                                        <span className="font-medium">
+                                            {pricePerServing.value.toFixed(2)} €
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                            / {priceLabel}{pricePerServing.isPartial ? ' (partiel)' : ''}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground underline ml-1">détail</span>
+                                    </button>
+                                )}
+                                {!pricePerServing && selectedIngredients.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setPriceBreakdownOpen(true)}
+                                        className="text-xs text-muted-foreground underline hover:text-foreground"
+                                        title="Aucun prix calculable pour l'instant. Cliquer pour renseigner les prix au 100g."
+                                    >
+                                        💶 détail prix
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Sélection d'ingrédients */}
@@ -872,6 +951,22 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                     </div>
                 </TabsContent>
             </Tabs>
+
+            <RecipePriceBreakdown
+                open={priceBreakdownOpen}
+                onOpenChange={setPriceBreakdownOpen}
+                selectedIngredients={selectedIngredients}
+                structuredIngredients={values.structured_ingredients ?? []}
+                baseServings={values.base_servings ?? null}
+                quantificationType={values.quantification_type}
+                onIngredientPriceUpdated={(id, newPrice) => {
+                    // Met à jour le catalogue local pour que le badge prix et la modale se rafraîchissent
+                    // immédiatement sans refetch. La valeur a déjà été persistée côté API.
+                    setSelectedIngredients((prev) =>
+                        prev.map((ing) => (ing.id === id ? { ...ing, price_per_100g: newPrice } : ing))
+                    )
+                }}
+            />
         </form>
     )
 }
