@@ -47,7 +47,9 @@ const MONTHS = [
 const DISH_TYPES = [
     { value: DishType.ENTREE, label: DISH_TYPE_LABELS[DishType.ENTREE] },
     { value: DishType.PLAT, label: DISH_TYPE_LABELS[DishType.PLAT] },
-    { value: DishType.DESSERT, label: DISH_TYPE_LABELS[DishType.DESSERT] }
+    { value: DishType.DESSERT, label: DISH_TYPE_LABELS[DishType.DESSERT] },
+    { value: DishType.SNACK, label: DISH_TYPE_LABELS[DishType.SNACK] },
+    { value: DishType.BREAKFAST, label: DISH_TYPE_LABELS[DishType.BREAKFAST] }
 ]
 
 const QUANTIFICATION_TYPES = [

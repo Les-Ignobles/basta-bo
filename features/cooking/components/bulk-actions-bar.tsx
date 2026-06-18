@@ -130,6 +130,8 @@ export function BulkActionsBar({ selectedCount, onClearSelection, onBulkDelete, 
                             <SelectItem value="1">{DISH_TYPE_LABELS[1]}</SelectItem>
                             <SelectItem value="2">{DISH_TYPE_LABELS[2]}</SelectItem>
                             <SelectItem value="3">{DISH_TYPE_LABELS[3]}</SelectItem>
+                            <SelectItem value="4">{DISH_TYPE_LABELS[4]}</SelectItem>
+                            <SelectItem value="5">{DISH_TYPE_LABELS[5]}</SelectItem>
                         </SelectContent>
                     </Select>
 

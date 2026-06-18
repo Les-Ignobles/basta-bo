@@ -3,13 +3,17 @@ import type { TranslationText } from '@/lib/i18n'
 export enum DishType {
     ENTREE = 1,
     PLAT = 2,
-    DESSERT = 3
+    DESSERT = 3,
+    SNACK = 4,
+    BREAKFAST = 5
 }
 
 export const DISH_TYPE_LABELS = {
     [DishType.ENTREE]: 'Entrée',
     [DishType.PLAT]: 'Plat',
-    [DishType.DESSERT]: 'Dessert'
+    [DishType.DESSERT]: 'Dessert',
+    [DishType.SNACK]: 'Snack',
+    [DishType.BREAKFAST]: 'Breakfast'
 } as const
 
 export enum QuantificationType {
