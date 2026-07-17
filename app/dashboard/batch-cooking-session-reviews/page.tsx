@@ -21,6 +21,29 @@ export default function BatchCookingSessionReviewsPage() {
     const [selectedReview, setSelectedReview] = useState<BatchCookingSessionReview | null>(null)
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
     const [analyzing, setAnalyzing] = useState(false)
+    const [sessionDetailLoading, setSessionDetailLoading] = useState(false)
+
+    // La liste ne charge qu'une session allégée (sans steps/ingredients) :
+    // on hydrate la session complète quand une review est ouverte
+    const hydrateSessionDetail = async (review: BatchCookingSessionReview) => {
+        if (!review.session || review.session.cooking_steps !== undefined) return
+        setSessionDetailLoading(true)
+        try {
+            const response = await fetch(`/api/batch-cooking-sessions/${review.session_id}`)
+            if (response.ok) {
+                const fullSession = await response.json()
+                setSelectedReview(prev =>
+                    prev && prev.id === review.id
+                        ? { ...prev, session: { ...prev.session!, ...fullSession } }
+                        : prev
+                )
+            }
+        } catch (err) {
+            console.error('Erreur lors du chargement du détail de la session:', err)
+        } finally {
+            setSessionDetailLoading(false)
+        }
+    }
 
     const totalPages = useMemo(() => Math.max(1, Math.ceil((total || 0) / (pageSize || 20))), [total, pageSize])
 
@@ -46,6 +69,7 @@ export default function BatchCookingSessionReviewsPage() {
             const review = reviews.find(r => r.id === Number(reviewId))
             if (review && selectedReview?.id !== review.id) {
                 setSelectedReview(review)
+                hydrateSessionDetail(review)
             }
         }
     }, [searchParams, reviews, selectedReview?.id])
@@ -59,6 +83,7 @@ export default function BatchCookingSessionReviewsPage() {
 
     const openReview = (review: BatchCookingSessionReview) => {
         setSelectedReview(review)
+        hydrateSessionDetail(review)
         const params = new URLSearchParams(searchParams.toString())
         params.set('review', review.id.toString())
         router.push(`/dashboard/batch-cooking-session-reviews?${params.toString()}`, { scroll: false })
@@ -314,7 +339,7 @@ export default function BatchCookingSessionReviewsPage() {
                                             variant="outline"
                                             size="sm"
                                             onClick={() => analyzeReview(selectedReview)}
-                                            disabled={analyzing || !selectedReview.session}
+                                            disabled={analyzing || sessionDetailLoading || !selectedReview.session}
                                         >
                                             {analyzing ? (
                                                 <>
@@ -391,6 +416,12 @@ export default function BatchCookingSessionReviewsPage() {
                                     </TabsList>
 
                                     <div className="h-[500px] mt-4 overflow-y-auto">
+                                        {sessionDetailLoading && (
+                                            <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                <span>Chargement du détail de la session...</span>
+                                            </div>
+                                        )}
                                         {/* Recipes Tab */}
                                         <TabsContent value="recipes" className="mt-0">
                                             {selectedReview.session.recipes && selectedReview.session.recipes.length > 0 ? (

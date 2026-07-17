@@ -7,6 +7,12 @@ export class BatchCookingSessionReviewRepository extends BaseRepository<BatchCoo
         super(client, 'batch_cooking_session_reviews')
     }
 
+    /**
+     * Liste paginée avec session allégée : les colonnes lourdes de la session
+     * (cooking_steps, assembly_steps, ingredients — ~450 KB par page de 20)
+     * sont chargées à la demande via GET /api/batch-cooking-sessions/[id]
+     * quand une review est ouverte.
+     */
     async findPage(
         page: number = 1,
         pageSize: number = 20
@@ -27,10 +33,7 @@ export class BatchCookingSessionReviewRepository extends BaseRepository<BatchCoo
                     id,
                     meal_count,
                     people_count,
-                    recipes,
-                    cooking_steps,
-                    assembly_steps,
-                    ingredients
+                    recipes
                 )
             `, { count: 'exact' })
             .order('created_at', { ascending: false })

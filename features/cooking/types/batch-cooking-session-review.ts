@@ -70,9 +70,10 @@ export type BatchCookingSessionReview = {
         meal_count: number
         people_count: number
         recipes: SessionRecipeSummary[]
-        cooking_steps: SessionCookingStep[] | null
-        assembly_steps: SessionAssemblyStep[] | null
-        ingredients: SessionIngredient[] | null
+        // Absents de la liste (payload), hydratés au clic sur une review
+        cooking_steps?: SessionCookingStep[] | null
+        assembly_steps?: SessionAssemblyStep[] | null
+        ingredients?: SessionIngredient[] | null
     }
 }
 
