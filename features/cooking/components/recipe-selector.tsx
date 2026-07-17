@@ -10,7 +10,8 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Search, Loader2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Plus, Search, Loader2, EyeOff } from 'lucide-react'
 import type { Recipe } from '@/features/cooking/types'
 
 type Props = {
@@ -168,6 +169,12 @@ export function RecipeSelector({ excludeRecipeIds, onSelect, disabled = false, m
                                             </div>
                                         )}
                                         <span className="flex-1 font-medium truncate">{recipe.title}</span>
+                                        {!recipe.is_visible && (
+                                            <Badge variant="secondary" className="flex items-center gap-1 bg-amber-100 text-amber-800 shrink-0">
+                                                <EyeOff className="h-3 w-3" />
+                                                Cachée
+                                            </Badge>
+                                        )}
                                         {adding === recipe.id && (
                                             <Loader2 className="h-4 w-4 animate-spin" />
                                         )}
