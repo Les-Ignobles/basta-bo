@@ -44,6 +44,10 @@ export interface RecipeOrderItem {
     title: string
     img_path: string | null
     position: number
+    // Données de compatibilité profil (badges d'anticipation dans la liste éditoriale)
+    diet_mask?: number | null
+    allergy_mask?: number | null
+    is_visible?: boolean
 }
 
 /**

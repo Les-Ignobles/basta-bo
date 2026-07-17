@@ -9,6 +9,8 @@ import { ArrowLeft, HelpCircle, UtensilsCrossed, Loader2 } from 'lucide-react'
 import { RecipeOrderList } from '@/features/cooking/components/recipe-order-list'
 import { RecipeSelector } from '@/features/cooking/components/recipe-selector'
 import type { RecipeCategory, RecipeOrderItem } from '@/features/cooking/types/recipe-category'
+import type { Diet } from '@/features/cooking/types/diet'
+import type { Allergy } from '@/features/cooking/types/allergy'
 
 export default function RecipeCategoryOrderPage() {
     const params = useParams()
@@ -17,6 +19,8 @@ export default function RecipeCategoryOrderPage() {
 
     const [category, setCategory] = useState<RecipeCategory | null>(null)
     const [recipes, setRecipes] = useState<RecipeOrderItem[]>([])
+    const [diets, setDiets] = useState<Diet[]>([])
+    const [allergies, setAllergies] = useState<Allergy[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
@@ -32,8 +36,12 @@ export default function RecipeCategoryOrderPage() {
                 const found = categories?.find((c: RecipeCategory) => c.id === categoryId)
                 setCategory(found || null)
 
-                // Fetch recipes for this category
-                const recipesRes = await fetch(`/api/recipe-categories/${categoryId}/recipes`)
+                // Fetch recipes for this category + référentiels pour les badges de compatibilité
+                const [recipesRes, dietsRes, allergiesRes] = await Promise.all([
+                    fetch(`/api/recipe-categories/${categoryId}/recipes`),
+                    fetch('/api/diets'),
+                    fetch('/api/allergies'),
+                ])
                 const { data: recipesData, error: recipesError } = await recipesRes.json()
 
                 if (recipesError) {
@@ -41,6 +49,8 @@ export default function RecipeCategoryOrderPage() {
                 }
 
                 setRecipes(recipesData || [])
+                setDiets((await dietsRes.json()).data || [])
+                setAllergies((await allergiesRes.json()).data || [])
             } catch (err) {
                 console.error('Error fetching data:', err)
                 setError('Erreur lors du chargement des données')
@@ -214,6 +224,8 @@ export default function RecipeCategoryOrderPage() {
                                     recipes={recipes}
                                     onOrderChange={handleOrderChange}
                                     onRemove={handleRemoveRecipe}
+                                    diets={diets}
+                                    allergies={allergies}
                                 />
                             </div>
                         </div>

@@ -24,7 +24,7 @@ import { CatalogItemCard } from '@/features/cooking/components/catalog/catalog-i
 import { CategoryCard } from '@/features/cooking/components/catalog/category-card'
 import { AddCategoryPopover } from '@/features/cooking/components/catalog/add-category-popover'
 import { DroppableZone } from '@/features/cooking/components/catalog/droppable-zone'
-import { CategoryPreviewDialog, type PreviewRecipe } from '@/features/cooking/components/catalog/category-preview-dialog'
+import { CategoryPreviewDialog } from '@/features/cooking/components/catalog/category-preview-dialog'
 import { useCatalogDnd } from '@/features/cooking/hooks/use-catalog-dnd'
 import type { RecipeCategory, RecipeCategoryFormValues } from '@/features/cooking/types/recipe-category'
 
@@ -40,9 +40,6 @@ export default function RecipeCategoriesPage() {
     // Preview state
     const [previewDialogOpen, setPreviewDialogOpen] = useState(false)
     const [previewCategory, setPreviewCategory] = useState<RecipeCategory | null>(null)
-    const [previewRecipes, setPreviewRecipes] = useState<PreviewRecipe[]>([])
-    const [previewLoading, setPreviewLoading] = useState(false)
-    const [previewError, setPreviewError] = useState<string | null>(null)
 
     const fetchCategories = async () => {
         try {
@@ -151,28 +148,9 @@ export default function RecipeCategoriesPage() {
         setOpen(true)
     }
 
-    const handlePreview = async (category: RecipeCategory) => {
+    const handlePreview = (category: RecipeCategory) => {
         setPreviewCategory(category)
         setPreviewDialogOpen(true)
-        setPreviewLoading(true)
-        setPreviewError(null)
-        setPreviewRecipes([])
-
-        try {
-            const response = await fetch(`/api/recipe-categories/${category.id}/preview?limit=10`)
-            const result = await response.json()
-
-            if (!response.ok) {
-                throw new Error(result.error || 'Erreur lors de la prévisualisation')
-            }
-
-            setPreviewRecipes(result.data?.recipes || [])
-        } catch (error) {
-            console.error('Error previewing category:', error)
-            setPreviewError(error instanceof Error ? error.message : 'Erreur inconnue')
-        } finally {
-            setPreviewLoading(false)
-        }
     }
 
     const handleOpenChange = (isOpen: boolean) => {
@@ -453,7 +431,7 @@ export default function RecipeCategoriesPage() {
                                                 setCategoryToDelete(cat)
                                                 setDeleteDialogOpen(true)
                                             }}
-                                            onPreview={category.is_dynamic ? handlePreview : undefined}
+                                            onPreview={handlePreview}
                                         />
                                     ))}
                                 </div>
@@ -487,9 +465,6 @@ export default function RecipeCategoriesPage() {
                 open={previewDialogOpen}
                 onOpenChange={setPreviewDialogOpen}
                 category={previewCategory}
-                recipes={previewRecipes}
-                loading={previewLoading}
-                error={previewError}
             />
         </div>
     )

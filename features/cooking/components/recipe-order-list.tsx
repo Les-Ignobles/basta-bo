@@ -31,12 +31,18 @@ import {
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import type { RecipeOrderItem } from '@/features/cooking/types/recipe-category'
+import type { Diet } from '@/features/cooking/types/diet'
+import type { Allergy } from '@/features/cooking/types/allergy'
+import { RecipeCompatBadges } from '@/features/cooking/components/catalog/recipe-compat-badges'
 
 type Props = {
     recipes: RecipeOrderItem[]
     onOrderChange: (recipeIds: number[]) => Promise<void>
     onRemove?: (recipeId: number) => Promise<void>
     disabled?: boolean
+    /** Référentiels pour les badges de compatibilité profil (optionnels) */
+    diets?: Diet[]
+    allergies?: Allergy[]
 }
 
 function SortableRecipeItem({
@@ -44,11 +50,15 @@ function SortableRecipeItem({
     disabled,
     onRemove,
     isRemoving,
+    diets,
+    allergies,
 }: {
     recipe: RecipeOrderItem
     disabled?: boolean
     onRemove?: (recipeId: number) => Promise<void>
     isRemoving?: boolean
+    diets?: Diet[]
+    allergies?: Allergy[]
 }) {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
     const {
@@ -105,7 +115,12 @@ function SortableRecipeItem({
                 </div>
             )}
 
-            <span className="font-medium flex-1">{recipe.title}</span>
+            <div className="flex-1 min-w-0 space-y-1">
+                <span className="font-medium">{recipe.title}</span>
+                {diets && allergies && (
+                    <RecipeCompatBadges recipe={recipe} diets={diets} allergies={allergies} />
+                )}
+            </div>
 
             {onRemove && !isDragging && (
                 <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
@@ -155,7 +170,7 @@ function SortableRecipeItem({
     )
 }
 
-export function RecipeOrderList({ recipes: initialRecipes, onOrderChange, onRemove, disabled = false }: Props) {
+export function RecipeOrderList({ recipes: initialRecipes, onOrderChange, onRemove, disabled = false, diets, allergies }: Props) {
     const [recipes, setRecipes] = useState(initialRecipes)
     const [saving, setSaving] = useState(false)
     const [removingId, setRemovingId] = useState<number | null>(null)
@@ -242,6 +257,8 @@ export function RecipeOrderList({ recipes: initialRecipes, onOrderChange, onRemo
                                 disabled={disabled || saving || removingId !== null}
                                 onRemove={onRemove ? handleRemove : undefined}
                                 isRemoving={removingId === recipe.id}
+                                diets={diets}
+                                allergies={allergies}
                             />
                         ))}
                     </div>

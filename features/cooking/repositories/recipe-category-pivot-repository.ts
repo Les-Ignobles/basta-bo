@@ -98,7 +98,10 @@ export class RecipeCategoryPivotRepository {
                 recipes:recipe_id (
                     id,
                     title,
-                    img_path
+                    img_path,
+                    diet_mask,
+                    allergy_mask,
+                    is_visible
                 )
             `)
             .eq('category_id', categoryId)
@@ -113,6 +116,9 @@ export class RecipeCategoryPivotRepository {
             title: item.recipes.title,
             img_path: item.recipes.img_path,
             position: item.position,
+            diet_mask: item.recipes.diet_mask,
+            allergy_mask: item.recipes.allergy_mask,
+            is_visible: item.recipes.is_visible,
         }))
     }
 
