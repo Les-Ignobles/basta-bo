@@ -1,9 +1,9 @@
 "use client"
 import { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
@@ -19,7 +19,6 @@ import {
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { BookOpen, HelpCircle, LayoutGrid, Loader2, Plus, Tags } from 'lucide-react'
-import { RecipeCategoryForm } from '@/features/cooking/components/recipe-category-form'
 import { CatalogItemCard } from '@/features/cooking/components/catalog/catalog-item-card'
 import { CategoryCard } from '@/features/cooking/components/catalog/category-card'
 import { AddCategoryPopover } from '@/features/cooking/components/catalog/add-category-popover'
@@ -29,11 +28,10 @@ import { useCatalogDnd } from '@/features/cooking/hooks/use-catalog-dnd'
 import type { RecipeCategory, RecipeCategoryFormValues } from '@/features/cooking/types/recipe-category'
 
 export default function RecipeCategoriesPage() {
+    const router = useRouter()
     const [categories, setCategories] = useState<RecipeCategory[]>([])
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
-    const [open, setOpen] = useState(false)
-    const [editingCategory, setEditingCategory] = useState<RecipeCategory | null>(null)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [categoryToDelete, setCategoryToDelete] = useState<RecipeCategory | null>(null)
 
@@ -106,29 +104,6 @@ export default function RecipeCategoriesPage() {
         .filter(c => !c.display_as_section)
         .sort((a, b) => a.name.fr.localeCompare(b.name.fr))
 
-    const handleSubmit = async (values: RecipeCategoryFormValues) => {
-        try {
-            if (editingCategory) {
-                await fetch('/api/recipe-categories', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: editingCategory.id, ...values }),
-                })
-            } else {
-                await fetch('/api/recipe-categories', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(values),
-                })
-            }
-            setOpen(false)
-            setEditingCategory(null)
-            fetchCategories()
-        } catch (error) {
-            console.error('Error saving category:', error)
-        }
-    }
-
     const handleDelete = async () => {
         if (!categoryToDelete) return
         try {
@@ -144,37 +119,12 @@ export default function RecipeCategoriesPage() {
     }
 
     const handleEdit = (category: RecipeCategory) => {
-        setEditingCategory(category)
-        setOpen(true)
+        router.push(`/dashboard/recipe-categories/${category.id}/edit`)
     }
 
     const handlePreview = (category: RecipeCategory) => {
         setPreviewCategory(category)
         setPreviewDialogOpen(true)
-    }
-
-    const handleOpenChange = (isOpen: boolean) => {
-        setOpen(isOpen)
-        if (!isOpen) {
-            setEditingCategory(null)
-        }
-    }
-
-    const getFormDefaultValues = (): Partial<RecipeCategoryFormValues> | undefined => {
-        if (!editingCategory) return undefined
-        return {
-            name_fr: editingCategory.name.fr,
-            name_en: editingCategory.name.en || '',
-            emoji: editingCategory.emoji,
-            color: editingCategory.color,
-            is_pinned: editingCategory.is_pinned,
-            display_as_chip: editingCategory.display_as_chip,
-            display_as_section: editingCategory.display_as_section,
-            chip_order: editingCategory.chip_order,
-            section_order: editingCategory.section_order,
-            is_dynamic: editingCategory.is_dynamic,
-            dynamic_type: editingCategory.dynamic_type,
-        }
     }
 
     if (loading) {
@@ -202,26 +152,10 @@ export default function RecipeCategoriesPage() {
                         </Badge>
                     )}
                 </div>
-                <Dialog open={open} onOpenChange={handleOpenChange}>
-                    <DialogTrigger asChild>
-                        <Button className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            Nouvelle catégorie
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                            <DialogTitle className="font-christmas">
-                                {editingCategory ? 'Modifier la catégorie' : 'Nouvelle catégorie'}
-                            </DialogTitle>
-                        </DialogHeader>
-                        <RecipeCategoryForm
-                            key={editingCategory?.id || 'new'}
-                            onSubmit={handleSubmit}
-                            defaultValues={getFormDefaultValues()}
-                        />
-                    </DialogContent>
-                </Dialog>
+                <Button className="gap-2" onClick={() => router.push('/dashboard/recipe-categories/new')}>
+                    <Plus className="h-4 w-4" />
+                    Nouvelle catégorie
+                </Button>
             </div>
 
             {/* Main content with Tabs */}
@@ -415,7 +349,7 @@ export default function RecipeCategoriesPage() {
                                 <div className="text-center py-12">
                                     <Tags className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
                                     <p className="text-muted-foreground mb-4">Aucune catégorie pour le moment</p>
-                                    <Button onClick={() => setOpen(true)} className="gap-2">
+                                    <Button onClick={() => router.push('/dashboard/recipe-categories/new')} className="gap-2">
                                         <Plus className="h-4 w-4" />
                                         Créer une catégorie
                                     </Button>

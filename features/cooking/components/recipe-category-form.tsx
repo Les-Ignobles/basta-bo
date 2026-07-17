@@ -1,5 +1,5 @@
 "use client"
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,6 +14,9 @@ type Props = {
     defaultValues?: Partial<RecipeCategoryFormValues>
     onSubmit: (values: RecipeCategoryFormValues) => Promise<void> | void
     submittingLabel?: string
+    /** Notifié à chaque frappe — alimente l'aperçu live des pages création/édition */
+    onChange?: (values: RecipeCategoryFormValues) => void
+    onCancel?: () => void
 }
 
 const DEFAULT_COLORS = [
@@ -22,7 +25,7 @@ const DEFAULT_COLORS = [
     '#10B981', '#EF4444', '#6366F1', '#EC4899',
 ]
 
-export function RecipeCategoryForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...' }: Props) {
+export function RecipeCategoryForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', onChange, onCancel }: Props) {
     const [values, setValues] = useState<RecipeCategoryFormValues>({
         name_fr: '',
         name_en: '',
@@ -38,6 +41,11 @@ export function RecipeCategoryForm({ defaultValues, onSubmit, submittingLabel = 
         ...defaultValues,
     })
     const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+        onChange?.(values)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [values])
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -309,6 +317,9 @@ export function RecipeCategoryForm({ defaultValues, onSubmit, submittingLabel = 
                                             <SelectItem value="user_recommendations">
                                                 ⭐ Recommandations personnalisées
                                             </SelectItem>
+                                            <SelectItem value="new_recipes">
+                                                ✨ Nouvelles recettes
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -332,6 +343,15 @@ export function RecipeCategoryForm({ defaultValues, onSubmit, submittingLabel = 
                                             </p>
                                         </div>
                                     )}
+                                    {values.dynamic_type === 'new_recipes' && (
+                                        <div className="text-xs space-y-1">
+                                            <p className="font-medium">✨ Nouvelles recettes</p>
+                                            <p className="text-muted-foreground">
+                                                Affiche les recettes marquées « Nouveauté » — la même vague que la
+                                                popup Nouveautés, gérée depuis la page dédiée du backoffice.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -339,6 +359,11 @@ export function RecipeCategoryForm({ defaultValues, onSubmit, submittingLabel = 
                 </Card>
 
                 <div className="flex justify-end gap-2 pt-2">
+                    {onCancel && (
+                        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+                            Annuler
+                        </Button>
+                    )}
                     <Button type="submit" disabled={loading || !values.name_fr || !values.emoji || !values.color}>
                         {loading ? submittingLabel : 'Enregistrer'}
                     </Button>
