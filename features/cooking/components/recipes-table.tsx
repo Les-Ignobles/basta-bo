@@ -1,6 +1,6 @@
 "use client"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { MoreHorizontal, Loader2 } from 'lucide-react'
+import { MoreHorizontal, Loader2, Sparkles } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { Recipe } from '@/features/cooking/types'
@@ -15,6 +15,7 @@ type Props = {
     selectedRecipes?: number[]
     onSelectRecipe?: (recipeId: number, selected: boolean) => void
     onSelectAll?: (selected: boolean) => void
+    onToggleNew?: (recipeId: number, isNew: boolean) => void
 }
 
 const MONTHS = [
@@ -22,7 +23,7 @@ const MONTHS = [
     'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
 ]
 
-export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDuplicate, selectedRecipes = [], onSelectRecipe, onSelectAll }: Props) {
+export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDuplicate, selectedRecipes = [], onSelectRecipe, onSelectAll, onToggleNew }: Props) {
     const allSelected = recipes.length > 0 && selectedRecipes.length === recipes.length
     const someSelected = selectedRecipes.length > 0 && selectedRecipes.length < recipes.length
     const getSeasonalityMonths = (mask: number | null) => {
@@ -53,6 +54,7 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                         <TableHead>Image</TableHead>
                         <TableHead>Ingrédients</TableHead>
                         <TableHead>Saisonnalité</TableHead>
+                        <TableHead className="text-center">Nouveauté</TableHead>
                         <TableHead className="text-right">Batch cooking</TableHead>
                         <TableHead className="text-right">Créé le</TableHead>
                         <TableHead className="w-[60px] text-right">Actions</TableHead>
@@ -61,7 +63,7 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                 <TableBody>
                     {loading ? (
                         <TableRow>
-                            <TableCell colSpan={10} className="text-center py-8">
+                            <TableCell colSpan={11} className="text-center py-8">
                                 <div className="flex items-center justify-center gap-2 text-muted-foreground">
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                     <span>Chargement des recettes...</span>
@@ -116,6 +118,20 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                                                 <span className="text-xs text-muted-foreground">Toute l'année</span>
                                             )}
                                         </TableCell>
+                                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                                            <button
+                                                title={recipe.is_new ? 'Retirer des nouveautés' : 'Marquer comme nouveauté'}
+                                                onClick={() => onToggleNew?.(Number(recipe.id), !recipe.is_new)}
+                                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors ${
+                                                    recipe.is_new
+                                                        ? 'bg-primary text-primary-foreground'
+                                                        : 'bg-muted text-muted-foreground hover:bg-accent'
+                                                }`}
+                                            >
+                                                <Sparkles className="h-3 w-3" />
+                                                New
+                                            </button>
+                                        </TableCell>
                                         <TableCell className="text-right tabular-nums cursor-pointer" onClick={() => onEdit?.(recipe)}>
                                             {recipe.batchcooking_usage_count > 0
                                                 ? recipe.batchcooking_usage_count.toLocaleString('fr-FR')
@@ -147,7 +163,7 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                             })}
                             {recipes.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-6">
+                                    <TableCell colSpan={11} className="text-center text-sm text-muted-foreground py-6">
                                         Aucune recette trouvée.
                                     </TableCell>
                                 </TableRow>

@@ -113,6 +113,7 @@ export type Recipe = {
     quantification_type: QuantificationType
     is_folklore: boolean
     is_visible: boolean
+    is_new: boolean  // Nouveauté : recette affichée dans la popup "Nouvelles recettes" de l'app
     base_servings: number | null  // Nombre de portions de base pour le calcul des quantités
     // Valeurs nutritionnelles par portion
     calories_per_serving: number | null
@@ -147,6 +148,7 @@ export type RecipeFormValues = {
     quantification_type: QuantificationType
     is_folklore: boolean
     is_visible: boolean
+    is_new?: boolean  // Nouveauté : recette affichée dans la popup "Nouvelles recettes" de l'app
     base_servings?: number | null  // Nombre de portions de base
     // Valeurs nutritionnelles par portion
     calories_per_serving?: number | null

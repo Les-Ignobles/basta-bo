@@ -36,10 +36,12 @@ export async function GET(req: NextRequest) {
     const isVisible = isVisibleParam ? isVisibleParam === 'true' : undefined
     const isFolkloreParam = searchParams.get('isFolklore')
     const isFolklore = isFolkloreParam ? isFolkloreParam === 'true' : undefined
+    const isNewParam = searchParams.get('isNew')
+    const isNew = isNewParam ? isNewParam === 'true' : undefined
 
     const { data, total } = (diets && diets.length > 0) || (kitchenEquipments && kitchenEquipments.length > 0)
         ? await repo.findPageWithFilters({ search, page, pageSize, noImage, dishType, diets, kitchenEquipments, quantificationType, isVisible, isFolklore })
-        : await repo.findPage({ search, page, pageSize, noImage, dishType, quantificationType, isVisible, isFolklore })
+        : await repo.findPage({ search, page, pageSize, noImage, dishType, quantificationType, isVisible, isFolklore, isNew })
     return Response.json({ data, total, page, pageSize })
 }
 

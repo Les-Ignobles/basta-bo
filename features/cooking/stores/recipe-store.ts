@@ -39,6 +39,7 @@ type RecipeState = {
     bulkUpdateDietMask: (ids: number[], dietMask: number) => Promise<void>
     bulkUpdateKitchenEquipmentsMask: (ids: number[], equipmentsMask: number) => Promise<void>
     bulkUpdateVisibility: (ids: number[], isVisible: boolean) => Promise<void>
+    toggleRecipeIsNew: (id: number, isNew: boolean) => Promise<void>
     setSearch: (s: string) => void
     setPage: (p: number) => void
     setNoImage: (b: boolean) => void
@@ -316,6 +317,26 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
             console.error('Failed to bulk update kitchen equipments mask:', error)
         } finally {
             set({ loading: false })
+        }
+    },
+
+    async toggleRecipeIsNew(id, isNew) {
+        // Optimiste : on met à jour la liste localement, revert si l'API échoue
+        const applyIsNew = (value: boolean) =>
+            set(state => ({
+                recipes: state.recipes.map(r => (Number(r.id) === id ? { ...r, is_new: value } : r))
+            }))
+        applyIsNew(isNew)
+        try {
+            const response = await fetch('/api/recipes', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, is_new: isNew })
+            })
+            if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        } catch (error) {
+            console.error('Failed to toggle recipe is_new:', error)
+            applyIsNew(!isNew)
         }
     },
 

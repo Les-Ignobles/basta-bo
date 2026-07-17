@@ -74,6 +74,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
         quantification_type: QuantificationType.PER_PERSON,
         is_folklore: false,
         is_visible: true,
+        is_new: false,
         base_servings: null,
         calories_per_serving: null,
         proteins_per_serving: null,
@@ -141,6 +142,7 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                 quantification_type: defaultValues.quantification_type || QuantificationType.PER_PERSON,
                 is_folklore: defaultValues.is_folklore || false,
                 is_visible: defaultValues.is_visible !== undefined ? defaultValues.is_visible : true,
+                is_new: defaultValues.is_new ?? false,
                 base_servings: defaultValues.base_servings ?? null,
                 calories_per_serving: defaultValues.calories_per_serving ?? null,
                 proteins_per_serving: defaultValues.proteins_per_serving ?? null,
@@ -557,6 +559,13 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                         onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_folklore: Boolean(checked) }))}
                                     />
                                     <span className="text-sm">Folklore</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <Checkbox
+                                        checked={values.is_new ?? false}
+                                        onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_new: Boolean(checked) }))}
+                                    />
+                                    <span className="text-sm">Nouveauté (popup app)</span>
                                 </label>
                             </div>
                         </div>

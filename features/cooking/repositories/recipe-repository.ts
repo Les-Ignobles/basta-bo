@@ -6,7 +6,7 @@ export class RecipeRepository extends BaseRepository<Recipe> {
         super(client, 'recipes')
     }
 
-    async findPage({ search, page, pageSize, noImage, dishType, quantificationType, isVisible, isFolklore }: { search?: string; page: number; pageSize: number; noImage?: boolean; dishType?: number; quantificationType?: number; isVisible?: boolean; isFolklore?: boolean }): Promise<{ data: Recipe[]; total: number }> {
+    async findPage({ search, page, pageSize, noImage, dishType, quantificationType, isVisible, isFolklore, isNew }: { search?: string; page: number; pageSize: number; noImage?: boolean; dishType?: number; quantificationType?: number; isVisible?: boolean; isFolklore?: boolean; isNew?: boolean }): Promise<{ data: Recipe[]; total: number }> {
         const from = (page - 1) * pageSize
         const to = from + pageSize - 1
         let query = (this.client as any).from(this.table).select('*', { count: 'exact' })
@@ -33,6 +33,10 @@ export class RecipeRepository extends BaseRepository<Recipe> {
 
         if (isFolklore !== undefined) {
             query = query.eq('is_folklore', isFolklore)
+        }
+
+        if (isNew !== undefined) {
+            query = query.eq('is_new', isNew)
         }
 
         query = query.order('title', { ascending: true })

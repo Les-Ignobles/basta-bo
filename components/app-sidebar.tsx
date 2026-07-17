@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings, BookOpen, FolderOpen, HelpCircle, ChefHat, Link2, Layers, MessageSquare, Tags, Users, Ticket, BarChart3, UserX, Wand2 } from "lucide-react"
+import { Salad, UtensilsCrossed, LogOut, User, Clock, Settings, BookOpen, FolderOpen, HelpCircle, ChefHat, Link2, Layers, MessageSquare, Tags, Users, Ticket, BarChart3, UserX, Wand2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/components/auth-provider"
@@ -90,6 +90,14 @@ export function AppSidebar() {
                                         <Link href="/dashboard/recipe-categories" className="flex items-center gap-2">
                                             <Tags className="size-4" />
                                             <span>Catégories Recettes</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/new-recipes-popup'}>
+                                        <Link href="/dashboard/new-recipes-popup" className="flex items-center gap-2">
+                                            <Sparkles className="size-4" />
+                                            <span>Popup Nouveautés</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>

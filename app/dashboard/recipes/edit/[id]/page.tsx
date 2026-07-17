@@ -137,6 +137,7 @@ export default function EditRecipePage() {
                 quantification_type: values.quantification_type,
                 is_folklore: values.is_folklore,
                 is_visible: values.is_visible,
+                is_new: values.is_new ?? false,
                 base_servings: values.base_servings ?? null,
                 // Valeurs nutritionnelles
                 calories_per_serving: values.calories_per_serving ?? null,

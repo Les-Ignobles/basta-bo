@@ -35,6 +35,7 @@ export default function RecipesIndexPage() {
         bulkUpdateDietMask,
         bulkUpdateKitchenEquipmentsMask,
         bulkUpdateVisibility,
+        toggleRecipeIsNew,
         loading,
         selectedRecipes,
         toggleRecipeSelection,
@@ -488,6 +489,7 @@ export default function RecipesIndexPage() {
                 }}
                 onDuplicate={handleDuplicateRecipe}
                 onDelete={handleDeleteRecipe}
+                onToggleNew={toggleRecipeIsNew}
             />
 
             {/* Modal de confirmation pour suppression individuelle */}
