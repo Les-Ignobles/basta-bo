@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Loader2, Search, Users, Globe, UserRound, X } from 'lucide-react'
-import type { RecipeCategory } from '@/features/cooking/types/recipe-category'
+import { DYNAMIC_TYPE_LABELS, type RecipeCategory } from '@/features/cooking/types/recipe-category'
 import type { TranslationText } from '@/lib/i18n'
 
 export type PreviewRecipe = {
@@ -165,11 +165,10 @@ export function CategoryPreviewDialog({ open, onOpenChange, category }: Props) {
                         </span>
                         Aperçu : {category?.name.fr}
                     </DialogTitle>
-                    {category?.is_dynamic && (
+                    {category?.is_dynamic && category.dynamic_type && (
                         <p className="text-sm text-muted-foreground">
-                            {category?.dynamic_type === 'seasonality'
-                                ? '🍂 Recettes sélectionnées automatiquement selon la saison'
-                                : '⭐ Recettes personnalisées selon le profil utilisateur'}
+                            {DYNAMIC_TYPE_LABELS[category.dynamic_type].emoji}{' '}
+                            {DYNAMIC_TYPE_LABELS[category.dynamic_type].description}
                         </p>
                     )}
                 </DialogHeader>

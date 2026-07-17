@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Eye, Pencil, Pin, Sparkles, Trash2, UtensilsCrossed } from 'lucide-react'
-import type { RecipeCategory } from '@/features/cooking/types/recipe-category'
+import { DYNAMIC_TYPE_LABELS, type RecipeCategory } from '@/features/cooking/types/recipe-category'
 
 type Props = {
     category: RecipeCategory
@@ -70,7 +70,7 @@ export function CategoryCard({ category, onEdit, onDelete, onPreview }: Props) {
                             </TooltipContent>
                         </Tooltip>
                     )}
-                    {category.is_dynamic && (
+                    {category.is_dynamic && category.dynamic_type && (
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Badge variant="default" className="text-xs cursor-help gap-1">
@@ -79,11 +79,7 @@ export function CategoryCard({ category, onEdit, onDelete, onPreview }: Props) {
                                 </Badge>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>
-                                    {category.dynamic_type === 'seasonality'
-                                        ? 'Recettes sélectionnées automatiquement selon la saison'
-                                        : 'Recettes personnalisées selon le profil utilisateur'}
-                                </p>
+                                <p>{DYNAMIC_TYPE_LABELS[category.dynamic_type].description}</p>
                             </TooltipContent>
                         </Tooltip>
                     )}

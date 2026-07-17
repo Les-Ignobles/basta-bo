@@ -3,7 +3,26 @@ import type { TranslationText } from '@/lib/i18n'
 /**
  * Types de catégories dynamiques
  */
-export type DynamicCategoryType = 'seasonality' | 'user_recommendations'
+export type DynamicCategoryType = 'seasonality' | 'user_recommendations' | 'new_recipes'
+
+/** Libellés des types de catégories automatiques (badges, tooltips, aperçus) */
+export const DYNAMIC_TYPE_LABELS: Record<DynamicCategoryType, { emoji: string; badge: string; description: string }> = {
+    seasonality: {
+        emoji: '🍂',
+        badge: 'Saison',
+        description: 'Recettes sélectionnées automatiquement selon la saison',
+    },
+    user_recommendations: {
+        emoji: '⭐',
+        badge: 'Recommandations',
+        description: 'Recettes personnalisées selon le profil utilisateur',
+    },
+    new_recipes: {
+        emoji: '✨',
+        badge: 'Nouveautés',
+        description: 'Recettes marquées « Nouveauté » (même vague que la popup)',
+    },
+}
 
 export interface RecipeCategory {
     id: number
