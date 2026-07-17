@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const FIREBASE_API_URL = process.env.FIREBASE_API_URL || 'http://127.0.0.1:5001/basta-app-staging/us-central1/api'
+const FIREBASE_API_URL =
+    process.env.FIREBASE_BACKEND_URL ||
+    process.env.FIREBASE_API_URL ||
+    'http://127.0.0.1:5001/basta-app-eabb1/europe-west9/api'
 
 /**
  * GET /api/recipe-categories/[id]/preview
