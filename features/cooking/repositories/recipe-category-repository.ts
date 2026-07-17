@@ -117,6 +117,30 @@ export class RecipeCategoryRepository {
         return data
     }
 
+    /** Applique en parallèle un lot de mises à jour d'ordre/placement (drag & drop). */
+    async bulkReorder(
+        updates: Array<{
+            id: number
+            chip_order?: number
+            section_order?: number
+            display_as_chip?: boolean
+            display_as_section?: boolean
+        }>
+    ): Promise<void> {
+        await Promise.all(
+            updates.map(async ({ id, ...fields }) => {
+                const { error } = await this.client
+                    .from(this.table)
+                    .update(fields)
+                    .eq('id', id)
+
+                if (error) {
+                    throw new Error(`Failed to reorder category ${id}: ${error.message}`)
+                }
+            })
+        )
+    }
+
     async delete(id: number): Promise<void> {
         const { error } = await this.client
             .from(this.table)

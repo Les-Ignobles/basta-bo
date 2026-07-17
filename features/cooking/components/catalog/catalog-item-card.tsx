@@ -51,7 +51,7 @@ export function CatalogItemCard({ category, zone, onEdit, onRemove, onAddToOther
                     {...listeners}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <GripVertical className={`${zone === 'chip' ? 'h-4 w-4' : 'h-5 w-5'} text-muted-foreground`} />
+                    <GripVertical className={zone === 'chip' ? 'h-4 w-4 text-white/80' : 'h-5 w-5 text-muted-foreground'} />
                 </button>
             </TooltipTrigger>
             <TooltipContent side={zone === 'chip' ? 'top' : 'left'}>
@@ -67,7 +67,7 @@ export function CatalogItemCard({ category, zone, onEdit, onRemove, onAddToOther
                     variant="ghost"
                     size="icon"
                     className={`opacity-0 group-hover:opacity-100 transition-opacity ${
-                        zone === 'chip' ? 'absolute bottom-0 right-0 h-6 w-6' : ''
+                        zone === 'chip' ? 'absolute bottom-0 right-0 h-6 w-6 text-white hover:text-white hover:bg-white/20' : ''
                     }`}
                     onClick={(e) => {
                         e.stopPropagation()
@@ -89,8 +89,10 @@ export function CatalogItemCard({ category, zone, onEdit, onRemove, onAddToOther
                 <Button
                     variant="ghost"
                     size="icon"
-                    className={`opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive ${
-                        zone === 'chip' ? 'absolute top-0 right-0 h-6 w-6' : ''
+                    className={`opacity-0 group-hover:opacity-100 transition-opacity ${
+                        zone === 'chip'
+                            ? 'absolute top-0 right-0 h-6 w-6 text-white hover:text-white hover:bg-white/20'
+                            : 'text-destructive hover:text-destructive'
                     }`}
                     onClick={(e) => {
                         e.stopPropagation()
@@ -107,27 +109,25 @@ export function CatalogItemCard({ category, zone, onEdit, onRemove, onAddToOther
     )
 
     if (zone === 'chip') {
+        // Tuile colorée fidèle aux filtres rapides in-app (fond couleur catégorie, emoji, texte clair)
         return (
             <TooltipProvider>
                 <div
                     ref={!isDragOverlay ? setNodeRef : undefined}
-                    style={style}
-                    className={`relative flex flex-col items-center justify-center p-4 rounded-xl border-2 min-w-[120px] cursor-pointer group ${
+                    style={{ ...style, backgroundColor: category.color }}
+                    className={`relative flex flex-col items-start justify-between p-4 rounded-2xl min-w-[140px] min-h-[110px] cursor-pointer group ${
                         isDragging && !isDragOverlay ? 'opacity-30' : ''
-                    } ${isDragOverlay ? 'shadow-lg ring-2 ring-primary' : ''} ${disabled ? 'opacity-60' : ''} bg-background`}
+                    } ${isDragOverlay ? 'shadow-lg ring-2 ring-primary' : ''} ${disabled ? 'opacity-60' : ''}`}
                     onClick={() => !isDragOverlay && onEdit(category)}
                 >
                     {dragHandle}
                     {removeButton}
                     {addToOtherZoneButton}
-                    <div
-                        className="w-16 h-16 rounded-lg flex items-center justify-center text-3xl mb-2"
-                        style={{ backgroundColor: category.color + '20' }}
-                    >
-                        {category.emoji}
+                    <span className="text-3xl drop-shadow-sm">{category.emoji}</span>
+                    <div className="mt-2">
+                        <span className="block text-sm font-semibold text-white drop-shadow-sm">{category.name.fr}</span>
+                        <span className="text-[10px] text-white/70">Position {category.chip_order}</span>
                     </div>
-                    <span className="text-sm font-medium text-center">{category.name.fr}</span>
-                    <span className="text-xs text-muted-foreground">Position {category.chip_order}</span>
                 </div>
             </TooltipProvider>
         )

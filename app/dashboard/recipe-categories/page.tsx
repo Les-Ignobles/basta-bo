@@ -66,13 +66,12 @@ export default function RecipeCategoriesPage() {
     ) => {
         setSaving(true)
         try {
-            for (const update of updates) {
-                await fetch('/api/recipe-categories', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(update),
-                })
-            }
+            const response = await fetch('/api/recipe-categories/reorder', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ updates }),
+            })
+            if (!response.ok) throw new Error(`HTTP ${response.status}`)
         } catch (error) {
             console.error('Error saving order:', error)
             fetchCategories()
@@ -252,7 +251,7 @@ export default function RecipeCategoriesPage() {
                 <TabsList>
                     <TabsTrigger value="preview" className="gap-2">
                         <LayoutGrid className="h-4 w-4" />
-                        Aperçu du catalogue
+                        Agencement du catalogue
                     </TabsTrigger>
                     <TabsTrigger value="list" className="gap-2">
                         <BookOpen className="h-4 w-4" />
@@ -267,10 +266,11 @@ export default function RecipeCategoriesPage() {
                             <div className="flex items-start justify-between">
                                 <div>
                                     <CardTitle className="text-base flex items-center gap-2">
-                                        Prévisualisation du catalogue
+                                        Agencement du catalogue
                                     </CardTitle>
                                     <CardDescription className="mt-1">
-                                        Organisez les catégories. Glissez-déposez pour réordonner.
+                                        Ce que verront les utilisateurs dans l&apos;onglet Recettes de l&apos;app,
+                                        dans cet ordre. Glissez-déposez pour réordonner ou changer de zone.
                                     </CardDescription>
                                 </div>
                                 <TooltipProvider>
