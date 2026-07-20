@@ -206,7 +206,7 @@ export function CatalogItemCard({ category, zone, onEdit, onRemove, onAddToOther
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Link
-                                    href={`/dashboard/recipe-categories/${category.id}/order`}
+                                    href={`/dashboard/recipe-categories/${category.id}/edit`}
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <Button variant="outline" size="sm" className="gap-1.5">

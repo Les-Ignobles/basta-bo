@@ -2,10 +2,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ArrowLeft, Eye, Loader2, Sparkles } from 'lucide-react'
 import { RecipeCategoryForm } from '@/features/cooking/components/recipe-category-form'
 import { CategoryLivePreview } from '@/features/cooking/components/catalog/category-live-preview'
-import type { RecipeCategory, RecipeCategoryFormValues } from '@/features/cooking/types/recipe-category'
+import { CategoryRecipesManager } from '@/features/cooking/components/catalog/category-recipes-manager'
+import { CategoryPreviewDialog } from '@/features/cooking/components/catalog/category-preview-dialog'
+import { DYNAMIC_TYPE_LABELS, type RecipeCategory, type RecipeCategoryFormValues } from '@/features/cooking/types/recipe-category'
 
 const toFormValues = (category: RecipeCategory): RecipeCategoryFormValues => ({
     name_fr: category.name.fr,
@@ -29,6 +32,7 @@ export default function EditRecipeCategoryPage() {
     const [category, setCategory] = useState<RecipeCategory | null>(null)
     const [liveValues, setLiveValues] = useState<RecipeCategoryFormValues | null>(null)
     const [loading, setLoading] = useState(true)
+    const [previewOpen, setPreviewOpen] = useState(false)
 
     useEffect(() => {
         async function fetchCategory() {
@@ -109,6 +113,52 @@ export default function EditRecipeCategoryPage() {
                 </div>
                 {liveValues && <CategoryLivePreview values={liveValues} />}
             </div>
+
+            {/* Contenu : recettes gérées à la main, ou explication du contenu automatique */}
+            {category.is_dynamic && category.dynamic_type ? (
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                            <Sparkles className="h-4 w-4" />
+                            {category.dynamic_type === 'new_recipes' ? 'Contenu semi-automatique' : 'Contenu automatique'}
+                        </CardTitle>
+                        <CardDescription>
+                            {category.dynamic_type === 'new_recipes' ? (
+                                <>
+                                    ✨ Cette catégorie affiche les recettes marquées « Nouveauté » — la même
+                                    vague que la popup de l&apos;app. Son contenu se gère sur la page dédiée.
+                                </>
+                            ) : (
+                                <>
+                                    {DYNAMIC_TYPE_LABELS[category.dynamic_type].emoji}{' '}
+                                    {DYNAMIC_TYPE_LABELS[category.dynamic_type].description} — il n&apos;y a pas de
+                                    liste de recettes à gérer.
+                                </>
+                            )}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex items-center gap-2">
+                        {category.dynamic_type === 'new_recipes' && (
+                            <Button className="gap-2" onClick={() => router.push('/dashboard/new-recipes-popup')}>
+                                <Sparkles className="h-4 w-4" />
+                                Gérer la vague de nouveautés
+                            </Button>
+                        )}
+                        <Button variant="outline" className="gap-2" onClick={() => setPreviewOpen(true)}>
+                            <Eye className="h-4 w-4" />
+                            Prévisualiser le contenu
+                        </Button>
+                    </CardContent>
+                </Card>
+            ) : (
+                <CategoryRecipesManager categoryId={category.id} categoryColor={category.color} />
+            )}
+
+            <CategoryPreviewDialog
+                open={previewOpen}
+                onOpenChange={setPreviewOpen}
+                category={category}
+            />
         </div>
     )
 }

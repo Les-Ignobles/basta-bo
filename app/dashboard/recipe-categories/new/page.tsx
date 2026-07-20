@@ -35,7 +35,9 @@ export default function NewRecipeCategoryPage() {
             console.error('Error creating category')
             return
         }
-        router.push('/dashboard/recipe-categories')
+        const { data } = await response.json()
+        // Enchaîner directement sur la gestion du contenu de la catégorie créée
+        router.push(data?.id ? `/dashboard/recipe-categories/${data.id}/edit` : '/dashboard/recipe-categories')
     }
 
     return (

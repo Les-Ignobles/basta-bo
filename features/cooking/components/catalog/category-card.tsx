@@ -96,7 +96,7 @@ export function CategoryCard({ category, onEdit, onDelete, onPreview }: Props) {
                                     asChild
                                     onClick={(e) => e.stopPropagation()}
                                 >
-                                    <Link href={`/dashboard/recipe-categories/${category.id}/order`}>
+                                    <Link href={`/dashboard/recipe-categories/${category.id}/edit`}>
                                         <UtensilsCrossed className="h-4 w-4" />
                                         <span className="hidden lg:inline">Recettes</span>
                                     </Link>
