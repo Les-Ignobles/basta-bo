@@ -8,6 +8,7 @@ import {
     useSensor,
     useSensors,
     DragEndEvent,
+    MeasuringStrategy,
 } from '@dnd-kit/core'
 import {
     arrayMove,
@@ -275,6 +276,7 @@ export function RecipeActionsSection({ recipeId }: Props) {
                     sensors={sensors}
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
+                    measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
                 >
                     <SortableContext
                         items={actions.map(a => a.id)}
