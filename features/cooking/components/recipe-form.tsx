@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 import { ImageUpload } from '@/components/image-upload'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -458,40 +459,29 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                 </TabsList>
 
                 {/* Tab 1: Recette (infos + ingrédients) */}
-                <TabsContent value="recipe" className="space-y-6 mt-6">
-                    {/* Section Titre et Image */}
+                <TabsContent value="recipe" className="mt-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
+                    {/* Colonne principale */}
+                    <div className="space-y-6 min-w-0">
+                    {/* Section Titre */}
                     <div className="space-y-4">
                         <h3 className="text-base font-semibold text-foreground">Informations principales</h3>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">Titre de la recette *</label>
-                                <Input
-                                    value={values.title}
-                                    onChange={(e) => setValues(prev => ({ ...prev, title: e.target.value }))}
-                                    placeholder="Ex: Tarte aux pommes"
-                                    required
-                                    className="text-base"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">Image de la recette</label>
-                                <ImageUpload
-                                    value={values.img_path ?? undefined}
-                                    onChange={(url) => setValues(prev => ({ ...prev, img_path: url }))}
-                                    bucket="recipes"
-                                    ingredientName={values.title}
-                                    defaultSize={800}
-                                    allowSizeSelection={true}
-                                />
-                            </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-foreground">Titre de la recette *</label>
+                            <Input
+                                value={values.title}
+                                onChange={(e) => setValues(prev => ({ ...prev, title: e.target.value }))}
+                                placeholder="Ex: Tarte aux pommes"
+                                required
+                                className="text-base"
+                            />
                         </div>
                     </div>
 
-                    {/* Section Classification + Options (compact) */}
+                    {/* Section Classification (compact) */}
                     <div className="space-y-4">
-                        <h3 className="text-base font-semibold text-foreground">Classification & Options</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <h3 className="text-base font-semibold text-foreground">Classification</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-foreground">Type de plat *</label>
                                 <Select
@@ -544,99 +534,16 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                     className="text-base"
                                 />
                             </div>
-
-                            <div className="space-y-3 flex flex-col justify-center">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <Checkbox
-                                        checked={values.is_visible}
-                                        onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_visible: Boolean(checked) }))}
-                                    />
-                                    <span className="text-sm">Visible</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <Checkbox
-                                        checked={values.is_folklore}
-                                        onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_folklore: Boolean(checked) }))}
-                                    />
-                                    <span className="text-sm">Folklore</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <Checkbox
-                                        checked={values.is_new ?? false}
-                                        onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_new: Boolean(checked) }))}
-                                    />
-                                    <span className="text-sm">Nouveauté (popup app)</span>
-                                </label>
-                            </div>
                         </div>
                     </div>
 
-                    {/* Section Ingrédients + Nutrition */}
+                    {/* Section Ingrédients */}
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-base font-semibold text-foreground">Ingrédients</h3>
-                                {syncingIngredients && (
-                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                )}
-                            </div>
-
-                            {/* Valeurs nutritionnelles + prix (inline, read-only) */}
-                            <div className="flex items-center gap-4 flex-wrap justify-end">
-                                {hasNutrition && (
-                                    <>
-                                        <div className="flex items-center gap-1.5 text-sm">
-                                            <Flame className="h-3.5 w-3.5 text-orange-500" />
-                                            <span className="font-medium">{values.calories_per_serving ?? '—'}</span>
-                                            <span className="text-xs text-muted-foreground">kcal</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 text-sm">
-                                            <Beef className="h-3.5 w-3.5 text-red-500" />
-                                            <span className="font-medium">{values.proteins_per_serving ?? '—'}</span>
-                                            <span className="text-xs text-muted-foreground">g</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 text-sm">
-                                            <Droplets className="h-3.5 w-3.5 text-yellow-500" />
-                                            <span className="font-medium">{values.fats_per_serving ?? '—'}</span>
-                                            <span className="text-xs text-muted-foreground">g</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 text-sm">
-                                            <Wheat className="h-3.5 w-3.5 text-amber-700" />
-                                            <span className="font-medium">{values.carbs_per_serving ?? '—'}</span>
-                                            <span className="text-xs text-muted-foreground">g</span>
-                                        </div>
-                                    </>
-                                )}
-                                {pricePerServing && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setPriceBreakdownOpen(true)}
-                                        className="flex items-center gap-1.5 text-sm rounded-md px-1.5 py-0.5 hover:bg-muted transition-colors"
-                                        title={pricePerServing.isPartial
-                                            ? `Estimation partielle : ${pricePerServing.missingPriceCount} ingrédient(s) sans prix renseigné. Cliquer pour voir le détail et éditer.`
-                                            : `Cliquer pour voir le détail par ingrédient et éditer les prix au 100g`}
-                                    >
-                                        <span className="text-base">💶</span>
-                                        <span className="font-medium">
-                                            {pricePerServing.value.toFixed(2)} €
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                            / {priceLabel}{pricePerServing.isPartial ? ' (partiel)' : ''}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground underline ml-1">détail</span>
-                                    </button>
-                                )}
-                                {!pricePerServing && selectedIngredients.length > 0 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setPriceBreakdownOpen(true)}
-                                        className="text-xs text-muted-foreground underline hover:text-foreground"
-                                        title="Aucun prix calculable pour l'instant. Cliquer pour renseigner les prix au 100g."
-                                    >
-                                        💶 détail prix
-                                    </button>
-                                )}
-                            </div>
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-base font-semibold text-foreground">Ingrédients</h3>
+                            {syncingIngredients && (
+                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                            )}
                         </div>
 
                         {/* Sélection d'ingrédients */}
@@ -834,7 +741,112 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                             </div>
                         )}
                     </div>
+                    </div>
+                    {/* fin colonne principale */}
 
+                    {/* Sidebar sticky : image, statut, nutrition */}
+                    <aside className="space-y-4 lg:sticky lg:top-24">
+                        {/* Image */}
+                        <div className="rounded-lg border p-4 space-y-2">
+                            <label className="text-sm font-medium text-foreground">Image de la recette</label>
+                            <ImageUpload
+                                value={values.img_path ?? undefined}
+                                onChange={(url) => setValues(prev => ({ ...prev, img_path: url }))}
+                                bucket="recipes"
+                                ingredientName={values.title}
+                                defaultSize={800}
+                                allowSizeSelection={true}
+                            />
+                        </div>
+
+                        {/* Statut */}
+                        <div className="rounded-lg border p-4 space-y-3">
+                            <h4 className="text-sm font-semibold text-foreground">Statut</h4>
+                            <label className="flex items-center justify-between gap-2 cursor-pointer">
+                                <span className="text-sm">Visible</span>
+                                <Switch
+                                    checked={values.is_visible}
+                                    onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_visible: Boolean(checked) }))}
+                                />
+                            </label>
+                            <label className="flex items-center justify-between gap-2 cursor-pointer">
+                                <span className="text-sm">Folklore</span>
+                                <Switch
+                                    checked={values.is_folklore}
+                                    onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_folklore: Boolean(checked) }))}
+                                />
+                            </label>
+                            <label className="flex items-center justify-between gap-2 cursor-pointer">
+                                <span className="text-sm">Nouveauté <span className="text-xs text-muted-foreground">(popup app)</span></span>
+                                <Switch
+                                    checked={values.is_new ?? false}
+                                    onCheckedChange={(checked) => setValues(prev => ({ ...prev, is_new: Boolean(checked) }))}
+                                />
+                            </label>
+                        </div>
+
+                        {/* Nutrition & prix */}
+                        {(hasNutrition || pricePerServing || selectedIngredients.length > 0) && (
+                            <div className="rounded-lg border p-4 space-y-3">
+                                <h4 className="text-sm font-semibold text-foreground">Nutrition &amp; prix</h4>
+                                {hasNutrition ? (
+                                    <>
+                                        <div className="flex items-baseline gap-1.5">
+                                            <Flame className="h-5 w-5 text-orange-500 self-center" />
+                                            <span className="text-2xl font-semibold tabular-nums">{values.calories_per_serving ?? '—'}</span>
+                                            <span className="text-xs text-muted-foreground">kcal / {priceLabel}</span>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <div className="rounded-md bg-muted/50 p-2 text-center">
+                                                <div className="flex items-center justify-center gap-1 text-red-500"><Beef className="h-3.5 w-3.5" /></div>
+                                                <div className="text-sm font-medium tabular-nums">{values.proteins_per_serving ?? '—'}<span className="text-xs text-muted-foreground"> g</span></div>
+                                                <div className="text-[10px] text-muted-foreground">Protéines</div>
+                                            </div>
+                                            <div className="rounded-md bg-muted/50 p-2 text-center">
+                                                <div className="flex items-center justify-center gap-1 text-yellow-500"><Droplets className="h-3.5 w-3.5" /></div>
+                                                <div className="text-sm font-medium tabular-nums">{values.fats_per_serving ?? '—'}<span className="text-xs text-muted-foreground"> g</span></div>
+                                                <div className="text-[10px] text-muted-foreground">Lipides</div>
+                                            </div>
+                                            <div className="rounded-md bg-muted/50 p-2 text-center">
+                                                <div className="flex items-center justify-center gap-1 text-amber-700"><Wheat className="h-3.5 w-3.5" /></div>
+                                                <div className="text-sm font-medium tabular-nums">{values.carbs_per_serving ?? '—'}<span className="text-xs text-muted-foreground"> g</span></div>
+                                                <div className="text-[10px] text-muted-foreground">Glucides</div>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <p className="text-xs text-muted-foreground">Valeurs nutritionnelles non renseignées.</p>
+                                )}
+                                {pricePerServing ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setPriceBreakdownOpen(true)}
+                                        className="flex w-full items-center justify-between gap-1.5 text-sm rounded-md border px-3 py-2 hover:bg-muted transition-colors"
+                                        title={pricePerServing.isPartial
+                                            ? `Estimation partielle : ${pricePerServing.missingPriceCount} ingrédient(s) sans prix renseigné. Cliquer pour voir le détail et éditer.`
+                                            : `Cliquer pour voir le détail par ingrédient et éditer les prix au 100g`}
+                                    >
+                                        <span className="flex items-center gap-1.5">
+                                            <span className="text-base">💶</span>
+                                            <span className="font-medium tabular-nums">{pricePerServing.value.toFixed(2)} €</span>
+                                            <span className="text-xs text-muted-foreground">/ {priceLabel}{pricePerServing.isPartial ? ' (partiel)' : ''}</span>
+                                        </span>
+                                        <span className="text-xs text-muted-foreground underline">détail</span>
+                                    </button>
+                                ) : selectedIngredients.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setPriceBreakdownOpen(true)}
+                                        className="text-xs text-muted-foreground underline hover:text-foreground"
+                                        title="Aucun prix calculable pour l'instant. Cliquer pour renseigner les prix au 100g."
+                                    >
+                                        💶 Renseigner les prix
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </aside>
+                  </div>
                 </TabsContent>
 
                 {/* Tab 2: Préparation */}
