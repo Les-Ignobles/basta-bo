@@ -207,16 +207,27 @@ export default function RecipesIndexPage() {
         }
     }
 
-    const handleDuplicateRecipe = (recipe: Recipe) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id, ...recipeWithoutId } = recipe
-        const duplicatedRecipe = {
-            ...recipeWithoutId,
-            title: `${recipe.title} (copie)`,
-            created_at: new Date().toISOString(),
+    const [duplicatingId, setDuplicatingId] = useState<number | null>(null)
+
+    const handleDuplicateRecipe = async (recipe: Recipe) => {
+        setDuplicatingId(Number(recipe.id))
+        try {
+            const res = await fetch(`/api/recipes/${recipe.id}/duplicate`, { method: 'POST' })
+            if (!res.ok) {
+                const { error } = await res.json().catch(() => ({ error: '' }))
+                throw new Error(error || `HTTP ${res.status}`)
+            }
+            const { data } = await res.json()
+            await fetchAllRecipes()
+            if (data?.id) {
+                router.push(`/dashboard/recipes/edit/${data.id}?returnPage=${currentPage}`)
+            }
+        } catch (e) {
+            console.error('Failed to duplicate recipe:', e)
+            alert('La duplication a échoué. Réessaie ou vérifie la console.')
+        } finally {
+            setDuplicatingId(null)
         }
-        sessionStorage.setItem('duplicatedRecipe', JSON.stringify(duplicatedRecipe))
-        router.push(`/dashboard/recipes/new?returnPage=${currentPage}`)
     }
 
     const toggleDiet = (dietId: number) => {
@@ -565,6 +576,7 @@ export default function RecipesIndexPage() {
             <RecipesTable
                 recipes={paginatedRecipes}
                 loading={recipesLoading}
+                duplicatingId={duplicatingId}
                 selectedRecipes={selectedRecipes}
                 onSelectRecipe={(id) => toggleRecipeSelection(id)}
                 onSelectAll={handleSelectAll}

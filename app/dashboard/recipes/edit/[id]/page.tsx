@@ -6,7 +6,7 @@ import { RecipeForm } from '@/features/cooking/components/recipe-form'
 import type { RecipeFormValues, Recipe, Ingredient, IngredientRecipePivot } from '@/features/cooking/types'
 import type { RecipeCategory } from '@/features/cooking/types/recipe-category'
 import { useRecipeStore } from '@/features/cooking/stores/recipe-store'
-import { ArrowLeft, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Loader2, ChevronLeft, ChevronRight, Copy } from 'lucide-react'
 
 export default function EditRecipePage() {
     const router = useRouter()
@@ -23,6 +23,7 @@ export default function EditRecipePage() {
     const [recipeCategoryIds, setRecipeCategoryIds] = useState<number[]>([])
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
+    const [duplicating, setDuplicating] = useState(false)
     const [navigation, setNavigation] = useState<{ previous: number | null; next: number | null } | null>(null)
 
     useEffect(() => {
@@ -115,6 +116,26 @@ export default function EditRecipePage() {
             setRecipeCategoryIds(categoryIds)
         } catch (error) {
             console.error('Failed to update recipe categories:', error)
+        }
+    }
+
+    async function handleDuplicate() {
+        setDuplicating(true)
+        try {
+            const res = await fetch(`/api/recipes/${recipeId}/duplicate`, { method: 'POST' })
+            if (!res.ok) {
+                const { error } = await res.json().catch(() => ({ error: '' }))
+                throw new Error(error || `HTTP ${res.status}`)
+            }
+            const { data } = await res.json()
+            if (data?.id) {
+                router.push(`/dashboard/recipes/edit/${data.id}`)
+            }
+        } catch (error) {
+            console.error('Failed to duplicate recipe:', error)
+            alert('La duplication a échoué. Réessaie ou vérifie la console.')
+        } finally {
+            setDuplicating(false)
         }
     }
 
@@ -247,14 +268,26 @@ export default function EditRecipePage() {
                         </div>
                         <h1 className="text-2xl font-semibold font-christmas">Modifier la recette</h1>
                     </div>
-                    <Button
-                        type="submit"
-                        form="recipe-form"
-                        disabled={submitting}
-                        className="flex items-center gap-2"
-                    >
-                        {submitting ? "Mise à jour..." : "Enregistrer"}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={handleDuplicate}
+                            disabled={duplicating || submitting}
+                            className="flex items-center gap-2"
+                            title="Crée une copie masquée de cette recette (avec ingrédients, étapes et critères)"
+                        >
+                            {duplicating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
+                            {duplicating ? "Duplication..." : "Créer à partir de cette recette"}
+                        </Button>
+                        <Button
+                            type="submit"
+                            form="recipe-form"
+                            disabled={submitting}
+                            className="flex items-center gap-2"
+                        >
+                            {submitting ? "Mise à jour..." : "Enregistrer"}
+                        </Button>
+                    </div>
                 </div>
             </div>
 

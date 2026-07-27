@@ -15,9 +15,10 @@ type Props = {
     onSelectRecipe?: (recipeId: number, selected: boolean) => void
     onSelectAll?: (selected: boolean) => void
     onToggleNew?: (recipeId: number, isNew: boolean) => void
+    duplicatingId?: number | null
 }
 
-export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDuplicate, selectedRecipes = [], onSelectRecipe, onSelectAll, onToggleNew }: Props) {
+export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDuplicate, selectedRecipes = [], onSelectRecipe, onSelectAll, onToggleNew, duplicatingId }: Props) {
     const allSelected = recipes.length > 0 && selectedRecipes.length === recipes.length
     const someSelected = selectedRecipes.length > 0 && selectedRecipes.length < recipes.length
 
@@ -88,6 +89,9 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                                             {new Date(recipe.created_at).toLocaleDateString('fr-FR')}
                                         </TableCell>
                                         <TableCell className="text-right">
+                                            {duplicatingId === Number(recipe.id) ? (
+                                                <Loader2 className="h-4 w-4 animate-spin inline-block text-muted-foreground" />
+                                            ) : (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <button
@@ -106,6 +110,7 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                                                     <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete?.(recipe); }}>Supprimer</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 )
