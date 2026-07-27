@@ -4,7 +4,6 @@ import { MoreHorizontal, Loader2, Sparkles } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { Recipe } from '@/features/cooking/types'
-import { DISH_TYPE_LABELS } from '@/features/cooking/types'
 
 type Props = {
     recipes: Recipe[]
@@ -18,24 +17,9 @@ type Props = {
     onToggleNew?: (recipeId: number, isNew: boolean) => void
 }
 
-const MONTHS = [
-    'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
-    'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
-]
-
 export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDuplicate, selectedRecipes = [], onSelectRecipe, onSelectAll, onToggleNew }: Props) {
     const allSelected = recipes.length > 0 && selectedRecipes.length === recipes.length
     const someSelected = selectedRecipes.length > 0 && selectedRecipes.length < recipes.length
-    const getSeasonalityMonths = (mask: number | null) => {
-        if (!mask) return []
-        const months = []
-        for (let i = 0; i < 12; i++) {
-            if (mask & (1 << i)) {
-                months.push(MONTHS[i])
-            }
-        }
-        return months
-    }
 
     return (
         <div className="border rounded-md">
@@ -49,13 +33,8 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                             />
                         </TableHead>
                         <TableHead className="w-[60px]">ID</TableHead>
+                        <TableHead className="w-[90px]">Image</TableHead>
                         <TableHead>Titre</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Image</TableHead>
-                        <TableHead>Ingrédients</TableHead>
-                        <TableHead>Saisonnalité</TableHead>
-                        <TableHead className="text-center">Nouveauté</TableHead>
-                        <TableHead className="text-right">Batch cooking</TableHead>
                         <TableHead className="text-right">Créé le</TableHead>
                         <TableHead className="w-[60px] text-right">Actions</TableHead>
                     </TableRow>
@@ -63,7 +42,7 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                 <TableBody>
                     {loading ? (
                         <TableRow>
-                            <TableCell colSpan={11} className="text-center py-8">
+                            <TableCell colSpan={6} className="text-center py-8">
                                 <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                                     <Loader2 className="h-6 w-6 animate-spin" />
                                     <span>Chargement en cours…</span>
@@ -85,61 +64,28 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                                                 onCheckedChange={(checked) => onSelectRecipe?.(Number(recipe.id), checked === true)}
                                             />
                                         </TableCell>
-                                        <TableCell className="cursor-pointer" onClick={() => onEdit?.(recipe)}>{recipe.id}</TableCell>
-                                        <TableCell className="font-medium cursor-pointer" onClick={() => onEdit?.(recipe)}>{recipe.title}</TableCell>
-                                        <TableCell className="cursor-pointer" onClick={() => onEdit?.(recipe)}>
-                                            <span className="text-sm">
-                                                {DISH_TYPE_LABELS[recipe.dish_type as keyof typeof DISH_TYPE_LABELS]}
-                                            </span>
-                                        </TableCell>
+                                        <TableCell className="cursor-pointer text-muted-foreground" onClick={() => onEdit?.(recipe)}>{recipe.id}</TableCell>
                                         <TableCell className="cursor-pointer" onClick={() => onEdit?.(recipe)}>
                                             {recipe.img_path ? (
                                                 // eslint-disable-next-line @next/next/no-img-element
-                                                <img src={recipe.img_path} alt={recipe.title} className="h-8 w-8 rounded object-cover" />
+                                                <img src={recipe.img_path} alt={recipe.title} className="h-16 w-16 rounded-md object-cover" />
                                             ) : (
-                                                <div className="h-8 w-8 rounded bg-muted" />
+                                                <div className="h-16 w-16 rounded-md bg-muted" />
                                             )}
                                         </TableCell>
-                                        <TableCell className="cursor-pointer" onClick={() => onEdit?.(recipe)}>
-                                            <div className="text-sm text-muted-foreground">
-                                                {recipe.ingredients_name.length} ingrédient{recipe.ingredients_name.length > 1 ? 's' : ''}
+                                        <TableCell className="font-medium cursor-pointer" onClick={() => onEdit?.(recipe)}>
+                                            <div className="flex items-center gap-2">
+                                                <span>{recipe.title}</span>
+                                                {recipe.is_new && (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+                                                        <Sparkles className="h-3 w-3" />
+                                                        New
+                                                    </span>
+                                                )}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="cursor-pointer" onClick={() => onEdit?.(recipe)}>
-                                            {recipe.seasonality_mask ? (
-                                                <div className="flex flex-wrap gap-1">
-                                                    {getSeasonalityMonths(recipe.seasonality_mask).map((month, index) => (
-                                                        <span key={index} className="text-xs bg-muted px-1 py-0.5 rounded">
-                                                            {month}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <span className="text-xs text-muted-foreground">Toute l'année</span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                                            <button
-                                                title={recipe.is_new ? 'Retirer des nouveautés' : 'Marquer comme nouveauté'}
-                                                onClick={() => onToggleNew?.(Number(recipe.id), !recipe.is_new)}
-                                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors ${
-                                                    recipe.is_new
-                                                        ? 'bg-primary text-primary-foreground'
-                                                        : 'bg-muted text-muted-foreground hover:bg-accent'
-                                                }`}
-                                            >
-                                                <Sparkles className="h-3 w-3" />
-                                                New
-                                            </button>
-                                        </TableCell>
-                                        <TableCell className="text-right tabular-nums cursor-pointer" onClick={() => onEdit?.(recipe)}>
-                                            {recipe.batchcooking_usage_count > 0
-                                                ? recipe.batchcooking_usage_count.toLocaleString('fr-FR')
-                                                : <span className="text-muted-foreground">&mdash;</span>
-                                            }
-                                        </TableCell>
                                         <TableCell className="text-right text-xs text-muted-foreground cursor-pointer" onClick={() => onEdit?.(recipe)}>
-                                            {new Date(recipe.created_at).toLocaleString()}
+                                            {new Date(recipe.created_at).toLocaleDateString('fr-FR')}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
@@ -153,6 +99,9 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(recipe); }}>Éditer</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleNew?.(Number(recipe.id), !recipe.is_new); }}>
+                                                        {recipe.is_new ? 'Retirer des nouveautés' : 'Marquer comme nouveauté'}
+                                                    </DropdownMenuItem>
                                                     <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate?.(recipe); }}>Créer à partir de cette recette</DropdownMenuItem>
                                                     <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete?.(recipe); }}>Supprimer</DropdownMenuItem>
                                                 </DropdownMenuContent>
@@ -163,7 +112,7 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                             })}
                             {recipes.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={11} className="text-center text-sm text-muted-foreground py-6">
+                                    <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-6">
                                         Aucune recette trouvée.
                                     </TableCell>
                                 </TableRow>

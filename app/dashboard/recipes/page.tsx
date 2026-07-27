@@ -281,10 +281,10 @@ export default function RecipesIndexPage() {
                         value={dishType.toString()}
                         onValueChange={(value) => setDishType(value as DishType | 'all')}
                     >
-                        <SelectTrigger className="w-[160px]">
-                            <div className="flex items-center gap-2">
-                                <ChefHat className="h-4 w-4" />
-                                <SelectValue placeholder="Type de plat" />
+                        <SelectTrigger className="w-[180px]">
+                            <div className="flex min-w-0 items-center gap-2">
+                                <ChefHat className="h-4 w-4 shrink-0" />
+                                <SelectValue placeholder="Type de plat" className="truncate" />
                             </div>
                         </SelectTrigger>
                         <SelectContent>
@@ -474,9 +474,13 @@ export default function RecipesIndexPage() {
                     )}
                 </div>
 
-                {/* Chips de filtres actifs */}
+                {/* Récap compact des filtres actifs */}
                 {hasAnyFilter && (
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground/70">Filtres :</span>
+                        {search && (
+                            <FilterChip label={`Recherche : « ${search} »`} onRemove={() => setSearch('')} />
+                        )}
                         {dishType !== 'all' && (
                             <FilterChip
                                 label={`Type : ${DISH_TYPE_LABELS[dishType as keyof typeof DISH_TYPE_LABELS]}`}
@@ -496,10 +500,10 @@ export default function RecipesIndexPage() {
                             />
                         )}
                         {isVisible !== null && (
-                            <FilterChip label={isVisible ? 'Visibles' : 'Cachées'} onRemove={() => setIsVisible(null)} />
+                            <FilterChip label={`Visibilité : ${isVisible ? 'Visibles' : 'Cachées'}`} onRemove={() => setIsVisible(null)} />
                         )}
                         {isFolklore !== null && (
-                            <FilterChip label={isFolklore ? 'Folklore' : 'Normales'} onRemove={() => setIsFolklore(null)} />
+                            <FilterChip label={`Folklore : ${isFolklore ? 'Oui' : 'Non'}`} onRemove={() => setIsFolklore(null)} />
                         )}
                         {noImage && <FilterChip label="Sans image" onRemove={() => setNoImage(false)} />}
                         {selectedDiets.map((id) => (
@@ -632,13 +636,19 @@ export default function RecipesIndexPage() {
 }
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+    const sep = label.indexOf(' : ')
+    const name = sep >= 0 ? label.slice(0, sep) : label
+    const value = sep >= 0 ? label.slice(sep + 3) : null
     return (
-        <span className="inline-flex items-center gap-1 rounded-full border bg-muted/50 pl-3 pr-1.5 py-1 text-xs">
-            {label}
+        <span className="inline-flex items-center gap-1">
+            <span className="text-foreground/80">
+                <span className="font-semibold">{name}</span>
+                {value !== null && <> : {value}</>}
+            </span>
             <button
                 type="button"
                 onClick={onRemove}
-                className="rounded-full p-0.5 hover:bg-muted-foreground/20"
+                className="rounded-full p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted"
                 aria-label={`Retirer ${label}`}
             >
                 <X className="h-3 w-3" />
