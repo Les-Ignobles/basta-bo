@@ -5,6 +5,13 @@ import { IngredientRepository } from '@/features/cooking/repositories/ingredient
 export async function GET(req: NextRequest) {
     const repo = new IngredientRepository(supabaseServer)
     const { searchParams } = new URL(req.url)
+
+    // Mode liste complète allégée : filtrage/recherche/pagination côté client.
+    if (searchParams.get('all') === 'true') {
+        const data = await repo.findAllForListing()
+        return Response.json({ data, total: data.length })
+    }
+
     const page = Number(searchParams.get('page') ?? '1')
     const pageSize = Number(searchParams.get('pageSize') ?? '10')
     const search = searchParams.get('search') ?? undefined

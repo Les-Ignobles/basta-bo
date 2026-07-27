@@ -6,6 +6,22 @@ export class IngredientRepository extends BaseRepository<Ingredient> {
         super(client, 'ingredients')
     }
 
+    /**
+     * Récupère tous les ingrédients pour un listing filtré/recherché côté client.
+     * On garde toutes les colonnes (lignes légères, pas de gros champ texte) afin
+     * que l'édition depuis la liste conserve les valeurs nutritionnelles/prix.
+     */
+    async findAllForListing(): Promise<Ingredient[]> {
+        const { data, error } = await (this.client as any)
+            .from(this.table)
+            .select('*')
+            .order('id', { ascending: true })
+            .range(0, 9999)
+
+        if (error) throw error
+        return (data ?? []) as Ingredient[]
+    }
+
     async findPage({ search, page, pageSize, noImage, categories, translationFilter }: { search?: string; page: number; pageSize: number; noImage?: boolean; categories?: number[]; translationFilter?: 'incomplete' | 'complete' }): Promise<{ data: Ingredient[]; total: number }> {
         const from = (page - 1) * pageSize
         const to = from + pageSize - 1

@@ -4,8 +4,12 @@ import type { Ingredient, IngredientCategory } from '@/features/cooking/types'
 
 type CookingState = {
     ingredients: Ingredient[]
+    /** Catalogue complet chargé une fois pour la recherche/filtres côté client. */
+    allIngredients: Ingredient[]
     categories: IngredientCategory[]
     loading: boolean
+    /** Chargement dédié au catalogue complet (découplé du `loading` partagé). */
+    ingredientsLoading: boolean
     error?: string
     // editing state
     editingIngredient: Ingredient | null
@@ -19,6 +23,7 @@ type CookingState = {
     translationFilter: 'all' | 'incomplete' | 'complete'
     fetchIngredients: () => Promise<void>
     fetchAllIngredients: () => Promise<void>
+    fetchAllIngredientsForListing: () => Promise<void>
     searchIngredients: (query: string) => Promise<Ingredient[]>
     fetchCategories: () => Promise<void>
     createIngredient: (payload: Omit<Ingredient, 'id' | 'created_at'>) => Promise<void>
@@ -34,8 +39,10 @@ type CookingState = {
 
 export const useCookingStore = create<CookingState>((set, get) => ({
     ingredients: [],
+    allIngredients: [],
     categories: [],
     loading: false,
+    ingredientsLoading: true,
     error: undefined,
     editingIngredient: null,
     page: 1,
@@ -61,6 +68,20 @@ export const useCookingStore = create<CookingState>((set, get) => ({
             set({ error: e?.message ?? 'Erreur de chargement' })
         } finally {
             set({ loading: false })
+        }
+    },
+
+    async fetchAllIngredientsForListing() {
+        set({ ingredientsLoading: true, error: undefined })
+        try {
+            const res = await fetch('/api/ingredients?all=true')
+            const json = await res.json()
+            const data = (json.data ?? []) as Ingredient[]
+            set({ allIngredients: data, total: data.length })
+        } catch (e: any) {
+            set({ error: e?.message ?? 'Erreur de chargement' })
+        } finally {
+            set({ ingredientsLoading: false })
         }
     },
 
@@ -106,6 +127,7 @@ export const useCookingStore = create<CookingState>((set, get) => ({
             })
             if (!res.ok) throw new Error('Erreur création ingrédient')
             await get().fetchIngredients()
+            if (get().allIngredients.length > 0) await get().fetchAllIngredientsForListing()
         } catch (e: any) {
             set({ error: e?.message ?? 'Erreur de création' })
         } finally {
@@ -122,6 +144,7 @@ export const useCookingStore = create<CookingState>((set, get) => ({
             })
             if (!res.ok) throw new Error('Erreur mise à jour ingrédient')
             await get().fetchIngredients()
+            if (get().allIngredients.length > 0) await get().fetchAllIngredientsForListing()
         } catch (e: any) {
             set({ error: e?.message ?? 'Erreur de mise à jour' })
         } finally {
@@ -134,6 +157,7 @@ export const useCookingStore = create<CookingState>((set, get) => ({
             const res = await fetch(`/api/ingredients?id=${id}`, { method: 'DELETE' })
             if (!res.ok) throw new Error('Erreur suppression ingrédient')
             await get().fetchIngredients()
+            if (get().allIngredients.length > 0) await get().fetchAllIngredientsForListing()
         } catch (e: any) {
             set({ error: e?.message ?? 'Erreur de suppression' })
         } finally {
