@@ -6,6 +6,39 @@ export class RecipeRepository extends BaseRepository<Recipe> {
         super(client, 'recipes')
     }
 
+    /**
+     * Récupère toutes les recettes avec uniquement les colonnes utiles au listing
+     * (sans `instructions` ni valeurs nutritionnelles) pour un payload léger.
+     * Le filtrage / la recherche / la pagination sont ensuite faits côté client.
+     */
+    async findAllForListing(): Promise<Recipe[]> {
+        const columns = [
+            'id',
+            'created_at',
+            'title',
+            'ingredients_name',
+            'img_path',
+            'seasonality_mask',
+            'kitchen_equipments_mask',
+            'diet_mask',
+            'quantification_type',
+            'dish_type',
+            'is_folklore',
+            'is_visible',
+            'is_new',
+            'batchcooking_usage_count',
+        ].join(',')
+
+        const { data, error } = await (this.client as any)
+            .from(this.table)
+            .select(columns)
+            .order('title', { ascending: true })
+            .range(0, 9999)
+
+        if (error) throw error
+        return (data ?? []) as Recipe[]
+    }
+
     async findPage({ search, page, pageSize, noImage, dishType, quantificationType, isVisible, isFolklore, isNew }: { search?: string; page: number; pageSize: number; noImage?: boolean; dishType?: number; quantificationType?: number; isVisible?: boolean; isFolklore?: boolean; isNew?: boolean }): Promise<{ data: Recipe[]; total: number }> {
         const from = (page - 1) * pageSize
         const to = from + pageSize - 1

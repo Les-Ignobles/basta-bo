@@ -64,9 +64,9 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                     {loading ? (
                         <TableRow>
                             <TableCell colSpan={11} className="text-center py-8">
-                                <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    <span>Chargement des recettes...</span>
+                                <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                    <Loader2 className="h-6 w-6 animate-spin" />
+                                    <span>Chargement en cours…</span>
                                 </div>
                             </TableCell>
                         </TableRow>

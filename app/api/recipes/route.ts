@@ -19,6 +19,13 @@ export async function GET(req: NextRequest) {
         return Response.json({ data: recipe })
     }
 
+    // Mode liste complète allégée : renvoie toutes les recettes avec les colonnes
+    // utiles au listing. Le filtrage/recherche/pagination se font côté client.
+    if (searchParams.get('all') === 'true') {
+        const data = await repo.findAllForListing()
+        return Response.json({ data, total: data.length })
+    }
+
     // Sinon, gérer la pagination des listes
     const page = Number(searchParams.get('page') ?? '1')
     const pageSize = Number(searchParams.get('pageSize') ?? '10')

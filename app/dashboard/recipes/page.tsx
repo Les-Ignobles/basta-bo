@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useMemo, useState, useRef } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
@@ -9,11 +9,23 @@ import { DishType, DISH_TYPE_LABELS, QuantificationType, QUANTIFICATION_TYPE_LAB
 import { useRecipeStore } from '@/features/cooking/stores/recipe-store'
 import { RecipesTable } from '@/features/cooking/components/recipes-table'
 import { BulkActionsBar } from '@/features/cooking/components/bulk-actions-bar'
+import { searchByRelevance } from '@/features/cooking/utils/recipe-search'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { BookOpen, Utensils, Users, Hash, ImageOff, ChefHat, Scale, Eye, EyeOff, Sparkles } from 'lucide-react'
+import { BookOpen, ImageOff, ChefHat, Search, X, SlidersHorizontal, Calendar } from 'lucide-react'
+
+const MONTHS = [
+    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+]
+const MONTHS_SHORT = [
+    'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
+    'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
+]
+
+const PAGE_SIZE = 50
 
 export default function RecipesIndexPage() {
     const router = useRouter()
@@ -22,10 +34,10 @@ export default function RecipesIndexPage() {
     const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
     const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null)
     const {
-        fetchRecipes,
+        fetchAllRecipes,
         fetchKitchenEquipments,
         fetchDiets,
-        recipes,
+        allRecipes,
         kitchenEquipments,
         diets,
         deleteRecipe,
@@ -37,19 +49,17 @@ export default function RecipesIndexPage() {
         bulkUpdateVisibility,
         toggleRecipeIsNew,
         loading,
+        recipesLoading,
         selectedRecipes,
         toggleRecipeSelection,
-        selectAllRecipes,
+        setSelectedRecipes,
         clearSelection,
+        search,
         setSearch,
-        setPage,
-        page,
-        pageSize,
-        total,
-        setNoImage,
         noImage,
-        setDishType,
+        setNoImage,
         dishType,
+        setDishType,
         selectedDiets,
         setSelectedDiets,
         selectedKitchenEquipments,
@@ -59,75 +69,134 @@ export default function RecipesIndexPage() {
         isVisible,
         setIsVisible,
         isFolklore,
-        setIsFolklore
+        setIsFolklore,
+        selectedMonths,
+        setSelectedMonths,
     } = useRecipeStore()
-    // Plus besoin de charger tous les ingrédients, la recherche se fait côté serveur
-    const isInitialized = useRef(false)
 
-    // Charger les données une seule fois au montage
+    const [page, setPage] = useState(() => {
+        const p = Number(searchParams.get('page'))
+        return Number.isFinite(p) && p > 0 ? p : 1
+    })
+
+    // Charger le catalogue complet + référentiels une seule fois au montage
     useEffect(() => {
+        fetchAllRecipes()
         fetchKitchenEquipments()
         fetchDiets()
-    }, [fetchKitchenEquipments, fetchDiets])
+    }, [fetchAllRecipes, fetchKitchenEquipments, fetchDiets])
 
-    // Synchroniser la page avec l'URL
-    useEffect(() => {
-        const pageParam = searchParams.get('page')
-        if (pageParam && !isNaN(Number(pageParam))) {
-            const pageNumber = Number(pageParam)
-            if (pageNumber !== page) {
-                setPage(pageNumber)
-            }
+    // Nombre de filtres avancés actifs (hors recherche / type / saisonnalité)
+    const advancedFilterCount = useMemo(() => {
+        let n = 0
+        if (quantificationType !== 'all') n++
+        if (selectedDiets.length > 0) n++
+        if (selectedKitchenEquipments.length > 0) n++
+        if (noImage) n++
+        if (isVisible !== null) n++
+        if (isFolklore !== null) n++
+        return n
+    }, [quantificationType, selectedDiets, selectedKitchenEquipments, noImage, isVisible, isFolklore])
+
+    const hasAnyFilter = Boolean(search) || dishType !== 'all' || selectedMonths.length > 0 || advancedFilterCount > 0
+
+    // Filtrage + recherche 100% côté client
+    const filteredRecipes = useMemo(() => {
+        let list = allRecipes
+
+        if (dishType !== 'all') {
+            list = list.filter((r) => String(r.dish_type) === String(dishType))
         }
-    }, [searchParams, page, setPage])
 
-    // Fetch recipes quand les filtres changent (séparé de la synchronisation URL)
-    useEffect(() => {
-        if (!isInitialized.current) {
-            isInitialized.current = true
-            return
+        if (quantificationType !== 'all') {
+            list = list.filter((r) => String(r.quantification_type) === String(quantificationType))
         }
-        fetchRecipes()
-    }, [fetchRecipes, page, noImage, dishType])
 
-    const totalPages = useMemo(() => Math.max(1, Math.ceil((total || 0) / (pageSize || 10))), [total, pageSize])
+        if (noImage) {
+            list = list.filter((r) => !r.img_path)
+        }
 
-    // debounce search
-    const [searchInput, setSearchInput] = useState('')
+        if (isVisible !== null) {
+            list = list.filter((r) => r.is_visible === isVisible)
+        }
+
+        if (isFolklore !== null) {
+            list = list.filter((r) => r.is_folklore === isFolklore)
+        }
+
+        if (selectedDiets.length > 0) {
+            list = list.filter((r) =>
+                r.diet_mask != null &&
+                selectedDiets.every((dietId) => (r.diet_mask! & (1 << (dietId - 1))) > 0)
+            )
+        }
+
+        if (selectedKitchenEquipments.length > 0) {
+            list = list.filter((r) =>
+                r.kitchen_equipments_mask != null &&
+                selectedKitchenEquipments.every((equipId) => (r.kitchen_equipments_mask! & (1 << (equipId - 1))) > 0)
+            )
+        }
+
+        if (selectedMonths.length > 0) {
+            const monthsMask = selectedMonths.reduce((acc, m) => acc | (1 << m), 0)
+            // Les recettes "toute l'année" (masque nul) restent disponibles chaque mois ;
+            // on n'exclut que les recettes saisonnières hors des mois sélectionnés.
+            list = list.filter((r) => !r.seasonality_mask || (r.seasonality_mask & monthsMask) !== 0)
+        }
+
+        if (search.trim()) {
+            list = searchByRelevance(list, search, (r) => r.title)
+        }
+
+        return list
+    }, [allRecipes, dishType, quantificationType, noImage, isVisible, isFolklore, selectedDiets, selectedKitchenEquipments, selectedMonths, search])
+
+    const total = filteredRecipes.length
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+    const currentPage = Math.min(page, totalPages)
+
+    const paginatedRecipes = useMemo(() => {
+        const from = (currentPage - 1) * PAGE_SIZE
+        return filteredRecipes.slice(from, from + PAGE_SIZE)
+    }, [filteredRecipes, currentPage])
+
+    // Revenir à la page 1 dès qu'un filtre change
     useEffect(() => {
-        const t = setTimeout(() => {
-            setSearch(searchInput)
-            setPage(1)
-            fetchRecipes()
-        }, 400)
-        return () => clearTimeout(t)
-    }, [searchInput, setSearch, fetchRecipes, setPage])
+        setPage(1)
+    }, [search, dishType, quantificationType, noImage, isVisible, isFolklore, selectedDiets, selectedKitchenEquipments, selectedMonths])
 
-
-    const handleSelectRecipe = (recipeId: number) => {
-        toggleRecipeSelection(recipeId)
+    const goToPage = (newPage: number) => {
+        const clamped = Math.min(Math.max(1, newPage), totalPages)
+        setPage(clamped)
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('page', clamped.toString())
+        router.replace(`/dashboard/recipes?${params.toString()}`, { scroll: false })
     }
 
     const handleSelectAll = (selected: boolean) => {
         if (selected) {
-            selectAllRecipes()
+            setSelectedRecipes(paginatedRecipes.map((r) => Number(r.id)))
         } else {
             clearSelection()
         }
     }
 
-    const handleBulkDelete = async () => {
-        setBulkDeleteDialogOpen(true)
+    const resetFilters = () => {
+        setSearch('')
+        setDishType('all')
+        setQuantificationType('all')
+        setSelectedDiets([])
+        setSelectedKitchenEquipments([])
+        setNoImage(false)
+        setIsVisible(null)
+        setIsFolklore(null)
+        setSelectedMonths([])
     }
 
     const confirmBulkDelete = async () => {
         await bulkDeleteRecipes(selectedRecipes)
         setBulkDeleteDialogOpen(false)
-    }
-
-    const handleDeleteRecipe = (recipe: Recipe) => {
-        setRecipeToDelete(recipe)
-        setDeleteDialogOpen(true)
     }
 
     const confirmDeleteRecipe = async () => {
@@ -138,86 +207,79 @@ export default function RecipesIndexPage() {
         }
     }
 
-    const handleBulkUpdateDishType = async (dishType: DishType) => {
-        await bulkUpdateDishType(selectedRecipes, dishType)
-    }
-
-    const handleBulkUpdateSeasonality = async (mask: number) => {
-        await bulkUpdateSeasonality(selectedRecipes, mask)
-    }
-
-    const handleBulkUpdateDietMask = async (mask: number) => {
-        await bulkUpdateDietMask(selectedRecipes, mask)
-    }
-
-    const handleBulkUpdateKitchenEquipmentsMask = async (mask: number) => {
-        await bulkUpdateKitchenEquipmentsMask(selectedRecipes, mask)
-    }
-
-    const handleBulkUpdateVisibility = async (isVisible: boolean) => {
-        await bulkUpdateVisibility(selectedRecipes, isVisible)
-    }
-
     const handleDuplicateRecipe = (recipe: Recipe) => {
-        // Créer une copie de la recette sans l'ID pour la duplication
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { id, ...recipeWithoutId } = recipe
         const duplicatedRecipe = {
             ...recipeWithoutId,
-            title: `${recipe.title} (copie)`, // Ajouter "(copie)" au titre
-            created_at: new Date().toISOString(), // Nouvelle date de création
+            title: `${recipe.title} (copie)`,
+            created_at: new Date().toISOString(),
         }
-
-        // Stocker la recette dupliquée dans sessionStorage pour la page de création
         sessionStorage.setItem('duplicatedRecipe', JSON.stringify(duplicatedRecipe))
-        router.push(`/dashboard/recipes/new?returnPage=${page}`)
+        router.push(`/dashboard/recipes/new?returnPage=${currentPage}`)
     }
 
-    // Fonction pour mettre à jour l'URL avec la page actuelle
-    const updateUrlWithPage = (newPage: number) => {
-        // Éviter les mises à jour inutiles
-        if (newPage === page) return
-
-        const params = new URLSearchParams(searchParams.toString())
-        params.set('page', newPage.toString())
-        router.push(`/dashboard/recipes?${params.toString()}`, { scroll: false })
+    const toggleDiet = (dietId: number) => {
+        setSelectedDiets(
+            selectedDiets.includes(dietId)
+                ? selectedDiets.filter((id) => id !== dietId)
+                : [...selectedDiets, dietId]
+        )
     }
 
-    const handleDietToggle = (dietId: number) => {
-        const newSelectedDiets = selectedDiets.includes(dietId)
-            ? selectedDiets.filter(id => id !== dietId)
-            : [...selectedDiets, dietId]
-        setSelectedDiets(newSelectedDiets)
-        setPage(1)
-        fetchRecipes()
+    const toggleEquipment = (equipmentId: number) => {
+        setSelectedKitchenEquipments(
+            selectedKitchenEquipments.includes(equipmentId)
+                ? selectedKitchenEquipments.filter((id) => id !== equipmentId)
+                : [...selectedKitchenEquipments, equipmentId]
+        )
     }
 
-    const handleKitchenEquipmentToggle = (equipmentId: number) => {
-        const newSelectedEquipments = selectedKitchenEquipments.includes(equipmentId)
-            ? selectedKitchenEquipments.filter(id => id !== equipmentId)
-            : [...selectedKitchenEquipments, equipmentId]
-        setSelectedKitchenEquipments(newSelectedEquipments)
-        setPage(1)
-        fetchRecipes()
+    const toggleMonth = (monthIndex: number) => {
+        setSelectedMonths(
+            selectedMonths.includes(monthIndex)
+                ? selectedMonths.filter((m) => m !== monthIndex)
+                : [...selectedMonths, monthIndex]
+        )
+    }
+
+    const dietLabel = (id: number) => {
+        const d = diets.find((diet) => diet.id === id)
+        return d ? (d.title as { fr?: string })?.fr || String(d.title) : `#${id}`
+    }
+    const equipmentLabel = (id: number) => {
+        const e = kitchenEquipments.find((eq) => eq.id === id)
+        return e ? (e.name as { fr?: string })?.fr || String(e.name) : `#${id}`
     }
 
     return (
         <div className="space-y-4">
-            <div className="sticky top-0 z-10 bg-background border-b py-4">
-                {/* Filtres sur une seule ligne avec flex-wrap intelligent */}
+            <div className="sticky top-0 z-10 bg-background border-b py-4 space-y-3">
+                {/* Ligne principale : recherche + filtres clés */}
                 <div className="flex items-center gap-3 flex-wrap">
-                    <Input
-                        placeholder="Rechercher par titre..."
-                        className="w-80"
-                        value={searchInput}
-                        onChange={(e) => setSearchInput(e.target.value)}
-                    />
+                    <div className="relative w-96 max-w-full">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Rechercher une recette (accents et fautes tolérés)…"
+                            className="pl-9 pr-9"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                        {search && (
+                            <button
+                                type="button"
+                                onClick={() => setSearch('')}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                aria-label="Effacer la recherche"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
+
                     <Select
                         value={dishType.toString()}
-                        onValueChange={(value) => {
-                            setDishType(value as DishType | 'all')
-                            fetchRecipes()
-                        }}
+                        onValueChange={(value) => setDishType(value as DishType | 'all')}
                     >
                         <SelectTrigger className="w-[160px]">
                             <div className="flex items-center gap-2">
@@ -226,7 +288,7 @@ export default function RecipesIndexPage() {
                             </div>
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">Tous</SelectItem>
+                            <SelectItem value="all">Tous les types</SelectItem>
                             {Object.entries(DISH_TYPE_LABELS).map(([value, label]) => (
                                 <SelectItem key={value} value={value}>
                                     {label}
@@ -234,261 +296,289 @@ export default function RecipesIndexPage() {
                             ))}
                         </SelectContent>
                     </Select>
-                    <Select
-                        value={quantificationType.toString()}
-                        onValueChange={(value) => {
-                            setQuantificationType(value as QuantificationType | 'all')
-                            setPage(1)
-                            fetchRecipes()
-                        }}
-                    >
-                        <SelectTrigger className="w-[180px]">
-                            <div className="flex items-center gap-2">
-                                {quantificationType === 'all' ? (
-                                    <Scale className="h-4 w-4" />
-                                ) : quantificationType === QuantificationType.PER_PERSON ? (
-                                    <Users className="h-4 w-4" />
-                                ) : (
-                                    <Hash className="h-4 w-4" />
-                                )}
-                                <SelectValue placeholder="Quantification" />
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Toutes</SelectItem>
-                            {Object.entries(QUANTIFICATION_TYPE_LABELS).map(([value, label]) => (
-                                <SelectItem key={value} value={value}>
-                                    {label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+
+                    {/* Saisonnalité */}
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="outline" className="flex items-center gap-2">
-                                <Utensils className="h-4 w-4" />
-                                Régimes
-                                {selectedDiets.length > 0 && (
+                                <Calendar className="h-4 w-4" />
+                                Saisonnalité
+                                {selectedMonths.length > 0 && (
                                     <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
-                                        {selectedDiets.length}
+                                        {selectedMonths.length}
                                     </span>
                                 )}
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-80">
-                            <div className="space-y-2">
-                                <h4 className="font-medium text-sm">Filtrer par régimes alimentaires</h4>
-                                <div className="space-y-2 max-h-60 overflow-y-auto">
-                                    {diets.map((diet) => (
-                                        <label key={diet.id} className="flex items-center gap-2 text-sm">
+                        <PopoverContent className="w-80" align="start">
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-medium text-sm">Filtrer par mois de saison</h4>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 text-xs"
+                                        onClick={() => setSelectedMonths([new Date().getMonth()])}
+                                    >
+                                        Mois courant
+                                    </Button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {MONTHS.map((month, index) => (
+                                        <label key={index} className="flex items-center gap-2 text-sm cursor-pointer">
                                             <Checkbox
-                                                checked={selectedDiets.includes(diet.id)}
-                                                onCheckedChange={() => handleDietToggle(diet.id)}
+                                                checked={selectedMonths.includes(index)}
+                                                onCheckedChange={() => toggleMonth(index)}
                                             />
-                                            <span className="flex items-center gap-2">
-                                                <span>{diet.emoji}</span>
-                                                <span>{(diet.title as { fr?: string })?.fr || String(diet.title)}</span>
-                                            </span>
+                                            <span>{month}</span>
                                         </label>
                                     ))}
                                 </div>
-                                {selectedDiets.length > 0 && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            setSelectedDiets([])
-                                            setPage(1)
-                                            fetchRecipes()
-                                        }}
-                                        className="w-full"
-                                    >
-                                        Effacer les filtres
+                                <p className="text-xs text-muted-foreground">
+                                    Les recettes « toute l&apos;année » restent affichées.
+                                </p>
+                                {selectedMonths.length > 0 && (
+                                    <Button variant="outline" size="sm" className="w-full" onClick={() => setSelectedMonths([])}>
+                                        Effacer
                                     </Button>
                                 )}
                             </div>
                         </PopoverContent>
                     </Popover>
+
+                    {/* Filtres avancés */}
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="outline" className="flex items-center gap-2">
-                                <Utensils className="h-4 w-4" />
-                                Ustensiles
-                                {selectedKitchenEquipments.length > 0 && (
+                                <SlidersHorizontal className="h-4 w-4" />
+                                Filtres avancés
+                                {advancedFilterCount > 0 && (
                                     <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
-                                        {selectedKitchenEquipments.length}
+                                        {advancedFilterCount}
                                     </span>
                                 )}
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-80">
-                            <div className="space-y-2">
-                                <h4 className="font-medium text-sm">Filtrer par ustensiles de cuisine</h4>
-                                <div className="space-y-2 max-h-60 overflow-y-auto">
-                                    {kitchenEquipments.map((equipment) => (
-                                        <label key={equipment.id} className="flex items-center gap-2 text-sm">
-                                            <Checkbox
-                                                checked={selectedKitchenEquipments.includes(equipment.id)}
-                                                onCheckedChange={() => handleKitchenEquipmentToggle(equipment.id)}
-                                            />
-                                            <span className="flex items-center gap-2">
-                                                <span>{equipment.emoji}</span>
-                                                <span>{(equipment.name as { fr?: string })?.fr || String(equipment.name)}</span>
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
-                                {selectedKitchenEquipments.length > 0 && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            setSelectedKitchenEquipments([])
-                                            setPage(1)
-                                            fetchRecipes()
-                                        }}
-                                        className="w-full"
+                        <PopoverContent className="w-96" align="start">
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <h4 className="font-medium text-sm">Quantification</h4>
+                                    <Select
+                                        value={quantificationType.toString()}
+                                        onValueChange={(value) => setQuantificationType(value as QuantificationType | 'all')}
                                     >
-                                        Effacer les filtres
-                                    </Button>
-                                )}
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Quantification" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">Toutes</SelectItem>
+                                            {Object.entries(QUANTIFICATION_TYPE_LABELS).map(([value, label]) => (
+                                                <SelectItem key={value} value={value}>
+                                                    {label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <h4 className="font-medium text-sm">Visibilité</h4>
+                                    <div className="flex gap-2">
+                                        {([['all', 'Toutes'], ['true', 'Visibles'], ['false', 'Cachées']] as const).map(([val, label]) => {
+                                            const active = (val === 'all' && isVisible === null) || (val !== 'all' && String(isVisible) === val)
+                                            return (
+                                                <Button
+                                                    key={val}
+                                                    variant={active ? 'default' : 'outline'}
+                                                    size="sm"
+                                                    className="flex-1"
+                                                    onClick={() => setIsVisible(val === 'all' ? null : val === 'true')}
+                                                >
+                                                    {label}
+                                                </Button>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <h4 className="font-medium text-sm">Folklore</h4>
+                                    <div className="flex gap-2">
+                                        {([['all', 'Toutes'], ['true', 'Folklore'], ['false', 'Normales']] as const).map(([val, label]) => {
+                                            const active = (val === 'all' && isFolklore === null) || (val !== 'all' && String(isFolklore) === val)
+                                            return (
+                                                <Button
+                                                    key={val}
+                                                    variant={active ? 'default' : 'outline'}
+                                                    size="sm"
+                                                    className="flex-1"
+                                                    onClick={() => setIsFolklore(val === 'all' ? null : val === 'true')}
+                                                >
+                                                    {label}
+                                                </Button>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <h4 className="font-medium text-sm">Régimes alimentaires</h4>
+                                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                                        {diets.map((diet) => (
+                                            <label key={diet.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                                                <Checkbox
+                                                    checked={selectedDiets.includes(diet.id)}
+                                                    onCheckedChange={() => toggleDiet(diet.id)}
+                                                />
+                                                <span className="flex items-center gap-2">
+                                                    <span>{diet.emoji}</span>
+                                                    <span>{dietLabel(diet.id)}</span>
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <h4 className="font-medium text-sm">Ustensiles de cuisine</h4>
+                                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                                        {kitchenEquipments.map((equipment) => (
+                                            <label key={equipment.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                                                <Checkbox
+                                                    checked={selectedKitchenEquipments.includes(equipment.id)}
+                                                    onCheckedChange={() => toggleEquipment(equipment.id)}
+                                                />
+                                                <span className="flex items-center gap-2">
+                                                    <span>{equipment.emoji}</span>
+                                                    <span>{equipmentLabel(equipment.id)}</span>
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <label className="flex items-center gap-2 text-sm cursor-pointer pt-1 border-t">
+                                    <Checkbox checked={noImage} onCheckedChange={(v) => setNoImage(Boolean(v))} />
+                                    <ImageOff className="h-4 w-4" />
+                                    Sans image uniquement
+                                </label>
                             </div>
                         </PopoverContent>
                     </Popover>
-                    <label className="flex items-center gap-2 text-sm whitespace-nowrap">
-                        <Checkbox checked={noImage} onCheckedChange={(v) => { setNoImage(Boolean(v)); setPage(1); fetchRecipes(); }} />
-                        <ImageOff className="h-4 w-4" />
-                        Sans image
-                    </label>
-                    <Select
-                        value={isVisible === null ? 'all' : isVisible.toString()}
-                        onValueChange={(value) => {
-                            const newValue = value === 'all' ? null : value === 'true'
-                            setIsVisible(newValue)
-                            setPage(1)
-                            fetchRecipes()
-                        }}
-                    >
-                        <SelectTrigger className="w-[140px]">
-                            <div className="flex items-center gap-2">
-                                {isVisible === null ? (
-                                    <Eye className="h-4 w-4" />
-                                ) : isVisible ? (
-                                    <Eye className="h-4 w-4" />
-                                ) : (
-                                    <EyeOff className="h-4 w-4" />
-                                )}
-                                <SelectValue placeholder="Visibilité" />
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Toutes</SelectItem>
-                            <SelectItem value="true">Visibles</SelectItem>
-                            <SelectItem value="false">Cachées</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <Select
-                        value={isFolklore === null ? 'all' : isFolklore.toString()}
-                        onValueChange={(value) => {
-                            const newValue = value === 'all' ? null : value === 'true'
-                            setIsFolklore(newValue)
-                            setPage(1)
-                            fetchRecipes()
-                        }}
-                    >
-                        <SelectTrigger className="w-[140px]">
-                            <div className="flex items-center gap-2">
-                                {isFolklore === null ? (
-                                    <Sparkles className="h-4 w-4" />
-                                ) : isFolklore ? (
-                                    <Sparkles className="h-4 w-4" />
-                                ) : (
-                                    <Sparkles className="h-4 w-4 opacity-50" />
-                                )}
-                                <SelectValue placeholder="Folklore" />
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Toutes</SelectItem>
-                            <SelectItem value="true">Folklore</SelectItem>
-                            <SelectItem value="false">Normales</SelectItem>
-                        </SelectContent>
-                    </Select>
+
+                    {hasAnyFilter && (
+                        <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground" onClick={resetFilters}>
+                            <X className="h-4 w-4" />
+                            Réinitialiser
+                        </Button>
+                    )}
                 </div>
+
+                {/* Chips de filtres actifs */}
+                {hasAnyFilter && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {dishType !== 'all' && (
+                            <FilterChip
+                                label={`Type : ${DISH_TYPE_LABELS[dishType as keyof typeof DISH_TYPE_LABELS]}`}
+                                onRemove={() => setDishType('all')}
+                            />
+                        )}
+                        {selectedMonths.length > 0 && (
+                            <FilterChip
+                                label={`Saison : ${selectedMonths.slice().sort((a, b) => a - b).map((m) => MONTHS_SHORT[m]).join(', ')}`}
+                                onRemove={() => setSelectedMonths([])}
+                            />
+                        )}
+                        {quantificationType !== 'all' && (
+                            <FilterChip
+                                label={`Quantif. : ${QUANTIFICATION_TYPE_LABELS[quantificationType as keyof typeof QUANTIFICATION_TYPE_LABELS]}`}
+                                onRemove={() => setQuantificationType('all')}
+                            />
+                        )}
+                        {isVisible !== null && (
+                            <FilterChip label={isVisible ? 'Visibles' : 'Cachées'} onRemove={() => setIsVisible(null)} />
+                        )}
+                        {isFolklore !== null && (
+                            <FilterChip label={isFolklore ? 'Folklore' : 'Normales'} onRemove={() => setIsFolklore(null)} />
+                        )}
+                        {noImage && <FilterChip label="Sans image" onRemove={() => setNoImage(false)} />}
+                        {selectedDiets.map((id) => (
+                            <FilterChip key={`diet-${id}`} label={`Régime : ${dietLabel(id)}`} onRemove={() => toggleDiet(id)} />
+                        ))}
+                        {selectedKitchenEquipments.map((id) => (
+                            <FilterChip key={`equip-${id}`} label={`Ustensile : ${equipmentLabel(id)}`} onRemove={() => toggleEquipment(id)} />
+                        ))}
+                    </div>
+                )}
             </div>
 
-            {/* Header avec pagination alignée */}
+            {/* Header avec compteur + pagination */}
             <div className="flex items-center justify-between py-3 border-b bg-muted/30">
                 <div className="flex items-center gap-4">
                     <h1 className="text-2xl font-semibold font-christmas">Recettes</h1>
                     <Badge variant="secondary" className="flex items-center gap-2">
                         <BookOpen className="h-4 w-4" />
                         {total} recette{total > 1 ? 's' : ''}
+                        {hasAnyFilter && <span className="text-muted-foreground">/ {allRecipes.length}</span>}
                     </Badge>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 text-sm">
-                        <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => updateUrlWithPage(page - 1)}>
+                        <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => goToPage(currentPage - 1)}>
                             Précédent
                         </Button>
                         <span className="text-muted-foreground">
-                            Page {page} / {totalPages}
+                            Page {currentPage} / {totalPages}
                         </span>
-                        <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => updateUrlWithPage(page + 1)}>
+                        <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => goToPage(currentPage + 1)}>
                             Suivant
                         </Button>
                     </div>
                     <Button
                         disabled={loading}
-                        onClick={() => {
-                            const params = new URLSearchParams(searchParams.toString())
-                            params.set('page', page.toString())
-                            router.push(`/dashboard/recipes/new?returnPage=${page}`)
-                        }}
+                        onClick={() => router.push(`/dashboard/recipes/new?returnPage=${currentPage}`)}
                     >
                         Nouvelle recette
                     </Button>
                 </div>
             </div>
+
             {selectedRecipes.length > 0 && (
                 <BulkActionsBar
                     selectedCount={selectedRecipes.length}
                     onClearSelection={clearSelection}
-                    onBulkDelete={handleBulkDelete}
-                    onBulkUpdateDishType={handleBulkUpdateDishType}
-                    onBulkUpdateSeasonality={handleBulkUpdateSeasonality}
-                    onBulkUpdateDietMask={handleBulkUpdateDietMask}
-                    onBulkUpdateKitchenEquipmentsMask={handleBulkUpdateKitchenEquipmentsMask}
-                    onBulkUpdateVisibility={handleBulkUpdateVisibility}
+                    onBulkDelete={() => setBulkDeleteDialogOpen(true)}
+                    onBulkUpdateDishType={(dt) => bulkUpdateDishType(selectedRecipes, dt)}
+                    onBulkUpdateSeasonality={(mask) => bulkUpdateSeasonality(selectedRecipes, mask)}
+                    onBulkUpdateDietMask={(mask) => bulkUpdateDietMask(selectedRecipes, mask)}
+                    onBulkUpdateKitchenEquipmentsMask={(mask) => bulkUpdateKitchenEquipmentsMask(selectedRecipes, mask)}
+                    onBulkUpdateVisibility={(v) => bulkUpdateVisibility(selectedRecipes, v)}
                     diets={diets}
                     kitchenEquipments={kitchenEquipments}
                 />
             )}
+
             <RecipesTable
-                recipes={recipes}
-                loading={loading}
+                recipes={paginatedRecipes}
+                loading={recipesLoading}
                 selectedRecipes={selectedRecipes}
-                onSelectRecipe={handleSelectRecipe}
+                onSelectRecipe={(id) => toggleRecipeSelection(id)}
                 onSelectAll={handleSelectAll}
                 onEdit={(recipe) => {
-                    // Construire l'URL avec tous les filtres actifs pour la navigation contextuelle
                     const params = new URLSearchParams()
-                    params.set('returnPage', page.toString())
-
-                    // Ajouter les filtres actifs
-                    if (searchInput) params.set('search', searchInput)
+                    params.set('returnPage', currentPage.toString())
+                    if (search) params.set('search', search)
                     if (noImage) params.set('noImage', 'true')
-                    if (dishType !== undefined && dishType !== null) params.set('dishType', dishType.toString())
+                    if (dishType !== 'all') params.set('dishType', dishType.toString())
                     if (selectedDiets.length > 0) params.set('diets', selectedDiets.join(','))
                     if (selectedKitchenEquipments.length > 0) params.set('kitchenEquipments', selectedKitchenEquipments.join(','))
-                    if (quantificationType !== undefined && quantificationType !== null) params.set('quantificationType', quantificationType.toString())
-                    if (isVisible !== undefined && isVisible !== null) params.set('isVisible', isVisible.toString())
-                    if (isFolklore !== undefined && isFolklore !== null) params.set('isFolklore', isFolklore.toString())
-
+                    if (quantificationType !== 'all') params.set('quantificationType', quantificationType.toString())
+                    if (isVisible !== null) params.set('isVisible', isVisible.toString())
+                    if (isFolklore !== null) params.set('isFolklore', isFolklore.toString())
                     router.push(`/dashboard/recipes/edit/${recipe.id}?${params.toString()}`)
                 }}
                 onDuplicate={handleDuplicateRecipe}
-                onDelete={handleDeleteRecipe}
+                onDelete={(recipe) => { setRecipeToDelete(recipe); setDeleteDialogOpen(true) }}
                 onToggleNew={toggleRecipeIsNew}
             />
 
@@ -538,5 +628,21 @@ export default function RecipesIndexPage() {
                 </AlertDialogContent>
             </AlertDialog>
         </div>
+    )
+}
+
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+    return (
+        <span className="inline-flex items-center gap-1 rounded-full border bg-muted/50 pl-3 pr-1.5 py-1 text-xs">
+            {label}
+            <button
+                type="button"
+                onClick={onRemove}
+                className="rounded-full p-0.5 hover:bg-muted-foreground/20"
+                aria-label={`Retirer ${label}`}
+            >
+                <X className="h-3 w-3" />
+            </button>
+        </span>
     )
 }

@@ -5,10 +5,14 @@ import type { Allergy } from '@/features/cooking/types/allergy'
 
 type RecipeState = {
     recipes: Recipe[]
+    /** Catalogue complet chargé une fois pour la recherche/filtres côté client. */
+    allRecipes: Recipe[]
     kitchenEquipments: KitchenEquipment[]
     diets: Diet[]
     allergies: Allergy[]
     loading: boolean
+    /** Chargement dédié au catalogue complet (découplé du `loading` partagé). */
+    recipesLoading: boolean
     error?: string
     // editing state
     editingRecipe: Recipe | null
@@ -26,7 +30,10 @@ type RecipeState = {
     quantificationType: QuantificationType | 'all'
     isVisible: boolean | null
     isFolklore: boolean | null
+    /** Mois sélectionnés pour le filtre saisonnalité (0 = janvier ... 11 = décembre). */
+    selectedMonths: number[]
     fetchRecipes: () => Promise<void>
+    fetchAllRecipes: () => Promise<void>
     fetchKitchenEquipments: () => Promise<void>
     fetchDiets: () => Promise<void>
     fetchAllergies: () => Promise<void>
@@ -49,6 +56,7 @@ type RecipeState = {
     setQuantificationType: (q: QuantificationType | 'all') => void
     setIsVisible: (v: boolean | null) => void
     setIsFolklore: (f: boolean | null) => void
+    setSelectedMonths: (months: number[]) => void
     setEditingRecipe: (recipe: Recipe | null) => void
     setSelectedRecipes: (ids: number[]) => void
     toggleRecipeSelection: (id: number) => void
@@ -58,10 +66,12 @@ type RecipeState = {
 
 export const useRecipeStore = create<RecipeState>((set, get) => ({
     recipes: [],
+    allRecipes: [],
     kitchenEquipments: [],
     diets: [],
     allergies: [],
     loading: false,
+    recipesLoading: true,
     error: undefined,
     editingRecipe: null,
     selectedRecipes: [],
@@ -76,6 +86,20 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     quantificationType: 'all',
     isVisible: null,
     isFolklore: null,
+    selectedMonths: [],
+    async fetchAllRecipes() {
+        set({ recipesLoading: true, error: undefined })
+        try {
+            const res = await fetch('/api/recipes?all=true')
+            const json = await res.json()
+            const data = (json.data ?? []) as Recipe[]
+            set({ allRecipes: data, total: data.length })
+        } catch (e: any) {
+            set({ error: e?.message ?? 'Erreur de chargement' })
+        } finally {
+            set({ recipesLoading: false })
+        }
+    },
     async fetchRecipes() {
         set({ loading: true, error: undefined })
         try {
@@ -166,7 +190,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
                 body: JSON.stringify(payload),
             })
             const { data } = await response.json()
-            get().fetchRecipes() // Refresh list
+            get().fetchAllRecipes() // Refresh list
             return data as Recipe
         } catch (error) {
             console.error('Failed to create recipe:', error)
@@ -184,7 +208,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
                 body: JSON.stringify({ id, ...payload }),
             })
             // Ne pas faire fetchRecipes() ici car la page liste va se recharger
-            // get().fetchRecipes() // Refresh list
+            // get().fetchAllRecipes() // Refresh list
         } catch (error) {
             console.error('Failed to update recipe:', error)
         } finally {
@@ -197,7 +221,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
             await fetch(`/api/recipes?id=${id}`, {
                 method: 'DELETE',
             })
-            get().fetchRecipes() // Refresh list
+            get().fetchAllRecipes() // Refresh list
         } catch (error) {
             console.error('Failed to delete recipe:', error)
         } finally {
@@ -228,7 +252,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
                 )
             )
             set({ selectedRecipes: [] })
-            get().fetchRecipes() // Refresh list
+            get().fetchAllRecipes() // Refresh list
         } catch (error) {
             console.error('Failed to bulk delete recipes:', error)
         } finally {
@@ -249,7 +273,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
                 )
             )
             set({ selectedRecipes: [] })
-            get().fetchRecipes() // Refresh list
+            get().fetchAllRecipes() // Refresh list
         } catch (error) {
             console.error('Failed to bulk update dish type:', error)
         } finally {
@@ -270,7 +294,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
                 )
             )
             set({ selectedRecipes: [] })
-            get().fetchRecipes() // Refresh list
+            get().fetchAllRecipes() // Refresh list
         } catch (error) {
             console.error('Failed to bulk update seasonality:', error)
         } finally {
@@ -291,7 +315,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
                 )
             )
             set({ selectedRecipes: [] })
-            get().fetchRecipes() // Refresh list
+            get().fetchAllRecipes() // Refresh list
         } catch (error) {
             console.error('Failed to bulk update diet mask:', error)
         } finally {
@@ -312,7 +336,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
                 )
             )
             set({ selectedRecipes: [] })
-            get().fetchRecipes() // Refresh list
+            get().fetchAllRecipes() // Refresh list
         } catch (error) {
             console.error('Failed to bulk update kitchen equipments mask:', error)
         } finally {
@@ -324,7 +348,8 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
         // Optimiste : on met à jour la liste localement, revert si l'API échoue
         const applyIsNew = (value: boolean) =>
             set(state => ({
-                recipes: state.recipes.map(r => (Number(r.id) === id ? { ...r, is_new: value } : r))
+                recipes: state.recipes.map(r => (Number(r.id) === id ? { ...r, is_new: value } : r)),
+                allRecipes: state.allRecipes.map(r => (Number(r.id) === id ? { ...r, is_new: value } : r))
             }))
         applyIsNew(isNew)
         try {
@@ -353,7 +378,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
                 )
             )
             set({ selectedRecipes: [] })
-            get().fetchRecipes() // Refresh list
+            get().fetchAllRecipes() // Refresh list
         } catch (error) {
             console.error('Failed to bulk update visibility:', error)
         } finally {
@@ -399,5 +424,8 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     },
     setIsFolklore(isFolklore) {
         set({ isFolklore })
+    },
+    setSelectedMonths(months) {
+        set({ selectedMonths: months })
     },
 }))
