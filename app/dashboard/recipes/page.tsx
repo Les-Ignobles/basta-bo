@@ -9,6 +9,7 @@ import { DishType, DISH_TYPE_LABELS, QuantificationType, QUANTIFICATION_TYPE_LAB
 import { useRecipeStore } from '@/features/cooking/stores/recipe-store'
 import { RecipesTable } from '@/features/cooking/components/recipes-table'
 import { BulkActionsBar } from '@/features/cooking/components/bulk-actions-bar'
+import { FullScreenSheet } from '@/components/ui/full-screen-sheet'
 import { searchByRelevance } from '@/features/cooking/utils/recipe-search'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -37,6 +38,7 @@ export default function RecipesIndexPage() {
         fetchAllRecipes,
         fetchKitchenEquipments,
         fetchDiets,
+        createRecipe,
         allRecipes,
         kitchenEquipments,
         diets,
@@ -204,6 +206,55 @@ export default function RecipesIndexPage() {
             await deleteRecipe(Number(recipeToDelete.id))
             setDeleteDialogOpen(false)
             setRecipeToDelete(null)
+        }
+    }
+
+    // Création rapide de recette (sheet plein écran)
+    const [newRecipeOpen, setNewRecipeOpen] = useState(false)
+    const [creatingRecipe, setCreatingRecipe] = useState(false)
+    const [newTitle, setNewTitle] = useState('')
+    const [newDishType, setNewDishType] = useState<DishType>(DishType.PLAT)
+    const [newQuantif, setNewQuantif] = useState<QuantificationType>(QuantificationType.PER_PERSON)
+    const [newFolklore, setNewFolklore] = useState(false)
+
+    const openNewRecipeSheet = () => {
+        setNewTitle('')
+        setNewDishType(DishType.PLAT)
+        setNewQuantif(QuantificationType.PER_PERSON)
+        setNewFolklore(false)
+        setNewRecipeOpen(true)
+    }
+
+    const handleCreateRecipe = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        if (!newTitle.trim()) return
+        setCreatingRecipe(true)
+        try {
+            const created = await createRecipe({
+                title: newTitle.trim(),
+                ingredients_name: [],
+                ingredients_quantities: null,
+                img_path: null,
+                seasonality_mask: null,
+                kitchen_equipments_mask: null,
+                diet_mask: null,
+                allergy_mask: null,
+                instructions: null,
+                dish_type: newDishType,
+                quantification_type: newQuantif,
+                is_folklore: newFolklore,
+                is_visible: false,
+                base_servings: null,
+                calories_per_serving: null,
+                proteins_per_serving: null,
+                fats_per_serving: null,
+                carbs_per_serving: null,
+            })
+            if (created?.id) {
+                router.push(`/dashboard/recipes/edit/${created.id}?returnPage=${currentPage}`)
+            }
+        } finally {
+            setCreatingRecipe(false)
         }
     }
 
@@ -551,7 +602,7 @@ export default function RecipesIndexPage() {
                     </div>
                     <Button
                         disabled={loading}
-                        onClick={() => router.push(`/dashboard/recipes/new?returnPage=${currentPage}`)}
+                        onClick={openNewRecipeSheet}
                     >
                         Nouvelle recette
                     </Button>
@@ -597,6 +648,64 @@ export default function RecipesIndexPage() {
                 onDelete={(recipe) => { setRecipeToDelete(recipe); setDeleteDialogOpen(true) }}
                 onToggleNew={toggleRecipeIsNew}
             />
+
+            {/* Sheet plein écran : création rapide d'une recette */}
+            <FullScreenSheet
+                open={newRecipeOpen}
+                onOpenChange={setNewRecipeOpen}
+                title="Nouvelle recette"
+                description="Renseigne les informations de base. Tu pourras compléter ingrédients, préparation et critères juste après."
+                headerActions={
+                    <Button type="submit" form="quick-new-recipe" disabled={creatingRecipe || !newTitle.trim()}>
+                        {creatingRecipe ? 'Création…' : 'Créer et continuer'}
+                    </Button>
+                }
+            >
+                <form id="quick-new-recipe" onSubmit={handleCreateRecipe} className="space-y-6">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Titre de la recette *</label>
+                        <Input
+                            value={newTitle}
+                            onChange={(e) => setNewTitle(e.target.value)}
+                            placeholder="Ex: Tarte aux pommes"
+                            required
+                            autoFocus
+                        />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Type de plat *</label>
+                            <Select value={newDishType.toString()} onValueChange={(v) => setNewDishType(Number(v) as DishType)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Type de plat" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {Object.entries(DISH_TYPE_LABELS).map(([value, label]) => (
+                                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Quantification *</label>
+                            <Select value={newQuantif.toString()} onValueChange={(v) => setNewQuantif(Number(v) as QuantificationType)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Quantification" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {Object.entries(QUANTIFICATION_TYPE_LABELS).map(([value, label]) => (
+                                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox checked={newFolklore} onCheckedChange={(v) => setNewFolklore(Boolean(v))} />
+                        <span className="text-sm">Folklore</span>
+                    </label>
+                </form>
+            </FullScreenSheet>
 
             {/* Modal de confirmation pour suppression individuelle */}
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

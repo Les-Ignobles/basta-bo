@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { FullScreenSheet } from '@/components/ui/full-screen-sheet'
 import { Badge } from '@/components/ui/badge'
 import { IngredientForm, type IngredientFormValues } from '@/features/cooking/components/ingredient-form'
 import { useCookingStore } from '@/features/cooking/store'
@@ -181,21 +181,18 @@ export default function IngredientsIndexPage() {
                         {hasAnyFilter && <span className="text-muted-foreground">/ {allIngredients.length}</span>}
                     </Badge>
                 </div>
-                <Dialog open={open} onOpenChange={setOpen}>
-                    <DialogTrigger asChild>
-                        <Button disabled={loading} onClick={() => setEditingIngredient(null)}>Nouvel ingrédient</Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[800px] max-w-[95vw] w-full">
-                        <DialogHeader>
-                            <DialogTitle className="font-christmas">{editingIngredient ? 'Modifier l\'ingrédient' : 'Nouvel ingrédient'}</DialogTitle>
-                        </DialogHeader>
-                        <IngredientForm
-                            onSubmit={handleSubmit}
-                            defaultValues={editingIngredient || undefined}
-                            categories={categories.map((c) => ({ id: Number(c.id), label: `${c.emoji ?? ''} ${c.title?.fr ?? ''}`.trim() }))}
-                        />
-                    </DialogContent>
-                </Dialog>
+                <Button disabled={loading} onClick={() => { setEditingIngredient(null); setOpen(true) }}>Nouvel ingrédient</Button>
+                <FullScreenSheet
+                    open={open}
+                    onOpenChange={setOpen}
+                    title={editingIngredient ? 'Modifier l\'ingrédient' : 'Nouvel ingrédient'}
+                >
+                    <IngredientForm
+                        onSubmit={handleSubmit}
+                        defaultValues={editingIngredient || undefined}
+                        categories={categories.map((c) => ({ id: Number(c.id), label: `${c.emoji ?? ''} ${c.title?.fr ?? ''}`.trim() }))}
+                    />
+                </FullScreenSheet>
             </div>
 
             <div className="sticky top-0 z-10 bg-background border-b py-4 space-y-3">
