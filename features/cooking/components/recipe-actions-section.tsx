@@ -33,6 +33,43 @@ type Props = {
     recipeId: number
 }
 
+// L'eau n'est pas un ingrédient de catalogue : refs légitimes, non signalées.
+const WATER_RE = /^eau(\s|$)|^eau\s*(salée|bouillante|chaude|froide|tiède|de cuisson)/i
+
+const isOrphanIngredient = (ing: RecipeActionIngredientBO) =>
+    !ing.ingredient_id && !WATER_RE.test((ing.name ?? '').trim())
+
+// Même logique de matching que le backend (accents, ligature œ, pluriels) —
+// sert à SUGGÉRER l'ingrédient du catalogue le plus proche d'un orphelin.
+const normalizeName = (s: string) =>
+    s.toLowerCase()
+        .replace(/œ/g, 'oe').replace(/æ/g, 'ae')
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()
+
+const singularizeName = (s: string) =>
+    s.split(' ').map(w => (w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w)).join(' ')
+
+function suggestIngredient(orphanName: string, recipeIngredients: Ingredient[]): Ingredient | null {
+    const target = singularizeName(normalizeName(orphanName ?? ''))
+    if (!target) return null
+    let best: Ingredient | null = null
+    let bestScore = 0
+    for (const ing of recipeIngredients) {
+        const candidate = singularizeName(normalizeName(ing.name.fr))
+        let score = 0
+        if (candidate === target) score = 3
+        else if (candidate.includes(target) || target.includes(candidate)) score = 2
+        else {
+            const targetWords = new Set(target.split(' ').filter(w => w.length > 2))
+            const overlap = candidate.split(' ').filter(w => targetWords.has(w)).length
+            if (overlap > 0) score = 1 + overlap / 10
+        }
+        if (score > bestScore) { bestScore = score; best = ing }
+    }
+    return bestScore >= 1 ? best : null
+}
+
 export function RecipeActionsSection({ recipeId }: Props) {
     const [actions, setActions] = useState<RecipeActionBO[]>([])
     const [recipeIngredients, setRecipeIngredients] = useState<Ingredient[]>([])
@@ -209,6 +246,18 @@ export function RecipeActionsSection({ recipeId }: Props) {
                     {actions.length > 0 && (
                         <Badge variant="secondary">{actions.length} etapes</Badge>
                     )}
+                    {(() => {
+                        const orphanCount = actions.reduce(
+                            (sum, a) => sum + (a.ingredients ?? []).filter(isOrphanIngredient).length,
+                            0
+                        )
+                        return orphanCount > 0 ? (
+                            <Badge variant="destructive" className="gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                {orphanCount} ingrédient{orphanCount > 1 ? 's' : ''} non relié{orphanCount > 1 ? 's' : ''}
+                            </Badge>
+                        ) : null
+                    })()}
                 </div>
                 <div className="flex items-center gap-2">
                     {actions.length > 0 && (
@@ -516,8 +565,18 @@ function IngredientMultiSelect({
         onSave(updated)
     }
 
-    const removeIngredient = (ingredientId: number) => {
-        onSave(selected.filter(s => s.ingredient_id !== ingredientId))
+    const removeIngredient = (target: RecipeActionIngredientBO) => {
+        onSave(selected.filter(s => !(s.ingredient_id === target.ingredient_id && s.name === target.name)))
+    }
+
+    // Remplace un orphelin par un vrai ingrédient du catalogue (dédoublonné
+    // si l'ingrédient est déjà sélectionné sur l'action).
+    const replaceIngredient = (target: RecipeActionIngredientBO, ingredient: Ingredient) => {
+        const alreadySelected = selected.some(s => s.ingredient_id === ingredient.id)
+        const updated = alreadySelected
+            ? selected.filter(s => s !== target)
+            : selected.map(s => (s === target ? { name: ingredient.name.fr, ingredient_id: ingredient.id } : s))
+        onSave(updated)
     }
 
     if (recipeIngredients.length === 0) {
@@ -532,17 +591,35 @@ function IngredientMultiSelect({
         <div className="flex flex-col gap-1">
             {selected.length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                    {selected.map((ing) => (
-                        <Badge key={ing.ingredient_id} variant="secondary" className="text-[10px] py-0 px-1.5 gap-0.5">
-                            {ing.name}
-                            <button
-                                onClick={(e) => { e.stopPropagation(); removeIngredient(ing.ingredient_id) }}
-                                className="ml-0.5 hover:text-destructive"
+                    {selected.map((ing) => {
+                        const orphan = isOrphanIngredient(ing)
+                        if (orphan) {
+                            return (
+                                <OrphanIngredientBadge
+                                    key={`${ing.ingredient_id}-${ing.name}`}
+                                    ing={ing}
+                                    recipeIngredients={recipeIngredients}
+                                    onReplace={(ingredient) => replaceIngredient(ing, ingredient)}
+                                    onRemove={() => removeIngredient(ing)}
+                                />
+                            )
+                        }
+                        return (
+                            <Badge
+                                key={`${ing.ingredient_id}-${ing.name}`}
+                                variant="secondary"
+                                className="text-[10px] py-0 px-1.5 gap-0.5"
                             >
-                                <X className="h-2.5 w-2.5" />
-                            </button>
-                        </Badge>
-                    ))}
+                                {ing.name}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); removeIngredient(ing) }}
+                                    className="ml-0.5 hover:text-destructive"
+                                >
+                                    <X className="h-2.5 w-2.5" />
+                                </button>
+                            </Badge>
+                        )
+                    })}
                 </div>
             )}
 
@@ -582,6 +659,87 @@ function IngredientMultiSelect({
                 </PopoverContent>
             </Popover>
         </div>
+    )
+}
+
+/**
+ * Badge d'ingrédient orphelin (non relié au catalogue) : cliquable → popover
+ * de remplacement avec suggestion intelligente en tête (matching accents /
+ * pluriels / inclusion sur les ingrédients de la recette) + recherche.
+ */
+function OrphanIngredientBadge({
+    ing,
+    recipeIngredients,
+    onReplace,
+    onRemove,
+}: {
+    ing: RecipeActionIngredientBO
+    recipeIngredients: Ingredient[]
+    onReplace: (ingredient: Ingredient) => void
+    onRemove: () => void
+}) {
+    const [open, setOpen] = useState(false)
+    const suggestion = suggestIngredient(ing.name, recipeIngredients)
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Badge
+                    variant="secondary"
+                    className="text-[10px] py-0 px-1.5 gap-0.5 bg-red-100 text-red-700 border border-red-300 cursor-pointer hover:bg-red-200"
+                    title="Non relié au catalogue — clique pour remplacer"
+                >
+                    <AlertCircle className="h-2.5 w-2.5" />
+                    {ing.name}
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onRemove() }}
+                        className="ml-0.5 hover:text-destructive"
+                    >
+                        <X className="h-2.5 w-2.5" />
+                    </button>
+                </Badge>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-0" align="start">
+                <div className="px-3 py-2 border-b">
+                    <div className="text-xs font-medium">Remplacer « {ing.name} »</div>
+                    <div className="text-[10px] text-muted-foreground">Ingrédient non relié au catalogue</div>
+                </div>
+                {suggestion && (
+                    <button
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left bg-amber-50 hover:bg-amber-100 border-b"
+                        onClick={() => { onReplace(suggestion); setOpen(false) }}
+                    >
+                        <Wand2 className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                        <span>
+                            Suggestion : <b>{suggestion.name.fr}</b>
+                        </span>
+                    </button>
+                )}
+                <Command>
+                    <CommandInput placeholder="Chercher un ingredient..." className="text-xs h-8" />
+                    <CommandList>
+                        <CommandEmpty className="text-xs p-2 text-center">
+                            Aucun resultat.
+                            <div className="text-muted-foreground mt-1">
+                                Absent de la recette ? Ajoute-le d&apos;abord a sa liste d&apos;ingredients.
+                            </div>
+                        </CommandEmpty>
+                        <CommandGroup>
+                            {recipeIngredients.map((ingredient) => (
+                                <CommandItem
+                                    key={ingredient.id}
+                                    value={ingredient.name.fr}
+                                    onSelect={() => { onReplace(ingredient); setOpen(false) }}
+                                    className="text-xs"
+                                >
+                                    {ingredient.name.fr}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
     )
 }
 

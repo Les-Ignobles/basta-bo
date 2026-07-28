@@ -24,6 +24,8 @@ type RecipeState = {
     total: number
     search: string
     noImage: boolean
+    /** Filtre : recettes avec des ingrédients d'étapes non reliés au catalogue. */
+    orphanOnly: boolean
     dishType: DishType | 'all'
     selectedDiets: number[]
     selectedKitchenEquipments: number[]
@@ -50,6 +52,7 @@ type RecipeState = {
     setSearch: (s: string) => void
     setPage: (p: number) => void
     setNoImage: (b: boolean) => void
+    setOrphanOnly: (b: boolean) => void
     setDishType: (d: DishType | 'all') => void
     setSelectedDiets: (diets: number[]) => void
     setSelectedKitchenEquipments: (equipments: number[]) => void
@@ -80,6 +83,7 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     total: 0,
     search: '',
     noImage: false,
+    orphanOnly: false,
     dishType: 'all',
     selectedDiets: [],
     selectedKitchenEquipments: [],
@@ -236,6 +240,9 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     },
     setNoImage(b) {
         set({ noImage: b, page: 1 })
+    },
+    setOrphanOnly(b) {
+        set({ orphanOnly: b, page: 1 })
     },
     setDishType(d) {
         set({ dishType: d, page: 1 })

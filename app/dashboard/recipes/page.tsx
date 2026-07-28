@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { BookOpen, ImageOff, ChefHat, Search, X, SlidersHorizontal, Calendar } from 'lucide-react'
+import { BookOpen, ImageOff, ChefHat, Search, X, SlidersHorizontal, Calendar, Unlink } from 'lucide-react'
 
 const MONTHS = [
     'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
@@ -60,6 +60,8 @@ export default function RecipesIndexPage() {
         setSearch,
         noImage,
         setNoImage,
+        orphanOnly,
+        setOrphanOnly,
         dishType,
         setDishType,
         selectedDiets,
@@ -81,6 +83,17 @@ export default function RecipesIndexPage() {
         return Number.isFinite(p) && p > 0 ? p : 1
     })
 
+    // Ids des recettes avec ingrédients d'étapes non reliés (chargé à la
+    // première activation du filtre "Ingrédients à relier").
+    const [orphanRecipeIds, setOrphanRecipeIds] = useState<Set<number> | null>(null)
+    useEffect(() => {
+        if (!orphanOnly || orphanRecipeIds !== null) return
+        fetch('/api/admin/orphan-ingredients')
+            .then((res) => res.json())
+            .then((data) => setOrphanRecipeIds(new Set((data.data ?? []).map((r: { recipe_id: number }) => r.recipe_id))))
+            .catch(() => setOrphanRecipeIds(new Set()))
+    }, [orphanOnly, orphanRecipeIds])
+
     // Charger le catalogue complet + référentiels une seule fois au montage
     useEffect(() => {
         fetchAllRecipes()
@@ -95,10 +108,11 @@ export default function RecipesIndexPage() {
         if (selectedDiets.length > 0) n++
         if (selectedKitchenEquipments.length > 0) n++
         if (noImage) n++
+        if (orphanOnly) n++
         if (isVisible !== null) n++
         if (isFolklore !== null) n++
         return n
-    }, [quantificationType, selectedDiets, selectedKitchenEquipments, noImage, isVisible, isFolklore])
+    }, [quantificationType, selectedDiets, selectedKitchenEquipments, noImage, orphanOnly, isVisible, isFolklore])
 
     const hasAnyFilter = Boolean(search) || dishType !== 'all' || selectedMonths.length > 0 || advancedFilterCount > 0
 
@@ -116,6 +130,10 @@ export default function RecipesIndexPage() {
 
         if (noImage) {
             list = list.filter((r) => !r.img_path)
+        }
+
+        if (orphanOnly) {
+            list = orphanRecipeIds ? list.filter((r) => orphanRecipeIds.has(r.id)) : []
         }
 
         if (isVisible !== null) {
@@ -152,7 +170,7 @@ export default function RecipesIndexPage() {
         }
 
         return list
-    }, [allRecipes, dishType, quantificationType, noImage, isVisible, isFolklore, selectedDiets, selectedKitchenEquipments, selectedMonths, search])
+    }, [allRecipes, dishType, quantificationType, noImage, orphanOnly, orphanRecipeIds, isVisible, isFolklore, selectedDiets, selectedKitchenEquipments, selectedMonths, search])
 
     const total = filteredRecipes.length
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -166,7 +184,7 @@ export default function RecipesIndexPage() {
     // Revenir à la page 1 dès qu'un filtre change
     useEffect(() => {
         setPage(1)
-    }, [search, dishType, quantificationType, noImage, isVisible, isFolklore, selectedDiets, selectedKitchenEquipments, selectedMonths])
+    }, [search, dishType, quantificationType, noImage, orphanOnly, isVisible, isFolklore, selectedDiets, selectedKitchenEquipments, selectedMonths])
 
     const goToPage = (newPage: number) => {
         const clamped = Math.min(Math.max(1, newPage), totalPages)
@@ -191,6 +209,7 @@ export default function RecipesIndexPage() {
         setSelectedDiets([])
         setSelectedKitchenEquipments([])
         setNoImage(false)
+        setOrphanOnly(false)
         setIsVisible(null)
         setIsFolklore(null)
         setSelectedMonths([])
@@ -524,6 +543,12 @@ export default function RecipesIndexPage() {
                                     <ImageOff className="h-4 w-4" />
                                     Sans image uniquement
                                 </label>
+
+                                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                    <Checkbox checked={orphanOnly} onCheckedChange={(v) => setOrphanOnly(Boolean(v))} />
+                                    <Unlink className="h-4 w-4 text-red-500" />
+                                    Ingrédients à relier
+                                </label>
                             </div>
                         </PopoverContent>
                     </Popover>
@@ -568,6 +593,7 @@ export default function RecipesIndexPage() {
                             <FilterChip label={`Folklore : ${isFolklore ? 'Oui' : 'Non'}`} onRemove={() => setIsFolklore(null)} />
                         )}
                         {noImage && <FilterChip label="Sans image" onRemove={() => setNoImage(false)} />}
+                        {orphanOnly && <FilterChip label="Ingrédients à relier" onRemove={() => setOrphanOnly(false)} />}
                         {selectedDiets.map((id) => (
                             <FilterChip key={`diet-${id}`} label={`Régime : ${dietLabel(id)}`} onRemove={() => toggleDiet(id)} />
                         ))}
