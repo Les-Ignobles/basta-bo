@@ -1,5 +1,6 @@
 import { BaseRepository } from '@/lib/repositories/base-repository'
 import type { IngredientRecipePivot, Ingredient, Recipe, StructuredIngredient } from '@/features/cooking/types'
+import { INGREDIENT_COLUMNS } from '@/features/cooking/repositories/ingredient-repository'
 
 export class IngredientRecipePivotRepository extends BaseRepository<IngredientRecipePivot> {
     constructor(client: any) {
@@ -19,7 +20,7 @@ export class IngredientRecipePivotRepository extends BaseRepository<IngredientRe
     async findIngredientsForRecipe(recipeId: number): Promise<Ingredient[]> {
         const { data, error } = await this.client
             .from(this.table)
-            .select('ingredient_id, ingredients(*)')
+            .select(`ingredient_id, ingredients(${INGREDIENT_COLUMNS})`)
             .eq('recipe_id', recipeId)
 
         if (error) throw error
@@ -100,7 +101,7 @@ export class IngredientRecipePivotRepository extends BaseRepository<IngredientRe
     async findStructuredIngredientsByRecipeId(recipeId: number): Promise<(IngredientRecipePivot & { ingredient: Ingredient })[]> {
         const { data, error } = await this.client
             .from(this.table)
-            .select('*, ingredient:ingredients(*)')
+            .select(`*, ingredient:ingredients(${INGREDIENT_COLUMNS})`)
             .eq('recipe_id', recipeId)
 
         if (error) throw error

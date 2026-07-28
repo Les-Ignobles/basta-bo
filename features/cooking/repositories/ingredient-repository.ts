@@ -1,6 +1,15 @@
 import { BaseRepository } from '@/lib/repositories/base-repository'
 import type { Ingredient } from '@/features/cooking/types'
 
+/**
+ * Colonnes métier de la table ingredients, SANS les embeddings vectoriels
+ * (name_embedding + name_embedding_test = ~97% du poids des lignes : un
+ * select('*') sur les 367 ingrédients télécharge ~4 Mo côté base, ~10 Mo en
+ * JSON — c'est ce qui rendait le listing lent).
+ */
+export const INGREDIENT_COLUMNS =
+    'id, created_at, img_path, name, suffix_singular, suffix_plural, category_id, is_basic, calories_per_100g, proteins_per_100g, fats_per_100g, carbs_per_100g, price_per_100g, allergy_mask'
+
 export class IngredientRepository extends BaseRepository<Ingredient> {
     constructor(client: any) {
         super(client, 'ingredients')
@@ -8,13 +17,13 @@ export class IngredientRepository extends BaseRepository<Ingredient> {
 
     /**
      * Récupère tous les ingrédients pour un listing filtré/recherché côté client.
-     * On garde toutes les colonnes (lignes légères, pas de gros champ texte) afin
-     * que l'édition depuis la liste conserve les valeurs nutritionnelles/prix.
+     * Toutes les colonnes métier (pour que l'édition depuis la liste conserve
+     * nutrition/prix/allergènes), mais jamais les embeddings.
      */
     async findAllForListing(): Promise<Ingredient[]> {
         const { data, error } = await (this.client as any)
             .from(this.table)
-            .select('*')
+            .select(INGREDIENT_COLUMNS)
             .order('id', { ascending: true })
             .range(0, 9999)
 
@@ -25,7 +34,7 @@ export class IngredientRepository extends BaseRepository<Ingredient> {
     async findPage({ search, page, pageSize, noImage, categories, translationFilter }: { search?: string; page: number; pageSize: number; noImage?: boolean; categories?: number[]; translationFilter?: 'incomplete' | 'complete' }): Promise<{ data: Ingredient[]; total: number }> {
         const from = (page - 1) * pageSize
         const to = from + pageSize - 1
-        let query = (this.client as any).from(this.table).select('*', { count: 'exact' })
+        let query = (this.client as any).from(this.table).select(INGREDIENT_COLUMNS, { count: 'exact' })
         if (search && search.trim()) {
             const searchTerm = search.trim()
             // Vérifier si la recherche est un nombre (ID)
@@ -90,7 +99,7 @@ export class IngredientRepository extends BaseRepository<Ingredient> {
         if (translationFilter) {
             // Pour le filtre de traduction, on doit compter tous les ingrédients qui matchent
             // On fait une requête séparée pour compter le total
-            let countQuery = (this.client as any).from(this.table).select('*', { count: 'exact' })
+            let countQuery = (this.client as any).from(this.table).select(INGREDIENT_COLUMNS, { count: 'exact' })
             if (search && search.trim()) {
                 const searchTerm = search.trim()
                 // Vérifier si la recherche est un nombre (ID)
