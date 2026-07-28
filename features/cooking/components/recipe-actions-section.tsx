@@ -33,11 +33,9 @@ type Props = {
     recipeId: number
 }
 
-// L'eau n'est pas un ingrédient de catalogue : refs légitimes, non signalées.
-const WATER_RE = /^eau(\s|$)|^eau\s*(salée|bouillante|chaude|froide|tiède|de cuisson)/i
-
-const isOrphanIngredient = (ing: RecipeActionIngredientBO) =>
-    !ing.ingredient_id && !WATER_RE.test((ing.name ?? '').trim())
+// Tout ingrédient non relié au catalogue est signalé (eau comprise : l'équipe
+// diet doit pouvoir la repérer et supprimer la référence facilement).
+const isOrphanIngredient = (ing: RecipeActionIngredientBO) => !ing.ingredient_id
 
 // Même logique de matching que le backend (accents, ligature œ, pluriels) —
 // sert à SUGGÉRER l'ingrédient du catalogue le plus proche d'un orphelin.

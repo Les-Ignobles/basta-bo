@@ -1,9 +1,5 @@
 import { supabaseServer } from '@/lib/supabase/server-client'
 
-// L'eau n'est pas un ingrédient de catalogue : les refs eau sont légitimes
-// (et vouées à disparaître) → exclues du signalement.
-const WATER_RE = /^eau(\s|$)|^eau\s*(salée|bouillante|chaude|froide|tiède|de cuisson)/i
-
 /**
  * GET /api/admin/orphan-ingredients
  * Liste les recettes dont des étapes référencent des ingrédients non reliés
@@ -30,7 +26,6 @@ export async function GET() {
                 const name = typeof ing === 'string' ? ing : ing?.name
                 const id = typeof ing === 'string' ? 0 : ing?.ingredient_id ?? 0
                 if (id !== 0 || !name) continue
-                if (WATER_RE.test(name.trim())) continue
                 const names = byRecipe.get(a.recipe_id) ?? new Map<string, number>()
                 names.set(name, (names.get(name) ?? 0) + 1)
                 byRecipe.set(a.recipe_id, names)
