@@ -3,10 +3,11 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Ingredient, Recipe, IngredientCategory } from '@/features/cooking/types'
 import { DISH_TYPE_LABELS } from '@/features/cooking/types'
+import type { Allergy } from '@/features/cooking/types/allergy'
 import { IngredientForm, type IngredientFormValues } from '@/features/cooking/components/ingredient-form'
 import { useCookingStore } from '@/features/cooking/store'
 
@@ -22,6 +23,7 @@ export default function IngredientDetailPage() {
     const [ingredient, setIngredient] = useState<Ingredient | null>(null)
     const [recipes, setRecipes] = useState<Recipe[]>([])
     const [categories, setCategories] = useState<IngredientCategory[]>([])
+    const [allergies, setAllergies] = useState<Allergy[]>([])
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -57,10 +59,11 @@ export default function IngredientDetailPage() {
                     : `/api/ingredients/${ingredientId}/navigation`
 
                 // Fetch ingredient, recipes, categories and navigation in parallel
-                const [ingredientRes, categoriesRes, navigationRes] = await Promise.all([
+                const [ingredientRes, categoriesRes, navigationRes, allergiesRes] = await Promise.all([
                     fetch(`/api/ingredients/${ingredientId}`),
                     fetch('/api/ingredient-categories'),
-                    fetch(navigationUrl)
+                    fetch(navigationUrl),
+                    fetch('/api/allergies')
                 ])
 
                 if (!ingredientRes.ok) {
@@ -77,6 +80,11 @@ export default function IngredientDetailPage() {
                 if (navigationRes.ok) {
                     const navigationData = await navigationRes.json()
                     setNavigation(navigationData.data)
+                }
+
+                if (allergiesRes.ok) {
+                    const allergiesData = await allergiesRes.json()
+                    setAllergies(allergiesData.data ?? [])
                 }
             } catch (err: unknown) {
                 setError(err instanceof Error ? err.message : 'Erreur de chargement')
@@ -111,6 +119,7 @@ export default function IngredientDetailPage() {
                 fats_per_100g: values.fats_per_100g ?? null,
                 carbs_per_100g: values.carbs_per_100g ?? null,
                 price_per_100g: values.price_per_100g ?? null,
+                allergy_mask: values.allergy_mask ?? 0,
             })
 
             // Reload ingredient data so the page reflects the latest persisted state
@@ -227,70 +236,67 @@ export default function IngredientDetailPage() {
                 </div>
             </div>
 
-            {/* Formulaire d'édition (toujours rendu) */}
-            <div className="bg-white rounded-lg border p-6">
-                <IngredientForm
-                    onSubmit={handleSubmit}
-                    defaultValues={ingredient}
-                    categories={categories.map((c) => ({ id: Number(c.id), label: `${c.emoji ?? ''} ${c.title?.fr ?? ''}`.trim() }))}
-                    formId={FORM_ID}
-                    submittingLabel="Mise à jour..."
-                />
-            </div>
-
-            {/* Recettes utilisant cet ingrédient */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="font-christmas">Recettes utilisant cet ingrédient</CardTitle>
-                    <CardDescription>
-                        {recipes.length} recette{recipes.length > 1 ? 's' : ''} trouvée{recipes.length > 1 ? 's' : ''}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {recipes.length === 0 ? (
-                        <p className="text-center text-muted-foreground py-8">
-                            Aucune recette ne contient cet ingrédient pour le moment.
-                        </p>
-                    ) : (
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {recipes.map((recipe) => (
-                                <Card key={recipe.id} className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/recipes/edit/${recipe.id}`)}>
-                                    {recipe.img_path && (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img
-                                            src={recipe.img_path}
-                                            alt={recipe.title}
-                                            className="h-32 w-full object-cover"
-                                        />
-                                    )}
-                                    <CardHeader className="pb-3">
-                                        <CardTitle className="text-base line-clamp-2">
-                                            {recipe.title}
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="pt-0">
-                                        <div className="flex flex-wrap gap-2">
-                                            <Badge variant="secondary" className="text-xs">
-                                                {DISH_TYPE_LABELS[recipe.dish_type]}
-                                            </Badge>
-                                            {recipe.is_folklore && (
-                                                <Badge variant="outline" className="text-xs">
-                                                    Folklore
+            {/* Formulaire d'édition (2 colonnes, recettes en contexte dans la colonne principale) */}
+            <IngredientForm
+                onSubmit={handleSubmit}
+                defaultValues={ingredient}
+                categories={categories.map((c) => ({ id: Number(c.id), label: `${c.emoji ?? ''} ${c.title?.fr ?? ''}`.trim() }))}
+                allergies={allergies}
+                formId={FORM_ID}
+                submittingLabel="Mise à jour..."
+                recipesSlot={
+                    <div className="space-y-3">
+                        <h3 className="text-base font-semibold text-foreground">
+                            Recettes utilisant cet ingrédient
+                            <span className="ml-2 text-sm font-normal text-muted-foreground">
+                                {recipes.length} recette{recipes.length > 1 ? 's' : ''}
+                            </span>
+                        </h3>
+                        {recipes.length === 0 ? (
+                            <p className="text-sm text-muted-foreground border border-dashed rounded-md p-6 text-center">
+                                Aucune recette ne contient cet ingrédient pour le moment.
+                            </p>
+                        ) : (
+                            <div className="grid gap-4 md:grid-cols-2">
+                                {recipes.map((recipe) => (
+                                    <Card key={recipe.id} className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/recipes/edit/${recipe.id}`)}>
+                                        {recipe.img_path && (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img
+                                                src={recipe.img_path}
+                                                alt={recipe.title}
+                                                className="h-32 w-full object-cover"
+                                            />
+                                        )}
+                                        <CardHeader className="pb-3">
+                                            <CardTitle className="text-base line-clamp-2">
+                                                {recipe.title}
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="pt-0">
+                                            <div className="flex flex-wrap gap-2">
+                                                <Badge variant="secondary" className="text-xs">
+                                                    {DISH_TYPE_LABELS[recipe.dish_type]}
                                                 </Badge>
-                                            )}
-                                            {!recipe.is_visible && (
-                                                <Badge variant="destructive" className="text-xs">
-                                                    Non visible
-                                                </Badge>
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                                                {recipe.is_folklore && (
+                                                    <Badge variant="outline" className="text-xs">
+                                                        Folklore
+                                                    </Badge>
+                                                )}
+                                                {!recipe.is_visible && (
+                                                    <Badge variant="destructive" className="text-xs">
+                                                        Non visible
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                }
+            />
         </div>
     )
 }

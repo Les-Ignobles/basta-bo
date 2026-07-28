@@ -9,6 +9,7 @@ import { useCookingStore } from '@/features/cooking/store'
 import { IngredientsTable } from '@/features/cooking/components/ingredients-table'
 import { searchByRelevance } from '@/features/cooking/utils/recipe-search'
 import type { Ingredient } from '@/features/cooking/types'
+import type { Allergy } from '@/features/cooking/types/allergy'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -62,11 +63,19 @@ export default function IngredientsIndexPage() {
         const p = Number(searchParams.get('page'))
         return Number.isFinite(p) && p > 0 ? p : 1
     })
+    const [allergies, setAllergies] = useState<Allergy[]>([])
 
     useEffect(() => {
         fetchAllIngredientsForListing()
         fetchCategories()
     }, [fetchAllIngredientsForListing, fetchCategories])
+
+    useEffect(() => {
+        fetch('/api/allergies')
+            .then((res) => (res.ok ? res.json() : { data: [] }))
+            .then(({ data }) => setAllergies(data ?? []))
+            .catch(() => setAllergies([]))
+    }, [])
 
     const advancedFilterCount = useMemo(() => {
         let n = 0
@@ -161,6 +170,7 @@ export default function IngredientsIndexPage() {
             fats_per_100g: values.fats_per_100g ?? null,
             carbs_per_100g: values.carbs_per_100g ?? null,
             price_per_100g: values.price_per_100g ?? null,
+            allergy_mask: values.allergy_mask ?? 0,
         }
         if (values.id) {
             await updateIngredient(values.id, payload)
@@ -191,6 +201,7 @@ export default function IngredientsIndexPage() {
                         onSubmit={handleSubmit}
                         defaultValues={editingIngredient || undefined}
                         categories={categories.map((c) => ({ id: Number(c.id), label: `${c.emoji ?? ''} ${c.title?.fr ?? ''}`.trim() }))}
+                        allergies={allergies}
                     />
                 </FullScreenSheet>
             </div>

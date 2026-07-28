@@ -10,8 +10,10 @@ import { TranslationTextField } from '@/components/translation-text'
 import { ImageUpload } from '@/components/image-upload'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 // Imports pour le composant Command amélioré
 import type { TranslationText } from '@/lib/i18n'
+import type { Allergy } from '@/features/cooking/types/allergy'
 
 export type IngredientFormValues = {
     id?: number
@@ -26,6 +28,7 @@ export type IngredientFormValues = {
     fats_per_100g?: number | null
     carbs_per_100g?: number | null
     price_per_100g?: number | null
+    allergy_mask?: number
 }
 
 type Props = {
@@ -33,14 +36,21 @@ type Props = {
     onSubmit: (values: IngredientFormValues) => Promise<void> | void
     submittingLabel?: string
     categories: Array<{ id: number; label: string }>
+    allergies?: Allergy[]
     /**
      * Quand fourni, le form expose `id={formId}` et masque son bouton "Enregistrer" interne.
      * Le parent doit alors fournir un bouton externe `<button type="submit" form={formId}>`.
      */
     formId?: string
+    /**
+     * Contenu affiché en bas de la colonne principale (ex : recettes utilisant
+     * l'ingrédient sur la page détail) — donne le contexte d'impact des
+     * modifications sans quitter le formulaire.
+     */
+    recipesSlot?: React.ReactNode
 }
 
-export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', categories, formId }: Props) {
+export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enregistrement...', categories, allergies, formId, recipesSlot }: Props) {
     // Trier les catégories par ordre alphabétique (en retirant l'emoji du tri)
     const sortedCategories = [...categories].sort((a, b) => {
         // Extraire le nom sans l'emoji (tout ce qui vient après le premier espace)
@@ -61,6 +71,10 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
     const [loading, setLoading] = useState(false)
     const [categoryOpen, setCategoryOpen] = useState(false)
     const [aiGenerating, setAiGenerating] = useState(false)
+
+    const toggleAllergy = (bitIndex: number) => {
+        setValues((s) => ({ ...s, allergy_mask: (s.allergy_mask ?? 0) ^ (1 << bitIndex) }))
+    }
 
     const handleAIGeneration = async () => {
         if (!values.name.fr?.trim()) return
@@ -125,47 +139,28 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
 
     return (
         <form id={formId} onSubmit={handleSubmit} className="space-y-6">
-            {/* Bouton d'autocomplétion IA en haut */}
-            <div className="flex justify-end pb-4 border-b">
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAIGeneration}
-                    disabled={!values.name.fr?.trim() || aiGenerating}
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0"
-                >
-                    {aiGenerating ? (
-                        <>
-                            <Sparkles className="h-4 w-4 mr-2 animate-spin" />
-                            Génération...
-                        </>
-                    ) : (
-                        <>
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            Autocomplétion IA
-                        </>
-                    )}
-                </Button>
-            </div>
-            <div className="grid gap-6">
-                <TranslationTextField
-                    label="Nom"
-                    value={values.name}
-                    onChange={(v) => setValues((s) => ({ ...s, name: v }))}
-                />
-                <div className="grid gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
+              {/* Colonne principale : identité, allergènes, contexte recettes */}
+              <div className="space-y-6 min-w-0">
+                <div className="space-y-4">
+                    <h3 className="text-base font-semibold text-foreground">Informations principales</h3>
                     <TranslationTextField
-                        label="Suffixe singulier"
-                        value={values.suffix_singular}
-                        onChange={(v) => setValues((s) => ({ ...s, suffix_singular: v }))}
+                        label="Nom"
+                        value={values.name}
+                        onChange={(v) => setValues((s) => ({ ...s, name: v }))}
                     />
-                    <TranslationTextField
-                        label="Suffixe pluriel"
-                        value={values.suffix_plural}
-                        onChange={(v) => setValues((s) => ({ ...s, suffix_plural: v }))}
-                    />
-                </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <TranslationTextField
+                            label="Suffixe singulier"
+                            value={values.suffix_singular}
+                            onChange={(v) => setValues((s) => ({ ...s, suffix_singular: v }))}
+                        />
+                        <TranslationTextField
+                            label="Suffixe pluriel"
+                            value={values.suffix_plural}
+                            onChange={(v) => setValues((s) => ({ ...s, suffix_plural: v }))}
+                        />
+                    </div>
                 <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">Catégorie</div>
                     <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
@@ -228,19 +223,87 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                         </PopoverContent>
                     </Popover>
                 </div>
-                <div className="flex items-center space-x-2">
-                    <Switch
-                        id="is_basic"
-                        checked={values.is_basic}
-                        onCheckedChange={(checked: boolean) => setValues((s) => ({ ...s, is_basic: checked }))}
-                    />
-                    <Label htmlFor="is_basic" className="text-sm font-medium">
-                        Ingrédient de base
-                    </Label>
+                    <div className="flex items-center space-x-2">
+                        <Switch
+                            id="is_basic"
+                            checked={values.is_basic}
+                            onCheckedChange={(checked: boolean) => setValues((s) => ({ ...s, is_basic: checked }))}
+                        />
+                        <Label htmlFor="is_basic" className="text-sm font-medium">
+                            Ingrédient de base
+                        </Label>
+                    </div>
                 </div>
-                <div className="space-y-2">
-                    <div className="text-xs text-muted-foreground font-medium">Valeurs nutritionnelles (pour 100g)</div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+                {allergies && allergies.length > 0 && (
+                    <div className="space-y-3">
+                        <h3 className="text-base font-semibold text-foreground">Allergènes contenus</h3>
+                        <div className="text-xs text-muted-foreground">
+                            Ces allergènes sont automatiquement reportés sur toutes les recettes utilisant cet ingrédient.
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 border rounded-md p-3">
+                            {allergies.map((allergy) => (
+                                <label key={allergy.id} className="flex items-center gap-2 text-sm">
+                                    <Checkbox
+                                        checked={((values.allergy_mask ?? 0) & (1 << allergy.bit_index)) !== 0}
+                                        onCheckedChange={() => toggleAllergy(allergy.bit_index)}
+                                    />
+                                    <span>{allergy.emoji} {allergy.name.fr}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {recipesSlot}
+              </div>
+
+              {/* Sidebar sticky : image, autocomplétion IA, nutrition, prix */}
+              <aside className="space-y-4 lg:sticky lg:top-24">
+                <div className="rounded-lg border p-4 space-y-3">
+                    {values.name?.fr && values.name.fr.trim() ? (
+                        <ImageUpload
+                            value={values.img_path ?? undefined}
+                            onChange={(url) => setValues((s) => ({ ...s, img_path: url }))}
+                            bucket="ingredients"
+                            ingredientName={values.name?.fr}
+                            defaultSize={100}
+                            allowSizeSelection={true}
+                        />
+                    ) : (
+                        <div className="flex items-center justify-center p-4 border-2 border-dashed rounded-md h-32 bg-muted/50">
+                            <div className="text-center text-sm text-muted-foreground">
+                                <div className="mb-1">📝</div>
+                                <div>Saisissez d&apos;abord le nom de l&apos;ingrédient</div>
+                            </div>
+                        </div>
+                    )}
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAIGeneration}
+                        disabled={!values.name.fr?.trim() || aiGenerating}
+                        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0"
+                        title="Remplit les suffixes, traductions et la catégorie à partir du nom"
+                    >
+                        {aiGenerating ? (
+                            <>
+                                <Sparkles className="h-4 w-4 mr-2 animate-spin" />
+                                Génération...
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                Autocomplétion IA
+                            </>
+                        )}
+                    </Button>
+                </div>
+
+                <div className="rounded-lg border p-4 space-y-3">
+                    <h4 className="text-sm font-semibold text-foreground">Nutrition (pour 100 g)</h4>
+                    <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
                             <Label className="text-xs">Calories (kcal)</Label>
                             <Input
@@ -253,7 +316,7 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                             />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Proteines (g)</Label>
+                            <Label className="text-xs">Protéines (g)</Label>
                             <Input
                                 type="number"
                                 step="0.1"
@@ -286,42 +349,26 @@ export function IngredientForm({ defaultValues, onSubmit, submittingLabel = 'Enr
                             />
                         </div>
                     </div>
-                </div>
-                <div className="space-y-2">
-                    <div className="text-xs text-muted-foreground font-medium">Prix indicatif (pour 100g)</div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div className="space-y-1">
-                            <Label className="text-xs">Prix (€)</Label>
-                            <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={values.price_per_100g ?? ''}
-                                onChange={(e) => setValues((s) => ({ ...s, price_per_100g: e.target.value ? parseFloat(e.target.value) : null }))}
-                                placeholder="-"
-                            />
-                        </div>
+                    <div className="text-xs text-muted-foreground">
+                        Reporté automatiquement sur les valeurs par portion des recettes.
                     </div>
                 </div>
-                <div className="space-y-1">
-                    {values.name?.fr && values.name.fr.trim() ? (
-                        <ImageUpload
-                            value={values.img_path ?? undefined}
-                            onChange={(url) => setValues((s) => ({ ...s, img_path: url }))}
-                            bucket="ingredients"
-                            ingredientName={values.name?.fr}
-                            defaultSize={100}
-                            allowSizeSelection={true}
+
+                <div className="rounded-lg border p-4 space-y-3">
+                    <h4 className="text-sm font-semibold text-foreground">Prix indicatif (pour 100 g)</h4>
+                    <div className="space-y-1">
+                        <Label className="text-xs">Prix (€)</Label>
+                        <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={values.price_per_100g ?? ''}
+                            onChange={(e) => setValues((s) => ({ ...s, price_per_100g: e.target.value ? parseFloat(e.target.value) : null }))}
+                            placeholder="-"
                         />
-                    ) : (
-                        <div className="flex items-center justify-center p-4 border-2 border-dashed rounded-md h-32 bg-muted/50">
-                            <div className="text-center text-sm text-muted-foreground">
-                                <div className="mb-1">📝</div>
-                                <div>Saisissez d'abord le nom de l'ingrédient</div>
-                            </div>
-                        </div>
-                    )}
+                    </div>
                 </div>
+              </aside>
             </div>
             {!formId && (
                 <div className="flex justify-end gap-2">

@@ -88,7 +88,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
     const [selectedMonths, setSelectedMonths] = useState<boolean[]>(new Array(12).fill(false))
     const [selectedEquipments, setSelectedEquipments] = useState<boolean[]>(new Array(kitchenEquipments.length).fill(false))
     const [selectedDiets, setSelectedDiets] = useState<boolean[]>(new Array(diets?.length || 0).fill(false))
-    const [selectedAllergies, setSelectedAllergies] = useState<boolean[]>(new Array(allergies?.length || 0).fill(false))
     const [ingredientOpen, setIngredientOpen] = useState(false)
     const [searchResults, setSearchResults] = useState<Ingredient[]>([])
     const [searching, setSearching] = useState(false)
@@ -193,12 +192,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
             setSelectedDiets(dietSelections)
         }
 
-        if (defaultValues?.allergy_mask !== undefined && allergies) {
-            const allergySelections = allergies.map(allergy =>
-                (defaultValues.allergy_mask! & (1 << allergy.bit_index)) !== 0
-            )
-            setSelectedAllergies(allergySelections)
-        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [JSON.stringify(defaultValues), kitchenEquipments, diets, allergies])
 
@@ -208,13 +201,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
             setSelectedDiets(new Array(diets.length).fill(false))
         }
     }, [diets, selectedDiets.length])
-
-    // Mettre à jour selectedAllergies quand allergies change
-    useEffect(() => {
-        if (allergies && allergies.length !== selectedAllergies.length) {
-            setSelectedAllergies(new Array(allergies.length).fill(false))
-        }
-    }, [allergies, selectedAllergies.length])
 
     // Initialiser selectedIngredients depuis defaultIngredients (mode édition)
     useEffect(() => {
@@ -277,21 +263,12 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                 })
             }
 
-            let allergyMask = 0
-            if (allergies) {
-                selectedAllergies.forEach((selected, index) => {
-                    if (selected && allergies[index]) {
-                        allergyMask |= (1 << allergies[index].bit_index)
-                    }
-                })
-            }
-
             await onSubmit({
                 ...values,
                 seasonality_mask: seasonalityMask || null,
                 kitchen_equipments_mask: equipmentsMask || null,
                 diet_mask: dietMask || null,
-                allergy_mask: allergyMask || null,
+                allergy_mask: computedAllergyMask || null,
             })
         } finally {
             setLoading(false)
@@ -362,10 +339,6 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
         setSelectedDiets(prev => prev.map((selected, i) => i === index ? !selected : selected))
     }
 
-    function toggleAllergy(index: number) {
-        setSelectedAllergies(prev => prev.map((selected, i) => i === index ? !selected : selected))
-    }
-
     function toggleCategory(categoryId: number) {
         setSelectedCategoryIds(prev => {
             const newIds = prev.includes(categoryId)
@@ -402,6 +375,17 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
     }
 
     const hasNutrition = values.calories_per_serving !== null || values.proteins_per_serving !== null
+
+    // Allergènes calculés depuis les ingrédients de la recette (source de vérité :
+    // ingredients.allergy_mask, comme les valeurs nutritionnelles). Plus d'édition
+    // manuelle : pour corriger, on corrige l'ingrédient.
+    const computedAllergyMask = selectedIngredients.reduce((mask, ing) => mask | (ing.allergy_mask ?? 0), 0)
+    const allergenSources = (bitIndex: number) =>
+        selectedIngredients
+            .filter(ing => ((ing.allergy_mask ?? 0) & (1 << bitIndex)) !== 0)
+            .map(ing => ing.name?.fr)
+            .filter(Boolean)
+            .join(', ')
 
     // Calcul indicatif du prix par portion (ou par unité selon la quantification).
     // Source: price_per_100g de chaque ingrédient × grammes / 100, sommé puis divisé par base_servings.
@@ -930,21 +914,29 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                 </div>
                             </div>
 
-                            {/* Allergies */}
+                            {/* Allergènes — calculés depuis les ingrédients, non éditables */}
                             <div className="space-y-2">
-                                <div className="text-sm font-medium">Allergies non compatibles</div>
-                                <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto border rounded-md p-3">
-                                    {allergies?.map((allergy, index) => (
-                                        <label key={allergy.id} className="flex items-center gap-2 text-sm">
-                                            <Checkbox
-                                                checked={selectedAllergies[index] || false}
-                                                onCheckedChange={() => toggleAllergy(index)}
-                                            />
-                                            <span>{allergy.emoji} {allergy.name.fr}</span>
-                                        </label>
-                                    )) || (
-                                            <div className="text-sm text-muted-foreground">Chargement des allergies...</div>
-                                        )}
+                                <div className="text-sm font-medium">Allergènes (calculés depuis les ingrédients)</div>
+                                <div className="space-y-2 border rounded-md p-3">
+                                    {allergies && allergies.length > 0 ? (
+                                        computedAllergyMask === 0 ? (
+                                            <div className="text-sm text-muted-foreground">Aucun allergène détecté dans les ingrédients.</div>
+                                        ) : (
+                                            allergies
+                                                .filter(allergy => (computedAllergyMask & (1 << allergy.bit_index)) !== 0)
+                                                .map(allergy => (
+                                                    <div key={allergy.id} className="text-sm">
+                                                        <span className="font-medium">{allergy.emoji} {allergy.name.fr}</span>
+                                                        <span className="text-muted-foreground"> — via {allergenSources(allergy.bit_index)}</span>
+                                                    </div>
+                                                ))
+                                        )
+                                    ) : (
+                                        <div className="text-sm text-muted-foreground">Chargement des allergies...</div>
+                                    )}
+                                    <div className="text-xs text-muted-foreground pt-1 border-t">
+                                        Pour corriger, modifie les allergènes de l&apos;ingrédient concerné (fiche Ingrédient) : la recette sera mise à jour automatiquement.
+                                    </div>
                                 </div>
                             </div>
 

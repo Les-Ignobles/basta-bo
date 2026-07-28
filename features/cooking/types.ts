@@ -88,6 +88,7 @@ export type Ingredient = {
     fats_per_100g: number | null
     carbs_per_100g: number | null
     price_per_100g: number | null
+    allergy_mask: number  // Allergènes contenus (bitmask sur allergies.bit_index), source de vérité du allergy_mask des recettes
 }
 
 export type IngredientCategory = {
