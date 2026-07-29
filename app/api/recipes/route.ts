@@ -95,7 +95,16 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const id = Number(searchParams.get('id'))
+    if (!Number.isFinite(id)) {
+        return Response.json({ error: 'Invalid recipe id' }, { status: 400 })
+    }
     const repo = new RecipeRepository(supabaseServer)
-    await repo.delete(id)
-    return Response.json({ ok: true })
+    try {
+        await repo.delete(id)
+        return Response.json({ ok: true })
+    } catch (error) {
+        console.error('Failed to delete recipe', id, error)
+        const message = error instanceof Error ? error.message : 'Suppression impossible'
+        return Response.json({ error: message }, { status: 500 })
+    }
 }

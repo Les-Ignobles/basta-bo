@@ -222,12 +222,17 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     async deleteRecipe(id) {
         set({ loading: true })
         try {
-            await fetch(`/api/recipes?id=${id}`, {
+            const res = await fetch(`/api/recipes?id=${id}`, {
                 method: 'DELETE',
             })
+            if (!res.ok) {
+                const { error } = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+                throw new Error(error || `HTTP ${res.status}`)
+            }
             get().fetchAllRecipes() // Refresh list
         } catch (error) {
             console.error('Failed to delete recipe:', error)
+            alert(`La suppression a échoué : ${error instanceof Error ? error.message : error}`)
         } finally {
             set({ loading: false })
         }
@@ -251,17 +256,22 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
     async bulkDeleteRecipes(ids) {
         set({ loading: true })
         try {
-            await Promise.all(
+            const responses = await Promise.all(
                 ids.map(id =>
                     fetch(`/api/recipes?id=${id}`, {
                         method: 'DELETE',
                     })
                 )
             )
+            const failed = responses.filter(r => !r.ok).length
+            if (failed > 0) {
+                alert(`${failed} recette(s) sur ${ids.length} n'ont pas pu être supprimées.`)
+            }
             set({ selectedRecipes: [] })
             get().fetchAllRecipes() // Refresh list
         } catch (error) {
             console.error('Failed to bulk delete recipes:', error)
+            alert(`La suppression a échoué : ${error instanceof Error ? error.message : error}`)
         } finally {
             set({ loading: false })
         }
