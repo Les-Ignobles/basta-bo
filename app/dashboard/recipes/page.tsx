@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
@@ -181,9 +181,20 @@ export default function RecipesIndexPage() {
         return filteredRecipes.slice(from, from + PAGE_SIZE)
     }, [filteredRecipes, currentPage])
 
-    // Revenir à la page 1 dès qu'un filtre change
+    // Revenir à la page 1 dès qu'un filtre change RÉELLEMENT (pas au montage, sinon
+    // on écrase la page restaurée depuis l'URL au retour depuis l'édition). On compare
+    // une signature des filtres : robuste au double-run des effets en StrictMode (dev).
+    const filtersSigRef = useRef<string | null>(null)
     useEffect(() => {
-        setPage(1)
+        const sig = JSON.stringify([search, dishType, quantificationType, noImage, orphanOnly, isVisible, isFolklore, selectedDiets, selectedKitchenEquipments, selectedMonths])
+        if (filtersSigRef.current === null) {
+            filtersSigRef.current = sig
+            return
+        }
+        if (filtersSigRef.current !== sig) {
+            filtersSigRef.current = sig
+            setPage(1)
+        }
     }, [search, dishType, quantificationType, noImage, orphanOnly, isVisible, isFolklore, selectedDiets, selectedKitchenEquipments, selectedMonths])
 
     const goToPage = (newPage: number) => {
@@ -658,6 +669,10 @@ export default function RecipesIndexPage() {
                 onSelectRecipe={(id) => toggleRecipeSelection(id)}
                 onSelectAll={handleSelectAll}
                 onEdit={(recipe) => {
+                    // Mémoriser l'ordre filtré courant pour la navigation ‹ › dans l'édition
+                    try {
+                        sessionStorage.setItem('recipeNavList', JSON.stringify(filteredRecipes.map((r) => Number(r.id))))
+                    } catch { /* sessionStorage indisponible */ }
                     const params = new URLSearchParams()
                     params.set('returnPage', currentPage.toString())
                     if (search) params.set('search', search)

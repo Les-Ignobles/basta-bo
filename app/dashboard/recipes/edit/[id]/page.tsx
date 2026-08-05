@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { RecipeForm } from '@/features/cooking/components/recipe-form'
@@ -25,6 +25,29 @@ export default function EditRecipePage() {
     const [submitting, setSubmitting] = useState(false)
     const [duplicating, setDuplicating] = useState(false)
     const [navigation, setNavigation] = useState<{ previous: number | null; next: number | null } | null>(null)
+    // Liste ordonnée filtrée mémorisée par la page liste (navigation ‹ › fidèle aux filtres client)
+    const [navList, setNavList] = useState<number[] | null>(null)
+
+    useEffect(() => {
+        try {
+            const raw = sessionStorage.getItem('recipeNavList')
+            if (raw) setNavList(JSON.parse(raw) as number[])
+        } catch { /* sessionStorage indisponible */ }
+    }, [])
+
+    // Navigation effective : liste filtrée client si disponible, sinon fallback serveur.
+    const effectiveNavigation = useMemo(() => {
+        if (navList && navList.length > 0) {
+            const idx = navList.indexOf(recipeId)
+            if (idx !== -1) {
+                return {
+                    previous: idx > 0 ? navList[idx - 1] : null,
+                    next: idx < navList.length - 1 ? navList[idx + 1] : null,
+                }
+            }
+        }
+        return navigation
+    }, [navList, recipeId, navigation])
 
     useEffect(() => {
         fetchKitchenEquipments()
@@ -239,12 +262,12 @@ export default function EditRecipePage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                    if (navigation?.previous) {
+                                    if (effectiveNavigation?.previous) {
                                         // Préserver tous les paramètres de filtrage pour la navigation
-                                        router.push(`/dashboard/recipes/edit/${navigation.previous}?${searchParams.toString()}`)
+                                        router.push(`/dashboard/recipes/edit/${effectiveNavigation.previous}?${searchParams.toString()}`)
                                     }
                                 }}
-                                disabled={!navigation?.previous}
+                                disabled={!effectiveNavigation?.previous}
                                 className="flex items-center gap-1"
                                 title="Recette précédente"
                             >
@@ -254,12 +277,12 @@ export default function EditRecipePage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                    if (navigation?.next) {
+                                    if (effectiveNavigation?.next) {
                                         // Préserver tous les paramètres de filtrage pour la navigation
-                                        router.push(`/dashboard/recipes/edit/${navigation.next}?${searchParams.toString()}`)
+                                        router.push(`/dashboard/recipes/edit/${effectiveNavigation.next}?${searchParams.toString()}`)
                                     }
                                 }}
-                                disabled={!navigation?.next}
+                                disabled={!effectiveNavigation?.next}
                                 className="flex items-center gap-1"
                                 title="Recette suivante"
                             >
