@@ -77,12 +77,15 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
         is_visible: true,
         is_new: false,
         base_servings: null,
+        units_per_serving: null,
         calories_per_serving: null,
         proteins_per_serving: null,
         fats_per_serving: null,
         carbs_per_serving: null,
         ...defaultValues,
     } as RecipeFormValues)
+    // Rendement (unités par portion) : base figée à l'activation, puis modifiable avec recalcul.
+    const [baselineLocked, setBaselineLocked] = useState<boolean>(defaultValues?.units_per_serving != null)
     const [loading, setLoading] = useState(false)
     const [ingredientInput, setIngredientInput] = useState('')
     const [selectedMonths, setSelectedMonths] = useState<boolean[]>(new Array(12).fill(false))
@@ -144,11 +147,13 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                 is_visible: defaultValues.is_visible !== undefined ? defaultValues.is_visible : true,
                 is_new: defaultValues.is_new ?? false,
                 base_servings: defaultValues.base_servings ?? null,
+                units_per_serving: defaultValues.units_per_serving ?? null,
                 calories_per_serving: defaultValues.calories_per_serving ?? null,
                 proteins_per_serving: defaultValues.proteins_per_serving ?? null,
                 fats_per_serving: defaultValues.fats_per_serving ?? null,
                 carbs_per_serving: defaultValues.carbs_per_serving ?? null,
             } as RecipeFormValues)
+            setBaselineLocked(defaultValues.units_per_serving != null)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [JSON.stringify(defaultValues)])
@@ -374,6 +379,47 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
         return values.structured_ingredients?.find(si => si.ingredient_id === ingredientId)
     }
 
+    const unitsEnabled = values.units_per_serving != null
+
+    // Activer / désactiver le rendement. Désactivé => null (n'affecte rien).
+    function toggleUnitsEnabled(enabled: boolean) {
+        setValues(prev => ({ ...prev, units_per_serving: enabled ? (prev.units_per_serving ?? 1) : null }))
+        setBaselineLocked(false)
+    }
+
+    // Phase 1 (base) : fixe le nombre d'unités que représentent les ingrédients
+    // actuels, SANS recalculer les quantités.
+    function setBaselineValue(rawValue: string) {
+        const parsed = parseInt(rawValue, 10)
+        const next = Number.isFinite(parsed) && parsed >= 1 ? parsed : 1
+        setValues(prev => ({ ...prev, units_per_serving: next }))
+    }
+
+    // Phase 2 (base figée) : changer le rendement recalcule toutes les quantités
+    // (quantité + poids) au prorata, en direct. Le nombre reste >= 1.
+    function changeUnits(rawValue: string) {
+        const parsed = parseInt(rawValue, 10)
+        const next = Number.isFinite(parsed) && parsed >= 1 ? parsed : 1
+        setValues(prev => {
+            const prevUnits = prev.units_per_serving ?? 1
+            const hasIngredients = (prev.structured_ingredients?.length ?? 0) > 0
+            if (next === prevUnits || !hasIngredients) {
+                return { ...prev, units_per_serving: next }
+            }
+            const ratio = next / prevUnits
+            const round = (n: number) => Math.round(n * 1000) / 1000
+            return {
+                ...prev,
+                units_per_serving: next,
+                structured_ingredients: (prev.structured_ingredients || []).map(si => ({
+                    ...si,
+                    quantity: si.quantity != null ? round(si.quantity * ratio) : si.quantity,
+                    weight_in_grams: si.weight_in_grams != null ? round(si.weight_in_grams * ratio) : si.weight_in_grams,
+                })),
+            }
+        })
+    }
+
     const hasNutrition = values.calories_per_serving !== null || values.proteins_per_serving !== null
 
     // Allergènes calculés depuis les ingrédients de la recette (source de vérité :
@@ -518,6 +564,66 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                     className="text-base"
                                 />
                             </div>
+
+                        </div>
+
+                        {/* Rendement : unités par portion (opt-in) */}
+                        <div className="space-y-3 rounded-md border p-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <Checkbox
+                                    checked={unitsEnabled}
+                                    onCheckedChange={(c) => toggleUnitsEnabled(Boolean(c))}
+                                />
+                                <span className="text-sm font-medium">Activer les unités par portion</span>
+                                <span className="text-xs text-muted-foreground">(ex: 4 cookies — n&apos;entre pas dans le batch cooking)</span>
+                            </label>
+
+                            {unitsEnabled && !baselineLocked && (
+                                <div className="flex flex-wrap items-center gap-3 rounded-md bg-muted/40 px-3 py-3">
+                                    <span className="text-sm">Les ingrédients actuels représentent</span>
+                                    <Input
+                                        type="number"
+                                        min="1"
+                                        value={values.units_per_serving ?? 1}
+                                        onChange={(e) => setBaselineValue(e.target.value)}
+                                        className="h-9 w-20 text-base"
+                                    />
+                                    <span className="text-sm">unité(s)</span>
+                                    <Button type="button" size="sm" onClick={() => setBaselineLocked(true)}>
+                                        Valider la base
+                                    </Button>
+                                    <p className="w-full text-xs text-muted-foreground">
+                                        Définit la base sans recalculer les quantités. Les quantités déjà saisies restent inchangées.
+                                    </p>
+                                </div>
+                            )}
+
+                            {unitsEnabled && baselineLocked && (
+                                <div className="flex flex-wrap items-end gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-sm font-medium text-foreground">Unités par portion</label>
+                                        <Input
+                                            type="number"
+                                            min="1"
+                                            value={values.units_per_serving ?? 1}
+                                            onChange={(e) => changeUnits(e.target.value)}
+                                            className="h-9 w-28 text-base"
+                                        />
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setBaselineLocked(false)}
+                                        title="Corriger la base sans recalculer les quantités"
+                                    >
+                                        Redéfinir la base
+                                    </Button>
+                                    <p className="w-full text-xs text-muted-foreground">
+                                        Changer cette valeur recalcule les quantités d&apos;ingrédients au prorata.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
 

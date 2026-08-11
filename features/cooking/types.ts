@@ -116,6 +116,7 @@ export type Recipe = {
     is_visible: boolean
     is_new: boolean  // Nouveauté : recette affichée dans la popup "Nouvelles recettes" de l'app
     base_servings: number | null  // Nombre de portions de base pour le calcul des quantités
+    units_per_serving: number | null  // Nombre d'unités produites par portion (ex: 4 cookies). BO uniquement, sert au recalcul des quantités
     // Valeurs nutritionnelles par portion
     calories_per_serving: number | null
     proteins_per_serving: number | null
@@ -151,6 +152,7 @@ export type RecipeFormValues = {
     is_visible: boolean
     is_new?: boolean  // Nouveauté : recette affichée dans la popup "Nouvelles recettes" de l'app
     base_servings?: number | null  // Nombre de portions de base
+    units_per_serving?: number | null  // Nombre d'unités produites par portion (ex: 4 cookies). BO uniquement
     // Valeurs nutritionnelles par portion
     calories_per_serving?: number | null
     proteins_per_serving?: number | null

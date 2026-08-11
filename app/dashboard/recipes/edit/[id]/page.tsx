@@ -183,6 +183,7 @@ export default function EditRecipePage() {
                 is_visible: values.is_visible,
                 is_new: values.is_new ?? false,
                 base_servings: values.base_servings ?? null,
+                units_per_serving: values.units_per_serving ?? null,
                 // Valeurs nutritionnelles
                 calories_per_serving: values.calories_per_serving ?? null,
                 proteins_per_serving: values.proteins_per_serving ?? null,
