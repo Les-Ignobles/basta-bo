@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-import { Check, ChevronsUpDown, Loader2, Flame, Beef, Droplets, Wheat } from 'lucide-react'
+import { Check, ChevronsUpDown, Loader2, Flame, Beef, Droplets, Wheat, ChefHat } from 'lucide-react'
 import { RecipeActionsSection } from './recipe-actions-section'
 import { RecipePriceBreakdown } from './recipe-price-breakdown'
 import { cn } from '@/lib/utils'
@@ -38,6 +38,8 @@ type Props = {
     onCategoriesChange?: (categoryIds: number[]) => void
     formId?: string
     recipeId?: number
+    /** Nombre de fois utilisée en batch cooking (lecture seule, incrémenté backend). */
+    usageCount?: number
 }
 
 const MONTHS = [
@@ -58,7 +60,7 @@ const QUANTIFICATION_TYPES = [
     { value: QuantificationType.PER_UNIT, label: QUANTIFICATION_TYPE_LABELS[QuantificationType.PER_UNIT] }
 ]
 
-export function RecipeForm({ defaultValues, defaultIngredients, defaultStructuredIngredients, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets, allergies, recipeCategories, defaultCategoryIds, onCategoriesChange, formId, recipeId }: Props) {
+export function RecipeForm({ defaultValues, defaultIngredients, defaultStructuredIngredients, onSubmit, submittingLabel = 'Enregistrement...', kitchenEquipments, diets, allergies, recipeCategories, defaultCategoryIds, onCategoriesChange, formId, recipeId, usageCount }: Props) {
     const [values, setValues] = useState<RecipeFormValues>({
         title: '',
         ingredients_name: [],
@@ -836,6 +838,19 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
 
                     {/* Sidebar sticky : image, statut, nutrition */}
                     <aside className="space-y-4 lg:sticky lg:top-24">
+                        {/* Usage batch cooking (lecture seule) */}
+                        {usageCount !== undefined && (
+                            <div className="rounded-lg border p-4 flex items-center gap-3">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                                    <ChefHat className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <p className="text-xs text-muted-foreground">Réalisée en batch cooking</p>
+                                    <p className="text-base font-semibold text-foreground">{usageCount.toLocaleString('fr-FR')} fois</p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Image */}
                         <div className="rounded-lg border p-4 space-y-2">
                             <label className="text-sm font-medium text-foreground">Image de la recette</label>

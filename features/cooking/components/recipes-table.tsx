@@ -1,6 +1,6 @@
 "use client"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { MoreHorizontal, Loader2, Sparkles } from 'lucide-react'
+import { MoreHorizontal, Loader2, Sparkles, ChefHat } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { Recipe } from '@/features/cooking/types'
@@ -36,6 +36,7 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                         <TableHead className="w-[60px]">ID</TableHead>
                         <TableHead className="w-[90px]">Image</TableHead>
                         <TableHead>Titre</TableHead>
+                        <TableHead className="w-[110px] text-right">Réalisée</TableHead>
                         <TableHead className="text-right">Créé le</TableHead>
                         <TableHead className="w-[60px] text-right">Actions</TableHead>
                     </TableRow>
@@ -43,7 +44,7 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                 <TableBody>
                     {loading ? (
                         <TableRow>
-                            <TableCell colSpan={6} className="text-center py-8">
+                            <TableCell colSpan={7} className="text-center py-8">
                                 <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                                     <Loader2 className="h-6 w-6 animate-spin" />
                                     <span>Chargement en cours…</span>
@@ -85,6 +86,12 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                                                 )}
                                             </div>
                                         </TableCell>
+                                        <TableCell className="text-right cursor-pointer" onClick={() => onEdit?.(recipe)}>
+                                            <span className="inline-flex items-center gap-1 text-sm text-muted-foreground" title="Nombre de fois utilisée en batch cooking">
+                                                <ChefHat className="h-3.5 w-3.5" />
+                                                {(recipe.batchcooking_usage_count ?? 0).toLocaleString('fr-FR')}
+                                            </span>
+                                        </TableCell>
                                         <TableCell className="text-right text-xs text-muted-foreground cursor-pointer" onClick={() => onEdit?.(recipe)}>
                                             {new Date(recipe.created_at).toLocaleDateString('fr-FR')}
                                         </TableCell>
@@ -117,7 +124,7 @@ export function RecipesTable({ recipes, loading = false, onEdit, onDelete, onDup
                             })}
                             {recipes.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-6">
+                                    <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-6">
                                         Aucune recette trouvée.
                                     </TableCell>
                                 </TableRow>

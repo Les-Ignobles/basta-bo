@@ -333,6 +333,7 @@ export default function EditRecipePage() {
                     submittingLabel="Mise à jour..."
                     formId="recipe-form"
                     recipeId={recipeId}
+                    usageCount={recipe.batchcooking_usage_count}
                 />
             </div>
         </div>
