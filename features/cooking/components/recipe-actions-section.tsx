@@ -25,7 +25,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Wand2, Loader2, Trash2, AlertCircle, Plus, X, ChefHat, GripVertical } from 'lucide-react'
+import { Wand2, Loader2, Trash2, AlertCircle, Plus, X, ChefHat, GripVertical, BookOpen } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import type { RecipeActionBO, RecipeActionIngredientBO, Ingredient } from '@/features/cooking/types'
 import { RecipeActionType, RECIPE_ACTION_TYPE_LABELS, CookingEquipmentBO, COOKING_EQUIPMENT_LABELS } from '@/features/cooking/types'
 
@@ -74,6 +75,26 @@ export function RecipeActionsSection({ recipeId }: Props) {
     const [loading, setLoading] = useState(true)
     const [converting, setConverting] = useState(false)
     const [convertError, setConvertError] = useState<string | null>(null)
+    // Règles de saisie = le system prompt du convertisseur IA, servi par le
+    // backend (source unique de vérité, demande équipe produit).
+    const [rulesOpen, setRulesOpen] = useState(false)
+    const [rulesText, setRulesText] = useState<string | null>(null)
+    const [rulesLoading, setRulesLoading] = useState(false)
+
+    const handleOpenRules = async () => {
+        setRulesOpen(true)
+        if (rulesText || rulesLoading) return
+        setRulesLoading(true)
+        try {
+            const res = await fetch('/api/firebase/recipes/normalize-actions/prompt')
+            const data = await res.json()
+            setRulesText(data?.data?.prompt ?? data?.prompt ?? 'Impossible de charger les règles.')
+        } catch {
+            setRulesText('Impossible de charger les règles.')
+        } finally {
+            setRulesLoading(false)
+        }
+    }
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -258,6 +279,15 @@ export function RecipeActionsSection({ recipeId }: Props) {
                     })()}
                 </div>
                 <div className="flex items-center gap-2">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleOpenRules}
+                    >
+                        <BookOpen className="h-4 w-4 mr-1" />
+                        Règles de saisie
+                    </Button>
                     {actions.length > 0 && (
                         <Button
                             type="button"
@@ -361,6 +391,26 @@ export function RecipeActionsSection({ recipeId }: Props) {
                     </SortableContext>
                 </DndContext>
             )}
+            <Dialog open={rulesOpen} onOpenChange={setRulesOpen}>
+                <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                        <DialogTitle>Règles de saisie des instructions</DialogTitle>
+                        <DialogDescription>
+                            Ces règles sont le guide exact suivi par la conversion IA — les respecter à la saisie garantit une conversion propre et un plan de batch cooking correct.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="max-h-[65vh] overflow-y-auto rounded-md border bg-muted/30 p-4">
+                        {rulesLoading ? (
+                            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Chargement des règles...
+                            </div>
+                        ) : (
+                            <pre className="whitespace-pre-wrap text-xs leading-relaxed font-mono">{rulesText}</pre>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
