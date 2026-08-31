@@ -3,11 +3,11 @@ import { BaseRepository } from '@/lib/repositories/base-repository'
 import type {
   PromoCode,
   PromoCodeWithLabel,
-  CreatePromoCodeDto,
-  PromoCodeStatus,
-  PromoDuration
+  PromoCodeRedemption,
+  CreatePromoCodeV2Dto,
+  PromoCodeStatus
 } from '../types'
-import { generatePromoCode, getDurationLabel } from '../types'
+import { promoDurationLabel, computePromoCodeStatus } from '../types'
 
 interface FindAllOptions {
   page?: number
@@ -26,92 +26,98 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
   }
 
   /**
-   * Find all promo codes with pagination and filtering
+   * Liste paginée. Le statut (actif/épuisé/expiré/inactif) est CALCULÉ
+   * (croisement de plusieurs colonnes) : le filtre s'applique en mémoire sur
+   * la page courante élargie — volumes faibles (codes marketing), pagination
+   * SQL conservée pour le cas « tous ».
    */
   async findAllPaginated(options: FindAllOptions = {}): Promise<FindAllResult> {
     const { page = 1, pageSize = 20, status = 'all' } = options
-    const from = (page - 1) * pageSize
-    const to = from + pageSize - 1
 
-    let query = this.client
-      .from(this.table)
-      .select('*', { count: 'exact' })
-
-    // Apply status filter
-    if (status === 'used') {
-      query = query.not('used_at', 'is', null)
-    } else if (status === 'unused') {
-      query = query.is('used_at', null)
+    if (status === 'all') {
+      const from = (page - 1) * pageSize
+      const to = from + pageSize - 1
+      const { data, count, error } = await this.client
+        .from(this.table)
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to)
+      if (error) throw error
+      return { data: this.withLabels(data ?? []), total: count ?? 0 }
     }
 
-    // Order by creation date (newest first) and apply pagination
-    const { data, count, error } = await query
+    // Filtre par statut calculé : on charge tout (petit volume) puis on filtre.
+    const { data, error } = await this.client
+      .from(this.table)
+      .select('*')
       .order('created_at', { ascending: false })
-      .range(from, to)
-
     if (error) throw error
 
-    // Add duration label to each promo code
-    const dataWithLabel: PromoCodeWithLabel[] = (data ?? []).map((code: PromoCode) => ({
-      ...code,
-      duration_label: getDurationLabel(code.created_at, code.premium_end_at)
-    }))
-
+    const filtered = (data ?? []).filter(
+      (code: PromoCode) => computePromoCodeStatus(code) === status
+    )
+    const from = (page - 1) * pageSize
     return {
-      data: dataWithLabel,
-      total: count ?? 0
+      data: this.withLabels(filtered.slice(from, from + pageSize)),
+      total: filtered.length
     }
   }
 
-  /**
-   * Create a promo code with the given DTO
-   */
-  async createPromoCode(dto: CreatePromoCodeDto): Promise<PromoCodeWithLabel> {
+  private withLabels(codes: PromoCode[]): PromoCodeWithLabel[] {
+    return codes.map((code) => ({
+      ...code,
+      duration_label: promoDurationLabel(code)
+    }))
+  }
+
+  async createPromoCode(dto: CreatePromoCodeV2Dto): Promise<PromoCodeWithLabel> {
     const { data, error } = await this.client
       .from(this.table)
       .insert({
         code: dto.code,
-        premium_end_at: dto.premium_end_at
+        label: dto.label,
+        duration_days: dto.duration_days,
+        premium_end_at: dto.premium_end_at,
+        max_uses: dto.max_uses,
+        valid_from: dto.valid_from,
+        valid_until: dto.valid_until,
+        only_never_subscribed: dto.only_never_subscribed
       })
       .select('*')
       .single()
 
     if (error) throw error
-
     const promoCode = data as PromoCode
-    return {
-      ...promoCode,
-      duration_label: getDurationLabel(promoCode.created_at, promoCode.premium_end_at)
-    }
+    return { ...promoCode, duration_label: promoDurationLabel(promoCode) }
   }
 
-  /**
-   * Generate a unique promo code with retry logic for collision handling
-   */
-  async generateUniquePromoCode(duration: PromoDuration): Promise<PromoCodeWithLabel> {
-    const maxRetries = 3
-    const days = duration === '1_month' ? 30 : 365
-    const premiumEndAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+  async setActive(id: number, isActive: boolean): Promise<void> {
+    const { error } = await this.client
+      .from(this.table)
+      .update({ is_active: isActive })
+      .eq('id', id)
+    if (error) throw error
+  }
 
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const code = generatePromoCode()
+  /** Activations d'un code, avec l'email/prénom du profil quand disponible. */
+  async findRedemptions(promoCodeId: number): Promise<PromoCodeRedemption[]> {
+    const { data, error } = await this.client
+      .from('promo_code_redemptions')
+      .select('id, redeemed_at, premium_end_at, user_profile_id, user_profiles(email, firstname)')
+      .eq('promo_code_id', promoCodeId)
+      .order('redeemed_at', { ascending: false })
+    if (error) throw error
 
-      try {
-        return await this.createPromoCode({
-          code,
-          premium_end_at: premiumEndAt
-        })
-      } catch (error: unknown) {
-        // Check if it's a unique constraint violation
-        const pgError = error as { code?: string }
-        if (pgError.code === '23505' && attempt < maxRetries - 1) {
-          // Unique violation, retry with new code
-          continue
-        }
-        throw error
+    return (data ?? []).map((row) => {
+      const profile = row.user_profiles as { email?: string | null; firstname?: string | null } | null
+      return {
+        id: row.id as number,
+        redeemed_at: row.redeemed_at as string,
+        premium_end_at: row.premium_end_at as string,
+        user_profile_id: row.user_profile_id as number,
+        user_email: profile?.email ?? null,
+        user_firstname: profile?.firstname ?? null
       }
-    }
-
-    throw new Error('Failed to generate unique promo code after multiple attempts')
+    })
   }
 }

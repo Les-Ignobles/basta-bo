@@ -49,8 +49,10 @@ export default function PromoCodesPage() {
 
       {/* Description */}
       <p className="text-muted-foreground">
-        Générez des codes promo pour les jeux-concours et opérations marketing.
-        Chaque code permet d&apos;obtenir un abonnement premium d&apos;un mois ou d&apos;un an.
+        Créez des codes individuels ou communautaires (quota d&apos;utilisations,
+        durée de premium au choix, fenêtre de validité, ciblage des personnes
+        jamais abonnées). Cliquez sur les utilisations d&apos;un code pour voir
+        qui l&apos;a activé.
       </p>
 
       {/* Generate Form */}
@@ -69,8 +71,10 @@ export default function PromoCodesPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous</SelectItem>
-              <SelectItem value="unused">Non utilisés</SelectItem>
-              <SelectItem value="used">Utilisés</SelectItem>
+              <SelectItem value="active">Actifs</SelectItem>
+              <SelectItem value="exhausted">Épuisés</SelectItem>
+              <SelectItem value="expired">Expirés</SelectItem>
+              <SelectItem value="inactive">Désactivés</SelectItem>
             </SelectContent>
           </Select>
         </div>

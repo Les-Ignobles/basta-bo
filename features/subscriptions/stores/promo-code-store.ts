@@ -1,8 +1,9 @@
 import { create } from 'zustand'
 import type {
   PromoCodeWithLabel,
+  PromoCodeRedemption,
   PromoCodeStatus,
-  PromoDuration
+  CreatePromoCodeV2Dto
 } from '../types'
 
 interface PromoCodeState {
@@ -14,31 +15,38 @@ interface PromoCodeState {
   status: PromoCodeStatus
   loading: boolean
 
-  // Generate state
-  generating: boolean
+  // Create state
+  creating: boolean
   newCode: PromoCodeWithLabel | null
   error: string | null
+
+  // Detail state (activations d'un code)
+  redemptions: PromoCodeRedemption[]
+  redemptionsLoading: boolean
 
   // Actions
   fetchPromoCodes: () => Promise<void>
   setPage: (page: number) => void
   setFilter: (status: PromoCodeStatus) => void
-  generateCode: (duration: PromoDuration) => Promise<boolean>
+  createCode: (dto: Partial<CreatePromoCodeV2Dto>) => Promise<boolean>
+  toggleActive: (id: number, isActive: boolean) => Promise<void>
+  fetchRedemptions: (id: number) => Promise<void>
   copyToClipboard: (code: string) => Promise<boolean>
   clearNewCode: () => void
 }
 
 export const usePromoCodeStore = create<PromoCodeState>((set, get) => ({
-  // Initial state
   promoCodes: [],
   total: 0,
   page: 1,
   pageSize: 20,
   status: 'all',
   loading: false,
-  generating: false,
+  creating: false,
   newCode: null,
   error: null,
+  redemptions: [],
+  redemptionsLoading: false,
 
   fetchPromoCodes: async () => {
     const { page, pageSize, status } = get()
@@ -50,91 +58,90 @@ export const usePromoCodeStore = create<PromoCodeState>((set, get) => ({
         pageSize: pageSize.toString(),
         status
       })
-
       const res = await fetch(`/api/promo-codes?${params}`)
       const json = await res.json()
 
       if (!res.ok) {
-        set({
-          loading: false,
-          error: json.message || 'Erreur lors du chargement'
-        })
+        set({ loading: false, error: json.message || 'Erreur lors du chargement' })
         return
       }
-
-      set({
-        loading: false,
-        promoCodes: json.data,
-        total: json.total
-      })
-    } catch (error) {
-      console.error('Error fetching promo codes:', error)
-      set({
-        loading: false,
-        error: 'Erreur lors du chargement des codes promo'
-      })
+      set({ promoCodes: json.data, total: json.total, loading: false })
+    } catch {
+      set({ loading: false, error: 'Erreur lors du chargement' })
     }
   },
 
-  setPage: (page: number) => {
+  setPage: (page) => {
     set({ page })
     get().fetchPromoCodes()
   },
 
-  setFilter: (status: PromoCodeStatus) => {
+  setFilter: (status) => {
     set({ status, page: 1 })
     get().fetchPromoCodes()
   },
 
-  generateCode: async (duration: PromoDuration) => {
-    set({ generating: true, error: null, newCode: null })
-
+  createCode: async (dto) => {
+    set({ creating: true, error: null, newCode: null })
     try {
       const res = await fetch('/api/promo-codes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ duration })
+        body: JSON.stringify(dto)
       })
-
       const json = await res.json()
 
       if (!res.ok) {
-        set({
-          generating: false,
-          error: json.message || 'Erreur lors de la génération'
-        })
+        set({ creating: false, error: json.message || 'Erreur lors de la création' })
         return false
       }
-
-      set({
-        generating: false,
-        newCode: json.data
-      })
-
-      // Refresh the list
+      set({ creating: false, newCode: json })
       get().fetchPromoCodes()
       return true
-    } catch (error) {
-      console.error('Error generating promo code:', error)
-      set({
-        generating: false,
-        error: 'Erreur lors de la génération du code promo'
-      })
+    } catch {
+      set({ creating: false, error: 'Erreur lors de la création' })
       return false
     }
   },
 
-  copyToClipboard: async (code: string) => {
+  toggleActive: async (id, isActive) => {
+    try {
+      const res = await fetch(`/api/promo-codes/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: isActive })
+      })
+      if (res.ok) {
+        set({
+          promoCodes: get().promoCodes.map((c) =>
+            c.id === id ? { ...c, is_active: isActive } : c
+          )
+        })
+      }
+    } catch {
+      // silencieux : l'état visuel reste inchangé en cas d'échec
+    }
+  },
+
+  fetchRedemptions: async (id) => {
+    set({ redemptionsLoading: true, redemptions: [] })
+    try {
+      const res = await fetch(`/api/promo-codes/${id}/redemptions`)
+      const json = await res.json()
+      set({ redemptions: res.ok ? json.data : [], redemptionsLoading: false })
+    } catch {
+      set({ redemptions: [], redemptionsLoading: false })
+    }
+  },
+
+  copyToClipboard: async (code) => {
     try {
       await navigator.clipboard.writeText(code)
       return true
-    } catch (error) {
-      console.error('Error copying to clipboard:', error)
+    } catch {
       return false
     }
   },
 
-  clearNewCode: () => {
-    set({ newCode: null })
-  }
+  clearNewCode: () => set({ newCode: null })
 }))
