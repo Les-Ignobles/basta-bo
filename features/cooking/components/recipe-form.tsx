@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -11,11 +11,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-import { Check, ChevronsUpDown, Loader2, Flame, Beef, Droplets, Wheat, ChefHat } from 'lucide-react'
+import { Check, ChevronsUpDown, Loader2, Flame, Beef, Droplets, Wheat, ChefHat, AlertCircle } from 'lucide-react'
 import { RecipeActionsSection } from './recipe-actions-section'
 import { RecipePriceBreakdown } from './recipe-price-breakdown'
 import { cn } from '@/lib/utils'
-import type { RecipeFormValues, KitchenEquipment, Ingredient, StructuredIngredient, IngredientRecipePivot } from '@/features/cooking/types'
+import type { RecipeFormValues, KitchenEquipment, Ingredient, StructuredIngredient, IngredientRecipePivot, RecipeActionBO } from '@/features/cooking/types'
+import { computeIngredientWarnings } from '@/features/cooking/utils/ingredient-warnings'
 import { DishType, DISH_TYPE_LABELS, QuantificationType, QUANTIFICATION_TYPE_LABELS, IngredientUnit, INGREDIENT_UNIT_LABELS } from '@/features/cooking/types'
 import type { Diet } from '@/features/cooking/types/diet'
 import type { Allergy } from '@/features/cooking/types/allergy'
@@ -101,7 +102,29 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
     const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>(defaultCategoryIds || [])
     const [priceBreakdownOpen, setPriceBreakdownOpen] = useState(false)
 
-    const { searchIngredients } = useCookingStore()
+    const { searchIngredients, ingredients: catalogueIngredients, fetchAllIngredients } = useCookingStore()
+
+    // Aperçu des incohérences liste ↔ étapes au-dessus du tableau des
+    // ingrédients : le formulaire recharge les étapes à chaque retour sur
+    // l'onglet Recette (elles s'éditent dans l'onglet Préparation, démonté
+    // quand on revient ici).
+    const [recipeActions, setRecipeActions] = useState<RecipeActionBO[]>([])
+    const fetchRecipeActions = useCallback(async () => {
+        if (!recipeId) return
+        try {
+            const res = await fetch(`/api/recipes/${recipeId}/actions`)
+            if (res.ok) setRecipeActions((await res.json()).data ?? [])
+        } catch { /* aperçu best-effort */ }
+    }, [recipeId])
+    useEffect(() => { fetchRecipeActions() }, [fetchRecipeActions])
+    useEffect(() => {
+        if (catalogueIngredients.length < 200) fetchAllIngredients()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+    const ingredientWarnings = useMemo(
+        () => computeIngredientWarnings(selectedIngredients, recipeActions, catalogueIngredients),
+        [selectedIngredients, recipeActions, catalogueIngredients]
+    )
 
     // Initialize categories from defaultCategoryIds
     useEffect(() => {
@@ -483,7 +506,11 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
 
     return (
         <form id={formId} onSubmit={handleSubmit} className="space-y-6">
-            <Tabs defaultValue="recipe" className="w-full">
+            <Tabs
+                defaultValue="recipe"
+                className="w-full"
+                onValueChange={(tab) => { if (tab === 'recipe') fetchRecipeActions() }}
+            >
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="recipe">Recette</TabsTrigger>
                     <TabsTrigger value="preparation">Préparation</TabsTrigger>
@@ -637,6 +664,18 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                             )}
                         </div>
+
+                        {ingredientWarnings.citedMissing.length > 0 && (
+                            <p className="flex items-center gap-2 text-sm text-destructive">
+                                <AlertCircle className="h-4 w-4 shrink-0" />
+                                <span>
+                                    <span className="font-semibold">{ingredientWarnings.citedMissing.join(', ')}</span>
+                                    {' '}{ingredientWarnings.citedMissing.length > 1 ? 'sont utilisés' : 'est utilisé'} dans les
+                                    étapes mais manque{ingredientWarnings.citedMissing.length > 1 ? 'nt' : ''} ici — ajoute-{ingredientWarnings.citedMissing.length > 1 ? 'les' : 'le'} à
+                                    la liste (sinon liste de courses incomplète et allergènes faux).
+                                </span>
+                            </p>
+                        )}
 
                         {/* Sélection d'ingrédients */}
                         <div className="flex gap-2 w-full max-w-md">
@@ -958,7 +997,10 @@ export function RecipeForm({ defaultValues, defaultIngredients, defaultStructure
                 <TabsContent value="preparation" className="space-y-6 mt-6">
                     {/* Actions normalisées (V6) - section principale */}
                     {recipeId ? (
-                        <RecipeActionsSection recipeId={recipeId} />
+                        <RecipeActionsSection
+                            recipeId={recipeId}
+                            ingredientsKey={(values.ingredient_ids ?? []).join(',')}
+                        />
                     ) : (
                         <div className="border border-dashed rounded-md p-8 text-center text-sm text-muted-foreground">
                             Enregistrez la recette pour accéder aux étapes de préparation.

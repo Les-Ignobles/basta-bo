@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { BookOpen, ImageOff, ChefHat, Search, X, SlidersHorizontal, Calendar, Unlink } from 'lucide-react'
+import { BookOpen, ImageOff, ChefHat, Search, X, SlidersHorizontal, Calendar, Unlink, AlertCircle } from 'lucide-react'
 
 const MONTHS = [
     'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
@@ -94,6 +94,22 @@ export default function RecipesIndexPage() {
             .catch(() => setOrphanRecipeIds(new Set()))
     }, [orphanOnly, orphanRecipeIds])
 
+    // Filtres incohérences liste ↔ étapes (mêmes détections que les tags de
+    // l'éditeur de recette). Ids chargés à la première activation.
+    const [coherenceRed, setCoherenceRed] = useState(false)
+    const [coherenceOrange, setCoherenceOrange] = useState(false)
+    const [coherenceIds, setCoherenceIds] = useState<{ red: Set<number>; orange: Set<number> } | null>(null)
+    useEffect(() => {
+        if ((!coherenceRed && !coherenceOrange) || coherenceIds !== null) return
+        fetch('/api/admin/coherence-warnings')
+            .then((res) => res.json())
+            .then((data) => setCoherenceIds({
+                red: new Set(data.data?.red ?? []),
+                orange: new Set(data.data?.orange ?? []),
+            }))
+            .catch(() => setCoherenceIds({ red: new Set(), orange: new Set() }))
+    }, [coherenceRed, coherenceOrange, coherenceIds])
+
     // Charger le catalogue complet + référentiels une seule fois au montage
     useEffect(() => {
         fetchAllRecipes()
@@ -109,10 +125,12 @@ export default function RecipesIndexPage() {
         if (selectedKitchenEquipments.length > 0) n++
         if (noImage) n++
         if (orphanOnly) n++
+        if (coherenceRed) n++
+        if (coherenceOrange) n++
         if (isVisible !== null) n++
         if (isFolklore !== null) n++
         return n
-    }, [quantificationType, selectedDiets, selectedKitchenEquipments, noImage, orphanOnly, isVisible, isFolklore])
+    }, [quantificationType, selectedDiets, selectedKitchenEquipments, noImage, orphanOnly, coherenceRed, coherenceOrange, isVisible, isFolklore])
 
     const hasAnyFilter = Boolean(search) || dishType !== 'all' || selectedMonths.length > 0 || advancedFilterCount > 0
 
@@ -134,6 +152,14 @@ export default function RecipesIndexPage() {
 
         if (orphanOnly) {
             list = orphanRecipeIds ? list.filter((r) => orphanRecipeIds.has(r.id)) : []
+        }
+
+        if (coherenceRed || coherenceOrange) {
+            list = coherenceIds
+                ? list.filter((r) =>
+                    (coherenceRed && coherenceIds.red.has(r.id)) ||
+                    (coherenceOrange && coherenceIds.orange.has(r.id)))
+                : []
         }
 
         if (isVisible !== null) {
@@ -170,7 +196,7 @@ export default function RecipesIndexPage() {
         }
 
         return list
-    }, [allRecipes, dishType, quantificationType, noImage, orphanOnly, orphanRecipeIds, isVisible, isFolklore, selectedDiets, selectedKitchenEquipments, selectedMonths, search])
+    }, [allRecipes, dishType, quantificationType, noImage, orphanOnly, orphanRecipeIds, coherenceRed, coherenceOrange, coherenceIds, isVisible, isFolklore, selectedDiets, selectedKitchenEquipments, selectedMonths, search])
 
     const total = filteredRecipes.length
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -221,6 +247,8 @@ export default function RecipesIndexPage() {
         setSelectedKitchenEquipments([])
         setNoImage(false)
         setOrphanOnly(false)
+        setCoherenceRed(false)
+        setCoherenceOrange(false)
         setIsVisible(null)
         setIsFolklore(null)
         setSelectedMonths([])
@@ -560,6 +588,18 @@ export default function RecipesIndexPage() {
                                     <Unlink className="h-4 w-4 text-red-500" />
                                     Ingrédients à relier
                                 </label>
+
+                                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                    <Checkbox checked={coherenceRed} onCheckedChange={(v) => setCoherenceRed(Boolean(v))} />
+                                    <AlertCircle className="h-4 w-4 text-red-500" />
+                                    Ingrédient manquant de la liste
+                                </label>
+
+                                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                    <Checkbox checked={coherenceOrange} onCheckedChange={(v) => setCoherenceOrange(Boolean(v))} />
+                                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                                    Jamais cité / étape composite
+                                </label>
                             </div>
                         </PopoverContent>
                     </Popover>
@@ -605,6 +645,8 @@ export default function RecipesIndexPage() {
                         )}
                         {noImage && <FilterChip label="Sans image" onRemove={() => setNoImage(false)} />}
                         {orphanOnly && <FilterChip label="Ingrédients à relier" onRemove={() => setOrphanOnly(false)} />}
+                        {coherenceRed && <FilterChip label="Ingrédient manquant" onRemove={() => setCoherenceRed(false)} />}
+                        {coherenceOrange && <FilterChip label="Jamais cité / composite" onRemove={() => setCoherenceOrange(false)} />}
                         {selectedDiets.map((id) => (
                             <FilterChip key={`diet-${id}`} label={`Régime : ${dietLabel(id)}`} onRemove={() => toggleDiet(id)} />
                         ))}

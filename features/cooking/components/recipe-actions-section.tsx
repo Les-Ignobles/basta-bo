@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
     DndContext,
     closestCenter,
@@ -29,9 +29,15 @@ import { Wand2, Loader2, Trash2, AlertCircle, Plus, X, ChefHat, GripVertical, Bo
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import type { RecipeActionBO, RecipeActionIngredientBO, Ingredient } from '@/features/cooking/types'
 import { RecipeActionType, RECIPE_ACTION_TYPE_LABELS, CookingEquipmentBO, COOKING_EQUIPMENT_LABELS } from '@/features/cooking/types'
+import { computeIngredientWarnings } from '@/features/cooking/utils/ingredient-warnings'
+import { useCookingStore } from '@/features/cooking/store'
 
 type Props = {
     recipeId: number
+    /** Ids de la liste d'ingrédients du formulaire parent : quand elle change
+     *  (ajout/retrait), la section recharge sa copie pour rafraîchir les tags
+     *  de cohérence sans rechargement de page. */
+    ingredientsKey?: string
 }
 
 // Tout ingrédient non relié au catalogue est signalé (eau comprise : l'équipe
@@ -48,6 +54,10 @@ const normalizeName = (s: string) =>
 
 const singularizeName = (s: string) =>
     s.split(' ').map(w => (w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w)).join(' ')
+
+/** Noms compacts pour les badges : les 3 premiers, puis « +N ». */
+const formatNames = (names: string[]) =>
+    names.length <= 3 ? names.join(', ') : `${names.slice(0, 3).join(', ')} +${names.length - 3}`
 
 function suggestIngredient(orphanName: string, recipeIngredients: Ingredient[]): Ingredient | null {
     const target = singularizeName(normalizeName(orphanName ?? ''))
@@ -69,7 +79,7 @@ function suggestIngredient(orphanName: string, recipeIngredients: Ingredient[]):
     return bestScore >= 1 ? best : null
 }
 
-export function RecipeActionsSection({ recipeId }: Props) {
+export function RecipeActionsSection({ recipeId, ingredientsKey }: Props) {
     const [actions, setActions] = useState<RecipeActionBO[]>([])
     const [recipeIngredients, setRecipeIngredients] = useState<Ingredient[]>([])
     const [loading, setLoading] = useState(true)
@@ -131,6 +141,23 @@ export function RecipeActionsSection({ recipeId }: Props) {
         fetchActions()
         fetchIngredients()
     }, [fetchActions, fetchIngredients])
+
+    useEffect(() => {
+        if (ingredientsKey !== undefined) fetchIngredients()
+    }, [ingredientsKey, fetchIngredients])
+
+    // Catalogue complet pour le matching textuel des tags de cohérence
+    // (« lait » cité dans une étape sans référence ni entrée de liste).
+    const { ingredients: catalogue, fetchAllIngredients } = useCookingStore()
+    useEffect(() => {
+        if (catalogue.length < 200) fetchAllIngredients()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    const warnings = useMemo(
+        () => computeIngredientWarnings(recipeIngredients, actions, catalogue),
+        [recipeIngredients, actions, catalogue]
+    )
 
     const handleConvert = async () => {
         setConverting(true)
@@ -277,6 +304,50 @@ export function RecipeActionsSection({ recipeId }: Props) {
                             </Badge>
                         ) : null
                     })()}
+                    {warnings.citedMissing.length > 0 && (
+                        <Badge
+                            variant="destructive"
+                            className="gap-1"
+                            title="Utilisé dans les étapes mais absent de la liste d'ingrédients : liste de courses incomplète et allergènes de la recette faux. Ajoute-le à la liste (ou corrige l'étape)."
+                        >
+                            <AlertCircle className="h-3 w-3" />
+                            Absent de la liste : {formatNames(warnings.citedMissing)}
+                        </Badge>
+                    )}
+                    {warnings.neverCited.length > 0 && (
+                        <Badge
+                            variant="outline"
+                            className="gap-1 border-amber-500 text-amber-600"
+                            title="Dans la liste d'ingrédients mais jamais évoqué par les étapes : étape oubliée, ou ingrédient à retirer de la liste ?"
+                        >
+                            <AlertCircle className="h-3 w-3" />
+                            Jamais cité : {formatNames(warnings.neverCited)}
+                        </Badge>
+                    )}
+                    {warnings.compositeSteps.some(c => c.kind === 'mistype') && (
+                        <Badge
+                            variant="outline"
+                            className="gap-1 border-amber-500 text-amber-600"
+                            title="Le texte de l'étape est un mélange/préchauffage/fouettage mais son type est une découpe : le moteur de batch la croit anticipable et peut perdre le préchauffage ou déplacer le geste. Corrige le type de l'action."
+                        >
+                            <AlertCircle className="h-3 w-3" />
+                            Type à corriger : {warnings.compositeSteps.filter(c => c.kind === 'mistype')
+                                .map(c => `#${c.step} (« ${c.verb} » typé ${RECIPE_ACTION_TYPE_LABELS[c.actionType as RecipeActionType] ?? c.actionType})`)
+                                .join(', ')}
+                        </Badge>
+                    )}
+                    {warnings.compositeSteps.some(c => c.kind === 'composite') && (
+                        <Badge
+                            variant="outline"
+                            className="gap-1 border-amber-500 text-amber-600"
+                            title="Une étape = un geste : cette étape de découpe contient aussi un dépôt, le moteur de batch peut l'anticiper en bloc. Sépare-la en deux étapes."
+                        >
+                            <AlertCircle className="h-3 w-3" />
+                            Étape à séparer : {warnings.compositeSteps.filter(c => c.kind === 'composite')
+                                .map(c => `#${c.step} (découpe + « ${c.verb} »)`)
+                                .join(', ')}
+                        </Badge>
+                    )}
                 </div>
                 <div className="flex items-center gap-2">
                     <Button
